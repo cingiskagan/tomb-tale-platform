@@ -26,8 +26,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: 'start-from-init --masterkey "${ZITADEL_MASTERKEY}" --tlsMode disabled'
+    command: 'start-from-init --tlsMode disabled'
     environment:
+      ZITADEL_MASTERKEY: ${ZITADEL_MASTERKEY}
       ZITADEL_DATABASE_POSTGRES_HOST: postgres
       ZITADEL_DATABASE_POSTGRES_PORT: 5432
       ZITADEL_DATABASE_POSTGRES_DATABASE: ${POSTGRES_DB}

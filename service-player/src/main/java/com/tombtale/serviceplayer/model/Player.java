@@ -3,7 +3,6 @@ package com.tombtale.serviceplayer.model;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -17,10 +16,13 @@ import java.time.Instant;
  * <p>
  * The {@code zitadelUserId} links this game profile to the authenticated
  * identity managed by Zitadel (the "sub" claim in the JWT).
+ * <p>
+ * NOTE: We use a manual no-args constructor instead of @NoArgsConstructor
+ * because Lombok's @Builder.Default steals field initializers. Without this,
+ * MongoDB deserialization via the no-args constructor would set level=0.
  */
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "players")
 public class Player {
@@ -49,4 +51,14 @@ public class Player {
 
     @LastModifiedDate
     private Instant updatedAt;
+
+    /**
+     * Manual no-args constructor with correct defaults.
+     * Required because @Builder.Default removes field initializers,
+     * causing MongoDB deserialization to use primitive defaults (0) instead.
+     */
+    public Player() {
+        this.level = 1;
+        this.experiencePoints = 0;
+    }
 }

@@ -1,0 +1,30 @@
+# =============================================
+# Development Profile — Local Docker Compose
+# =============================================
+# Activate with: --spring.profiles.active=dev
+# or set SPRING_PROFILES_ACTIVE=dev
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_USER:root}:${MONGO_PASSWORD:rootpassword}@localhost:27017/tomb_tale_players?authSource=admin
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: ${RABBITMQ_USER:admin}
+    password: ${RABBITMQ_PASSWORD:adminpassword}
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080
+
+server:
+  port: 8081
+
+logging:
+  level:
+    com.tombtale: DEBUG
+    org.springframework.security: DEBUG
