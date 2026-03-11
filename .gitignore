@@ -1,0 +1,43 @@
+# =========================
+# Environment Secrets
+# =========================
+.env
+infrastructure/.env
+
+# =========================
+# IDE / Editor
+# =========================
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Java / Spring Boot
+# =========================
+**/target/
+*.jar
+*.war
+*.class
+*.log
+
+# =========================
+# Node / Next.js
+# =========================
+node_modules/
+.next/
+out/
+.env.local
+
+# =========================
+# Docker
+# =========================
+docker-compose.override.yml

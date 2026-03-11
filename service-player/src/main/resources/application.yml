@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: service-player
+
+  # --- MongoDB ---
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_USER:root}:${MONGO_PASSWORD:rootpassword}@localhost:27017/tomb_tale_players?authSource=admin
+
+  # --- RabbitMQ ---
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: ${RABBITMQ_USER:admin}
+    password: ${RABBITMQ_PASSWORD:adminpassword}
+
+  # --- OAuth2 Resource Server (Zitadel JWT) ---
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080
+
+server:
+  port: 8081
+
+# --- Actuator ---
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.tombtale: DEBUG
+    org.springframework.security: DEBUG
