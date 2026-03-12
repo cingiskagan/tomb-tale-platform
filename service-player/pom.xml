@@ -28,6 +28,9 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<!-- Override Jackson to patch DoS vulnerabilities in 3.0.4 -->
+		<!-- GHSA-72hv-8253-57qq, GHSA-6v53-7c9g-w56r -->
+		<jackson-bom.version>3.1.0</jackson-bom.version>
 	</properties>
 	<dependencies>
 		<dependency>

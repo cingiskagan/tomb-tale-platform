@@ -24,8 +24,8 @@ jobs:
       # For PR comments and status checks
       issues: write
       pull-requests: write
-      # For pushing auto-fixes (if APPLY_FIXES is enabled)
-      contents: write
+      # For pushing auto-fixes (elevate to 'write' if APPLY_FIXES is enabled)
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
