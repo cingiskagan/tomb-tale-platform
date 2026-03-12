@@ -23,11 +23,19 @@
         <!-- JUnit assertions — keep defaults -->
 
         <!--
-            EXCLUDED: LoosePackageCoupling
-            Requires explicit package configuration; produces only warnings
-            with no value when unconfigured.
+            EXCLUDED: GuardLogStatement
+            SLF4J parameterized logging `log.debug("{}", var)` defers evaluation
+            automatically, making `if (log.isDebugEnabled())` guards obsolete clutter.
         -->
-        <exclude name="LoosePackageCoupling"/>
+        <exclude name="GuardLogStatement"/>
+
+        <!--
+            EXCLUDED: UnnecessaryBooleanAssertion
+            Tests verifying Spring context loads purely check if the context starts without throwing an exception.
+            Asserting `assertTrue(true)` simply creates redundant noise.
+        -->
+        <exclude name="UnnecessaryBooleanAssertion"/>
+
     </rule>
 
     <!-- ============================== -->
@@ -77,12 +85,6 @@
         <exclude name="CommentDefaultAccessModifier"/>
         <exclude name="DefaultPackage"/>
 
-        <!--
-            EXCLUDED: UnnecessaryAnnotationValueElement
-            @RequestMapping(value = "/api") is more explicit than
-            @RequestMapping("/api") and preferred in our codebase.
-        -->
-        <exclude name="UnnecessaryAnnotationValueElement"/>
     </rule>
 
     <!-- ============================== -->
@@ -122,12 +124,6 @@
     <!--   Error Prone                   -->
     <!-- ============================== -->
     <rule ref="category/java/errorprone.xml">
-        <!--
-            EXCLUDED: NonSerializableClass (was BeanMembersShouldSerialize in PMD 6)
-            Lombok @Data generates serialVersionUID and serialization
-            methods. This rule doesn't understand Lombok.
-        -->
-        <exclude name="NonSerializableClass"/>
     </rule>
 
     <!-- ============================== -->
