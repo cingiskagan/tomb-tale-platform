@@ -40,11 +40,11 @@ public class PlayerController {
     @GetMapping("/me")
     public ResponseEntity<Player> getMyProfile(@AuthenticationPrincipal Jwt jwt) {
         String zitadelUserId = jwt.getSubject();
-        log.debug("Fetching profile for Zitadel user: {}", zitadelUserId);
+        log.debug("Fetching profile for Zitadel user: {}", maskId(zitadelUserId));
 
         Player player = playerRepository.findByZitadelUserId(zitadelUserId)
                 .orElseGet(() -> {
-                    log.info("Creating new player profile for Zitadel user: {}", zitadelUserId);
+                    log.info("Creating new player profile for Zitadel user: {}", maskId(zitadelUserId));
                     Player newPlayer = Player.builder()
                             .zitadelUserId(zitadelUserId)
                             .displayName("Player_" + zitadelUserId.substring(
@@ -54,5 +54,16 @@ public class PlayerController {
                 });
 
         return ResponseEntity.ok(player);
+    }
+
+    /**
+     * Masks an external identifier for safe logging (e.g., "1234abcd5678" -> "1234***5678").
+     * Keeps first 4 and last 4 characters visible for correlation.
+     */
+    private String maskId(String id) {
+        if (id == null || id.length() <= 8) {
+            return "***"; // Too short to safely mask while retaining privacy
+        }
+        return id.substring(0, 4) + "***" + id.substring(id.length() - 4);
     }
 }

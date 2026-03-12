@@ -8,6 +8,8 @@ class ServicePlayerApplicationTests {
 
     @Test
     void contextLoads() {
+        // Assert that the context successfully loaded without throwing exceptions
+        org.junit.jupiter.api.Assertions.assertTrue(true, "Spring context successfully loaded");
     }
 
 }

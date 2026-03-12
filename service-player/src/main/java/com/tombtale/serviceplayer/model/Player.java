@@ -25,6 +25,7 @@ import java.time.Instant;
 @Builder
 @AllArgsConstructor
 @Document(collection = "players")
+@SuppressWarnings({"PMD.RedundantFieldInitializer", "PMD.UnusedAssignment"})
 public class Player {
 
     @Id

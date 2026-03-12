@@ -22,7 +22,7 @@
 
     <!-- Enforce Unix-style line endings or Windows-style (accept both) -->
     <module name="NewlineAtEndOfFile">
-        <property name="lineSeparator" value="lf_cr_lf"/>
+        <property name="lineSeparator" value="lf_cr_crlf"/>
     </module>
 
     <!-- No tab characters — use spaces for indentation -->
@@ -113,7 +113,7 @@
             <property name="option" value="TEXT"/>
         </module>
 
-        <!-- Avoid nested ternary expressions -->
+        <!-- Avoid standalone blocks ({}) without a control structure -->
         <module name="AvoidNestedBlocks"/>
 
         <!-- ============================== -->

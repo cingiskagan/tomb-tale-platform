@@ -123,11 +123,11 @@
     <!-- ============================== -->
     <rule ref="category/java/errorprone.xml">
         <!--
-            EXCLUDED: BeanMembersShouldSerialize
+            EXCLUDED: NonSerializableClass (was BeanMembersShouldSerialize in PMD 6)
             Lombok @Data generates serialVersionUID and serialization
             methods. This rule doesn't understand Lombok.
         -->
-        <exclude name="BeanMembersShouldSerialize"/>
+        <exclude name="NonSerializableClass"/>
     </rule>
 
     <!-- ============================== -->
