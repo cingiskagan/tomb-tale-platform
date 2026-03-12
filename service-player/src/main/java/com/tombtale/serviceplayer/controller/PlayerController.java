@@ -58,7 +58,7 @@ public class PlayerController {
                     Player newPlayer = Player.builder()
                             .zitadelUserId(zitadelUserId)
                             .displayName("Player_" + zitadelUserId.substring(
-                                    0, DISPLAY_NAME_ID_PREFIX_LENGTH))
+                                    0, Math.min(zitadelUserId.length(), DISPLAY_NAME_ID_PREFIX_LENGTH)))
                             .build();
                     return playerRepository.save(newPlayer);
                 });
@@ -67,7 +67,8 @@ public class PlayerController {
     }
 
     /**
-     * Masks an external identifier for safe logging (e.g., "1234abcd5678" -> "1234***5678").
+     * Masks an external identifier for safe logging (e.g., "1234abcd5678" ->
+     * "1234***5678").
      * Keeps first 4 and last 4 characters visible for correlation.
      */
     private String maskId(String id) {
@@ -75,6 +76,6 @@ public class PlayerController {
             return "***"; // Too short to safely mask while retaining privacy
         }
         return id.substring(0, VISIBLE_ID_CHARS) + "***" +
-               id.substring(id.length() - VISIBLE_ID_CHARS);
+                id.substring(id.length() - VISIBLE_ID_CHARS);
     }
 }
