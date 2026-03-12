@@ -1,0 +1,185 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+    Custom Checkstyle configuration for Tomb Tale platform services.
+    Based on Google Java Style with adjustments for Spring Boot + Lombok.
+    https://checkstyle.org/checks.html
+-->
+<module name="Checker">
+
+    <!-- ============================== -->
+    <!--   File-Level Checks            -->
+    <!-- ============================== -->
+
+    <!-- Enforce UTF-8 encoding -->
+    <property name="charset" value="UTF-8"/>
+
+    <!-- Report severity as error (MegaLinter respects this) -->
+    <property name="severity" value="error"/>
+
+    <!-- Enforce Unix-style line endings or Windows-style (accept both) -->
+    <module name="NewlineAtEndOfFile">
+        <property name="lineSeparator" value="lf_cr_lf"/>
+    </module>
+
+    <!-- No tab characters — use spaces for indentation -->
+    <module name="FileTabCharacter">
+        <property name="eachLine" value="true"/>
+    </module>
+
+    <!-- Limit line length to 120 characters -->
+    <module name="LineLength">
+        <property name="max" value="120"/>
+        <!-- Ignore import statements and URLs in comments -->
+        <property name="ignorePattern"
+                  value="^(package |import |.*https?://).*$"/>
+    </module>
+
+    <!-- Suppress checks on generated code or test boilerplate as needed -->
+    <module name="SuppressWarningsFilter"/>
+
+    <!-- ============================== -->
+    <!--   TreeWalker (AST-Level)       -->
+    <!-- ============================== -->
+    <module name="TreeWalker">
+
+        <!-- Enable @SuppressWarnings annotation support -->
+        <module name="SuppressWarningsHolder"/>
+
+        <!-- ============================== -->
+        <!--   Import Checks               -->
+        <!-- ============================== -->
+
+        <!-- Flag unused imports -->
+        <module name="UnusedImports"/>
+
+        <!-- Disallow star imports (import java.util.*) -->
+        <module name="AvoidStarImport"/>
+
+        <!-- Disallow redundant imports (e.g., java.lang.*) -->
+        <module name="RedundantImport"/>
+
+        <!-- ============================== -->
+        <!--   Naming Conventions           -->
+        <!-- ============================== -->
+
+        <!-- Type names: PascalCase -->
+        <module name="TypeName"/>
+
+        <!-- Method names: camelCase -->
+        <module name="MethodName"/>
+
+        <!-- Constants: UPPER_SNAKE_CASE -->
+        <module name="ConstantName"/>
+
+        <!-- Local variables: camelCase -->
+        <module name="LocalVariableName"/>
+
+        <!-- Parameters: camelCase -->
+        <module name="ParameterName"/>
+
+        <!-- Member variables: camelCase -->
+        <module name="MemberName"/>
+
+        <!-- Package names: lowercase -->
+        <module name="PackageName"/>
+
+        <!-- ============================== -->
+        <!--   Coding Rules                 -->
+        <!-- ============================== -->
+
+        <!-- No magic numbers (except -1, 0, 1, 2 which are common) -->
+        <module name="MagicNumber">
+            <property name="ignoreNumbers" value="-1, 0, 1, 2"/>
+            <property name="ignoreAnnotation" value="true"/>
+            <property name="ignoreFieldDeclaration" value="true"/>
+            <property name="ignoreHashCodeMethod" value="true"/>
+        </module>
+
+        <!-- Require default branch in switch statements -->
+        <module name="MissingSwitchDefault"/>
+
+        <!-- No fall-through in switch cases -->
+        <module name="FallThrough"/>
+
+        <!-- equals() must be paired with hashCode() -->
+        <module name="EqualsHashCode"/>
+
+        <!-- Avoid empty blocks (catch, if, etc.) unless commented -->
+        <module name="EmptyBlock">
+            <property name="option" value="TEXT"/>
+        </module>
+
+        <!-- Avoid nested ternary expressions -->
+        <module name="AvoidNestedBlocks"/>
+
+        <!-- ============================== -->
+        <!--   Whitespace / Formatting      -->
+        <!-- ============================== -->
+
+        <!-- Require whitespace after comma, semicolon, cast -->
+        <module name="WhitespaceAfter"/>
+
+        <!-- Require whitespace around assignment, logical, and comparison operators -->
+        <module name="WhitespaceAround">
+            <property name="allowEmptyConstructors" value="true"/>
+            <property name="allowEmptyMethods" value="true"/>
+            <property name="allowEmptyLambdas" value="true"/>
+        </module>
+
+        <!-- No whitespace after unary operators like !, ~, ++ -->
+        <module name="NoWhitespaceAfter"/>
+
+        <!-- No whitespace before comma, semicolon, postfix operators -->
+        <module name="NoWhitespaceBefore"/>
+
+        <!-- Opening brace on same line (K&R style) -->
+        <module name="LeftCurly"/>
+
+        <!-- Closing brace placement -->
+        <module name="RightCurly"/>
+
+        <!-- ============================== -->
+        <!--   Javadoc (Relaxed)            -->
+        <!-- ============================== -->
+
+        <!--
+            Only require Javadoc on public classes/interfaces.
+            Spring Boot @Configuration, @RestController etc. will need class-level doc.
+        -->
+        <module name="MissingJavadocType">
+            <property name="scope" value="public"/>
+            <!-- Exclude annotations that are self-documenting -->
+            <property name="skipAnnotations"
+                      value="SpringBootApplication,Generated"/>
+        </module>
+
+        <!--
+            Require Javadoc on public methods, but exclude:
+            - Getters/setters (Lombok generates these)
+            - main() method
+            - Methods with @Override, @Bean, @Test annotations
+        -->
+        <module name="MissingJavadocMethod">
+            <property name="scope" value="public"/>
+            <property name="minLineCount" value="2"/>
+            <property name="allowedAnnotations"
+                      value="Override,Bean,Test,GetMapping,PostMapping,PutMapping,DeleteMapping,PatchMapping,RequestMapping,ExceptionHandler,Scheduled"/>
+            <property name="allowMissingPropertyJavadoc" value="true"/>
+        </module>
+
+        <!--
+            DISABLED by omission:
+            - FinalParameters: not idiomatic in Spring Boot
+            - HideUtilityClassConstructor: false positive on @SpringBootApplication
+            - DesignForExtension: noise on @Configuration classes
+            - JavadocVariable: Lombok @Data makes this redundant
+            - JavadocMethod @param/@return strictness: handled by MissingJavadocMethod above
+        -->
+
+    </module>
+
+</module>

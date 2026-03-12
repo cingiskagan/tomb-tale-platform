@@ -1,3 +1,4 @@
+---
 # =============================================
 # MegaLinter Configuration
 # https://megalinter.io/latest/configuration/
@@ -90,6 +91,12 @@ MARKDOWN_MARKDOWNLINT_CONFIG_DATA:
     line_length: 200
   MD033: false    # Allow inline HTML
   MD041: false    # First line doesn't have to be h1
+
+# Checkstyle: use project-specific rules instead of sun_checks.xml
+JAVA_CHECKSTYLE_CONFIG_FILE: service-player/config/checkstyle/checkstyle.xml
+
+# PMD: use project-specific rules instead of defaults
+JAVA_PMD_CONFIG_FILE: service-player/config/pmd/pmd-ruleset.xml
 
 # ESLint: let the project's own .eslintrc handle config
 TYPESCRIPT_ES_FILE_EXTENSIONS:

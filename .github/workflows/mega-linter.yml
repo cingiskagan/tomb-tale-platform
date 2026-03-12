@@ -1,8 +1,9 @@
+---
 # MegaLinter GitHub Actions Workflow
 # https://megalinter.io
 name: MegaLinter
 
-on:
+"on":
   push:
     branches: [main, develop]
   pull_request:

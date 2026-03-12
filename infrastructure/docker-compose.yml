@@ -1,3 +1,4 @@
+---
 services:
   # --- 1. POSTGRES (Relational DB for Zitadel & Spring Boot) ---
   postgres:

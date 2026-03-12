@@ -23,6 +23,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class PlayerController {
 
+    /**
+     * Number of leading characters from the Zitadel user ID
+     * used to generate a default display name (e.g. "Player_a1b2c3d4").
+     */
+    private static final int DISPLAY_NAME_ID_PREFIX_LENGTH = 8;
+
     private final PlayerRepository playerRepository;
 
     /**
@@ -41,7 +47,8 @@ public class PlayerController {
                     log.info("Creating new player profile for Zitadel user: {}", zitadelUserId);
                     Player newPlayer = Player.builder()
                             .zitadelUserId(zitadelUserId)
-                            .displayName("Player_" + zitadelUserId.substring(0, 8))
+                            .displayName("Player_" + zitadelUserId.substring(
+                                    0, DISPLAY_NAME_ID_PREFIX_LENGTH))
                             .build();
                     return playerRepository.save(newPlayer);
                 });

@@ -1,0 +1,148 @@
+<?xml version="1.0"?>
+<!--
+    Custom PMD ruleset for Tomb Tale platform services.
+    Tailored for Spring Boot + Lombok projects.
+    https://docs.pmd-code.org/latest/pmd_rules_java.html
+-->
+<ruleset name="TombTale PMD Rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0
+                             https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        PMD rules for Tomb Tale Java microservices.
+        Based on PMD best practices with exclusions for Spring Boot and Lombok patterns.
+    </description>
+
+    <!-- ============================== -->
+    <!--   Best Practices                -->
+    <!-- ============================== -->
+    <rule ref="category/java/bestpractices.xml">
+        <!-- Unused imports — keep this, it catches real issues -->
+        <!-- JUnit assertions — keep defaults -->
+
+        <!--
+            EXCLUDED: LoosePackageCoupling
+            Requires explicit package configuration; produces only warnings
+            with no value when unconfigured.
+        -->
+        <exclude name="LoosePackageCoupling"/>
+    </rule>
+
+    <!-- ============================== -->
+    <!--   Code Style                    -->
+    <!-- ============================== -->
+    <rule ref="category/java/codestyle.xml">
+        <!--
+            EXCLUDED: AtLeastOneConstructor
+            Spring @Configuration, @RestController, and test classes
+            are instantiated by the framework via reflection.
+            Forcing an explicit constructor adds noise.
+        -->
+        <exclude name="AtLeastOneConstructor"/>
+
+        <!--
+            EXCLUDED: MethodArgumentCouldBeFinal / LocalVariableCouldBeFinal
+            Not idiomatic in modern Java. Adding 'final' to every local
+            variable and parameter reduces readability for negligible benefit.
+        -->
+        <exclude name="MethodArgumentCouldBeFinal"/>
+        <exclude name="LocalVariableCouldBeFinal"/>
+
+        <!--
+            EXCLUDED: OnlyOneReturn
+            Conflicts with early-return / guard-clause pattern
+            which we prefer for reducing cognitive complexity.
+        -->
+        <exclude name="OnlyOneReturn"/>
+
+        <!--
+            EXCLUDED: ShortVariable
+            Entity fields like 'id' and loop vars like 'i' are standard.
+        -->
+        <exclude name="ShortVariable"/>
+
+        <!--
+            EXCLUDED: LongVariable
+            Descriptive constant names like PLAYER_EVENTS_EXCHANGE are
+            desirable. The default 17-char limit is too restrictive.
+        -->
+        <exclude name="LongVariable"/>
+
+        <!--
+            EXCLUDED: CommentDefaultAccessModifier / DefaultPackage
+            Spring beans often use package-private access intentionally.
+        -->
+        <exclude name="CommentDefaultAccessModifier"/>
+        <exclude name="DefaultPackage"/>
+
+        <!--
+            EXCLUDED: UnnecessaryAnnotationValueElement
+            @RequestMapping(value = "/api") is more explicit than
+            @RequestMapping("/api") and preferred in our codebase.
+        -->
+        <exclude name="UnnecessaryAnnotationValueElement"/>
+    </rule>
+
+    <!-- ============================== -->
+    <!--   Design                        -->
+    <!-- ============================== -->
+    <rule ref="category/java/design.xml">
+        <!--
+            EXCLUDED: UseUtilityClass
+            False positive on @SpringBootApplication classes which have
+            only a static main() but must remain instantiable by Spring.
+        -->
+        <exclude name="UseUtilityClass"/>
+
+        <!--
+            EXCLUDED: LawOfDemeter
+            Extremely noisy with Spring's fluent builder APIs
+            (HttpSecurity, MongoClient, etc.).
+        -->
+        <exclude name="LawOfDemeter"/>
+
+        <!--
+            EXCLUDED: SignatureDeclareThrowsException
+            Spring Security's HttpSecurity.build() forces 'throws Exception'.
+            Nothing we can do about framework-imposed signatures.
+        -->
+        <exclude name="SignatureDeclareThrowsException"/>
+
+        <!--
+            EXCLUDED: ExcessiveImports
+            Spring Boot services naturally have many imports
+            (annotations, config, security, data, etc.).
+        -->
+        <exclude name="ExcessiveImports"/>
+    </rule>
+
+    <!-- ============================== -->
+    <!--   Error Prone                   -->
+    <!-- ============================== -->
+    <rule ref="category/java/errorprone.xml">
+        <!--
+            EXCLUDED: BeanMembersShouldSerialize
+            Lombok @Data generates serialVersionUID and serialization
+            methods. This rule doesn't understand Lombok.
+        -->
+        <exclude name="BeanMembersShouldSerialize"/>
+    </rule>
+
+    <!-- ============================== -->
+    <!--   Performance                   -->
+    <!-- ============================== -->
+    <rule ref="category/java/performance.xml"/>
+
+    <!-- ============================== -->
+    <!--   Security                      -->
+    <!-- ============================== -->
+    <rule ref="category/java/security.xml"/>
+
+    <!-- ============================== -->
+    <!--   Multithreading                -->
+    <!-- ============================== -->
+    <rule ref="category/java/multithreading.xml"/>
+
+</ruleset>

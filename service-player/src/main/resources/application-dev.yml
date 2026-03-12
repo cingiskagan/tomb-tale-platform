@@ -4,6 +4,7 @@
 # Activate with: --spring.profiles.active=dev
 # or set SPRING_PROFILES_ACTIVE=dev
 
+---
 spring:
   data:
     mongodb:
