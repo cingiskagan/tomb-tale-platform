@@ -1,0 +1,40 @@
+---
+spring:
+  application:
+    name: service-player
+
+  # --- MongoDB ---
+  data:
+    mongodb:
+      uri: ${MONGO_URI}
+
+  # --- RabbitMQ ---
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+
+  # --- OAuth2 Resource Server (Zitadel JWT) ---
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${ZITADEL_ISSUER_URI}
+
+server:
+  port: ${SERVER_PORT:8081}
+
+# --- Actuator ---
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.tombtale: INFO

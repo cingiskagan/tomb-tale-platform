@@ -1,0 +1,107 @@
+---
+# =============================================
+# MegaLinter Configuration
+# https://megalinter.io/latest/configuration/
+# =============================================
+# Tailored for: Java (Spring Boot), TypeScript (Next.js),
+# YAML, Docker, Markdown, JSON
+
+# ---------------------
+# Flavor & Scope
+# ---------------------
+# Only enable linters relevant to our tech stack
+ENABLE_LINTERS:
+  # --- Java ---
+  - JAVA_CHECKSTYLE
+  - JAVA_PMD
+
+  # --- TypeScript / JavaScript ---
+  - TYPESCRIPT_ES
+  - JAVASCRIPT_ES
+
+  # --- JSON ---
+  - JSON_JSONLINT
+
+  # --- YAML ---
+  - YAML_YAMLLINT
+
+  # --- Markdown ---
+  - MARKDOWN_MARKDOWNLINT
+
+  # --- Docker ---
+  - DOCKERFILE_HADOLINT
+
+  # --- Shell ---
+  - BASH_SHELLCHECK
+
+  # --- Git ---
+  - GIT_GIT_DIFF
+  - REPOSITORY_GITLEAKS       # Secret leak detection
+  - REPOSITORY_CHECKOV        # Infrastructure-as-code security
+
+# ---------------------
+# Behavior
+# ---------------------
+# Show linter version in logs for reproducibility
+SHOW_LINTER_VERSION: true
+
+# Print elapsed time per linter
+SHOW_ELAPSED_TIME: true
+
+# File types to exclude from analysis
+EXCLUDED_DIRECTORIES:
+  - .git
+  - node_modules
+  - .next
+  - target
+  - build
+  - dist
+  - .mvn
+
+# Filter mode — on PRs only lint changed files (set in workflow via VALIDATE_ALL_CODEBASE)
+FILTER_REGEX_EXCLUDE: '(\.mvn/|\.git/)'
+
+# ---------------------
+# Reporting
+# ---------------------
+# Comment on PRs with results
+GITHUB_COMMENT_REPORTER: true
+
+# Generate SARIF for GitHub Security tab (optional)
+SARIF_REPORTER: false
+
+# Console reporter for logs
+CONSOLE_REPORTER: true
+
+# ---------------------
+# Linter-Specific Config
+# ---------------------
+# Yamllint: relax line length for docker-compose and Spring configs
+YAML_YAMLLINT_CONFIG_DATA: |
+  extends: default
+  rules:
+    line-length:
+      max: 200
+    truthy:
+      check-keys: false
+
+# Markdown: relax some rules for README files
+MARKDOWN_MARKDOWNLINT_CONFIG_DATA:
+  MD013:
+    line_length: 200
+  MD033: false    # Allow inline HTML
+  MD041: false    # First line doesn't have to be h1
+
+# Checkstyle: use project-specific rules instead of sun_checks.xml
+JAVA_CHECKSTYLE_CONFIG_FILE: service-player/config/checkstyle/checkstyle.xml
+
+# PMD: use project-specific rules instead of defaults
+JAVA_PMD_CONFIG_FILE: service-player/config/pmd/pmd-ruleset.xml
+
+# ESLint: let the project's own .eslintrc handle config
+TYPESCRIPT_ES_FILE_EXTENSIONS:
+  - .ts
+  - .tsx
+JAVASCRIPT_ES_FILE_EXTENSIONS:
+  - .js
+  - .jsx

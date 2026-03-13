@@ -1,0 +1,50 @@
+---
+# MegaLinter GitHub Actions Workflow
+# https://megalinter.io
+name: MegaLinter
+
+"on":
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+# Cancel in-progress runs for the same branch/PR
+concurrency:
+  group: ${{ github.ref }}-${{ github.head_ref }}-megalinter
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  megalinter:
+    name: MegaLinter
+    runs-on: ubuntu-latest
+    permissions:
+      # For PR comments and status checks
+      issues: write
+      pull-requests: write
+      # For pushing auto-fixes (elevate to 'write' if APPLY_FIXES is enabled)
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          fetch-depth: 0 # Full history for better linting context
+
+      - name: MegaLinter
+        id: ml
+        uses: oxsecurity/megalinter@8fbdead70d1409964ab3d5afa885e18ee85388bb  # v9
+        env:
+          VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Upload reports as artifacts for review
+      - name: Archive MegaLinter reports
+        if: success() || failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: MegaLinter-reports
+          path: |
+            megalinter-reports
+          retention-days: 7
