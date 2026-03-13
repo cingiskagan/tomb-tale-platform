@@ -7,9 +7,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 class ServicePlayerApplicationTests {
 
     @Test
+    @SuppressWarnings("PMD")
     void contextLoads() {
-        // Assert that the context successfully loaded without throwing exceptions
-        org.junit.jupiter.api.Assertions.assertTrue(true, "Spring context successfully loaded");
+        // Intentionally empty: test passes if Spring context loads without throwing
     }
 
 }

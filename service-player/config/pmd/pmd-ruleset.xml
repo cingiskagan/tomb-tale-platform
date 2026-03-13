@@ -29,13 +29,6 @@
         -->
         <exclude name="GuardLogStatement"/>
 
-        <!--
-            EXCLUDED: UnnecessaryBooleanAssertion
-            Tests verifying Spring context loads purely check if the context starts without throwing an exception.
-            Asserting `assertTrue(true)` simply creates redundant noise.
-        -->
-        <exclude name="UnnecessaryBooleanAssertion"/>
-
     </rule>
 
     <!-- ============================== -->
@@ -79,11 +72,10 @@
         <exclude name="LongVariable"/>
 
         <!--
-            EXCLUDED: CommentDefaultAccessModifier / DefaultPackage
+            EXCLUDED: CommentDefaultAccessModifier
             Spring beans often use package-private access intentionally.
         -->
         <exclude name="CommentDefaultAccessModifier"/>
-        <exclude name="DefaultPackage"/>
 
     </rule>
 
