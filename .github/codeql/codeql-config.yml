@@ -1,0 +1,14 @@
+name: "Tomb Tale CodeQL Config"
+
+# Elevate checks to match high quality standards (from default 'security-extended' to 'security-and-quality')
+queries:
+  - uses: security-and-quality
+
+# Ignore test classes, infrastructure configs, and linter rule files
+paths-ignore:
+  - '**/src/test/**'
+  - '**/checkstyle/**'
+  - 'infrastructure/**'
+  - '**/*.xml'
+  - '**/*.yml'
+  - '**/*.yaml'
