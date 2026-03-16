@@ -1,3 +1,4 @@
+---
 name: "Tomb Tale CodeQL Config"
 
 # Elevate checks to match high quality standards (from default 'security-extended' to 'security-and-quality')

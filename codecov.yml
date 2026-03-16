@@ -1,3 +1,4 @@
+---
 coverage:
   status:
     project:
@@ -11,7 +12,6 @@ coverage:
 # Ignore the same files we ignore in Jacoco
 ignore:
   - "service-player/src/main/java/com/tombtale/serviceplayer/config/**"
-  - "service-player/src/main/java/com/tombtale/serviceplayer/dto/**"
-  - "service-player/src/main/java/com/tombtale/serviceplayer/entity/**"
+  - "service-player/src/main/java/com/tombtale/serviceplayer/model/**"
   - "service-player/src/main/java/com/tombtale/serviceplayer/exception/**"
   - "service-player/src/main/java/com/tombtale/serviceplayer/*Application.java"

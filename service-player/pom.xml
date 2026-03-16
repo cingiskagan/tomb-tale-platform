@@ -132,8 +132,7 @@
 				<configuration>
 					<excludes>
 						<exclude>**/config/**</exclude>
-						<exclude>**/dto/**</exclude>
-						<exclude>**/entity/**</exclude>
+						<exclude>**/model/**</exclude>
 						<exclude>**/exception/**</exclude>
 						<exclude>**/*Application.*</exclude>
 					</excludes>
