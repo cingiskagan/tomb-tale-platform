@@ -1,0 +1,17 @@
+---
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 2%
+    patch:
+      default:
+        target: 80%
+
+# Ignore the same files we ignore in Jacoco
+ignore:
+  - "service-player/src/main/java/com/tombtale/serviceplayer/config/**"
+  - "service-player/src/main/java/com/tombtale/serviceplayer/model/**"
+  - "service-player/src/main/java/com/tombtale/serviceplayer/exception/**"
+  - "service-player/src/main/java/com/tombtale/serviceplayer/*Application.java"

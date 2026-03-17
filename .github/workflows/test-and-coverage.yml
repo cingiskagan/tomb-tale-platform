@@ -1,0 +1,38 @@
+---
+name: "Test and Coverage"
+
+"on":
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions: read-all
+
+jobs:
+  test:
+    name: Run Tests & Upload Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run Maven Tests and Generate Jacoco Report
+        working-directory: service-player
+        run: ./mvnw clean verify
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./service-player/target/site/jacoco/jacoco.xml
+          flags: backend
+          fail_ci_if_error: true

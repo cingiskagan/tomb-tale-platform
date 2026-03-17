@@ -28,9 +28,15 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
-		<!-- Override Jackson to patch DoS vulnerabilities in 3.0.4 -->
-		<!-- GHSA-72hv-8253-57qq, GHSA-6v53-7c9g-w56r -->
-		<jackson-bom.version>3.1.0</jackson-bom.version>
+		<!--
+			TODO: Jackson DoS vulnerabilities in jackson-core 3.0.4
+			  - GHSA-72hv-8253-57qq (maxNumberLength bypass → unbounded memory/CPU)
+			  - GHSA-6v53-7c9g-w56r (nesting depth bypass → StackOverflowError)
+			Fixed in jackson-core 3.1.0, but Spring Boot 4.0.x still ships 3.0.4.
+			Cannot override jackson-bom to 3.1.0 due to jackson-annotations 2.x/3.x
+			classpath conflict. Monitor for Spring Boot 4.1.0 or a 4.0.x patch that
+			bumps Jackson to 3.1.x, then remove this comment.
+		-->
 	</properties>
 	<dependencies>
 		<dependency>
@@ -107,6 +113,34 @@
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
 						</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.13</version>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<excludes>
+						<exclude>**/config/**</exclude>
+						<exclude>**/model/**</exclude>
+						<exclude>**/exception/**</exclude>
+						<exclude>**/*Application.*</exclude>
 					</excludes>
 				</configuration>
 			</plugin>

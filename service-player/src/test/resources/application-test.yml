@@ -1,0 +1,26 @@
+---
+# Test profile: overrides external dependencies with safe defaults
+# so the Spring context can load in CI without real infrastructure.
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/test-db
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://issuer.test.example.com
+
+  # Disable auto-connect to external services during tests
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
