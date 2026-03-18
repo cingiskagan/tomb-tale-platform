@@ -110,6 +110,14 @@
             (annotations, config, security, data, etc.).
         -->
         <exclude name="ExcessiveImports"/>
+
+        <!--
+            EXCLUDED: LoosePackageCoupling
+            Requires explicit package/class configuration that does not
+            apply to this project. Without it, PMD emits a misconfiguration
+            warning and silently removes the rule anyway.
+        -->
+        <exclude name="LoosePackageCoupling"/>
     </rule>
 
     <!-- ============================== -->

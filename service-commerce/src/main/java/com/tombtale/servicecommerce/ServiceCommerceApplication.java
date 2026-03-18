@@ -2,7 +2,6 @@ package com.tombtale.servicecommerce;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Entry point for the Commerce microservice.
@@ -11,7 +10,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * backed by PostgreSQL (JPA + QueryDSL) and RabbitMQ event publishing.
  */
 @SpringBootApplication
-@EnableScheduling
 public class ServiceCommerceApplication {
 
     public static void main(String[] args) {
