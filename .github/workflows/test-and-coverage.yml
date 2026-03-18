@@ -13,6 +13,9 @@ jobs:
   test:
     name: Run Tests & Upload Coverage
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [service-player, service-commerce]
 
     steps:
       - name: Checkout repository
@@ -26,13 +29,13 @@ jobs:
           cache: maven
 
       - name: Run Maven Tests and Generate Jacoco Report
-        working-directory: service-player
+        working-directory: ${{ matrix.service }}
         run: ./mvnw clean verify
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./service-player/target/site/jacoco/jacoco.xml
+          files: ./${{ matrix.service }}/target/site/jacoco/jacoco.xml
           flags: backend
           fail_ci_if_error: true
