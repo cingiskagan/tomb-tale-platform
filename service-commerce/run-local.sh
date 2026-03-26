@@ -15,8 +15,11 @@ SERVER_PORT="${SERVER_PORT:-8082}"
 # ── Load .env ───────────────────────────────────────────────────────────────
 if [[ -f "${ENV_FILE}" ]]; then
   set -a
-  # shellcheck disable=SC1090
-  source "${ENV_FILE}"
+  # Safe key=value parser — avoids executing .env as shell code (SC1090).
+  while IFS='=' read -r key value; do
+    [[ -z "${key}" || "${key}" == \#* ]] && continue
+    export "${key}=${value}"
+  done < "${ENV_FILE}"
   set +a
 else
   echo "⚠  .env file not found at ${ENV_FILE}"

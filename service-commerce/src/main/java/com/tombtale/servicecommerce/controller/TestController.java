@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/test")
+@SuppressWarnings("PMD.TestClassWithoutTestCases") // Not a test class — named "Test" for smoke-test endpoints
 public class TestController {
 
     /**

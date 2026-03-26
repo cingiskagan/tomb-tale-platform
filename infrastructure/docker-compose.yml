@@ -10,7 +10,6 @@ services:
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=zitadel
       - --entrypoints.web.address=:80
-      - --entrypoints.websecure.address=:443
       - --api.dashboard=${TRAEFIK_DASHBOARD_ENABLED}
       - --api.insecure=false
       - --ping=true
@@ -113,23 +112,12 @@ services:
       - traefik.http.routers.zitadel-api-alias-web.service=zitadel-api
       - traefik.http.routers.zitadel-api-alias-web.priority=200
 
-      - traefik.http.routers.zitadel-api-alias-websecure.rule=Host(`${ZITADEL_DOMAIN}`) && PathPrefix(`/api`)
-      - traefik.http.routers.zitadel-api-alias-websecure.entrypoints=websecure
-      - traefik.http.routers.zitadel-api-alias-websecure.tls=true
-      - traefik.http.routers.zitadel-api-alias-websecure.middlewares=zitadel-strip-api
-      - traefik.http.routers.zitadel-api-alias-websecure.service=zitadel-api
-      - traefik.http.routers.zitadel-api-alias-websecure.priority=200
 
       - traefik.http.routers.zitadel-canonical-web.rule=Host(`${ZITADEL_DOMAIN}`) && !PathPrefix(`/ui/v2/login`) && !PathPrefix(`/api`) && !Path(`/`)
       - traefik.http.routers.zitadel-canonical-web.entrypoints=web
       - traefik.http.routers.zitadel-canonical-web.service=zitadel-api
       - traefik.http.routers.zitadel-canonical-web.priority=100
 
-      - traefik.http.routers.zitadel-canonical-websecure.rule=Host(`${ZITADEL_DOMAIN}`) && !PathPrefix(`/ui/v2/login`) && !PathPrefix(`/api`) && !Path(`/`)
-      - traefik.http.routers.zitadel-canonical-websecure.entrypoints=websecure
-      - traefik.http.routers.zitadel-canonical-websecure.tls=true
-      - traefik.http.routers.zitadel-canonical-websecure.service=zitadel-api
-      - traefik.http.routers.zitadel-canonical-websecure.priority=100
 
   zitadel-login:
     image: ghcr.io/zitadel/zitadel-login:${ZITADEL_VERSION}
@@ -175,23 +163,12 @@ services:
       - traefik.http.routers.zitadel-root-web.service=zitadel-login
       - traefik.http.routers.zitadel-root-web.priority=400
 
-      - traefik.http.routers.zitadel-root-websecure.rule=Host(`${ZITADEL_DOMAIN}`) && Path(`/`)
-      - traefik.http.routers.zitadel-root-websecure.entrypoints=websecure
-      - traefik.http.routers.zitadel-root-websecure.tls=true
-      - traefik.http.routers.zitadel-root-websecure.middlewares=zitadel-root-rewrite
-      - traefik.http.routers.zitadel-root-websecure.service=zitadel-login
-      - traefik.http.routers.zitadel-root-websecure.priority=400
 
       - traefik.http.routers.zitadel-login-web.rule=Host(`${ZITADEL_DOMAIN}`) && PathPrefix(`/ui/v2/login`)
       - traefik.http.routers.zitadel-login-web.entrypoints=web
       - traefik.http.routers.zitadel-login-web.service=zitadel-login
       - traefik.http.routers.zitadel-login-web.priority=250
 
-      - traefik.http.routers.zitadel-login-websecure.rule=Host(`${ZITADEL_DOMAIN}`) && PathPrefix(`/ui/v2/login`)
-      - traefik.http.routers.zitadel-login-websecure.entrypoints=websecure
-      - traefik.http.routers.zitadel-login-websecure.tls=true
-      - traefik.http.routers.zitadel-login-websecure.service=zitadel-login
-      - traefik.http.routers.zitadel-login-websecure.priority=250
 
   postgres:
     image: ${POSTGRES_IMAGE}
