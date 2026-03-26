@@ -3,6 +3,7 @@
 # =========================
 .env
 infrastructure/.env
+infrastructure/.zitadel-masterkey
 
 # =========================
 # IDE / Editor
@@ -41,3 +42,7 @@ out/
 # Docker
 # =========================
 docker-compose.override.yml
+infrastructure/.client-secret
+infrastructure/.client-id
+infrastructure/.personal_access_token
+infrastructure/*.json

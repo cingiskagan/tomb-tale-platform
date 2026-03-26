@@ -6,8 +6,8 @@ spring:
   # --- PostgreSQL ---
   datasource:
     url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/tombtale}
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    username: ${POSTGRES_ADMIN_USER}
+    password: ${POSTGRES_ADMIN_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   # --- JPA / Hibernate ---
