@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SecureTestControllerTest {
 
     private static final String MOCK_SUBJECT = "test-user-id-12345";
+    private static final long TOKEN_VALIDITY_SECONDS = 3600L;
 
     private final SecureTestController controller = new SecureTestController();
 
@@ -43,7 +44,7 @@ class SecureTestControllerTest {
         return new Jwt(
             "mock.jwt.token",
             Instant.now(),
-            Instant.now().plusSeconds(3600),
+            Instant.now().plusSeconds(TOKEN_VALIDITY_SECONDS),
             Map.of("alg", "RS256"),
             Map.of("sub", subject)
         );
