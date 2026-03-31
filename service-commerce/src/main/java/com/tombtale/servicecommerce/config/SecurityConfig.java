@@ -2,7 +2,6 @@ package com.tombtale.servicecommerce.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -13,20 +12,15 @@ import org.springframework.security.web.SecurityFilterChain;
  * Global security configuration for the commerce service.
  *
  * <p>
- * Configures the application as a stateless OAuth2 resource server that
- * validates
- * JWT bearer tokens issued by Zitadel. Key decisions:
+ * <b>Current state (early development):</b> all endpoints are public
+ * to allow Swagger UI testing without a Zitadel token. JWT authentication
+ * will be re-enabled once the frontend integrates login.
+ *
+ * <p>Key decisions:
  * <ul>
- * <li><b>CSRF disabled</b> — this API is stateless and uses
- * {@code Authorization: Bearer}
- * headers, not cookies. CSRF attacks only exploit cookie-based authentication
- * where
- * the browser automatically attaches credentials. With JWTs sent explicitly via
- * headers,
- * there is no CSRF attack vector.</li>
- * <li><b>Stateless sessions</b> — no server-side session is created; every
- * request is
- * independently authenticated via its JWT.</li>
+ *   <li><b>CSRF disabled</b> — this API is stateless and will eventually use
+ *       {@code Authorization: Bearer} headers, not cookies.</li>
+ *   <li><b>Stateless sessions</b> — no server-side session is created.</li>
  * </ul>
  */
 @Configuration
@@ -36,15 +30,10 @@ public class SecurityConfig {
     /**
      * Configures the main security filter chain for HTTP requests.
      *
-     * <p>
-     * Public paths (no token required):
-     * <ul>
-     * <li>{@code /api/v1/test/**} — smoke-test / connectivity endpoints</li>
-     * <li>{@code /actuator/health, /actuator/info, /actuator/metrics} — observability</li>
-     * </ul>
-     *
-     * <p>
-     * All other paths require a valid Zitadel-issued JWT.
+     * <p>All paths are currently permitted (no authentication required).
+     * When JWT authentication is re-enabled, restrict
+     * {@code anyRequest().authenticated()} and add
+     * {@code .oauth2ResourceServer(…)} back.
      *
      * @param http The HttpSecurity builder to configure.
      * @return The configured SecurityFilterChain.
@@ -58,10 +47,9 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/v1/test/**").permitAll()
-                        .requestMatchers("/actuator/health", "/actuator/info", "/actuator/metrics").permitAll()
-                        .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
+                        .requestMatchers("/api/**").authenticated()
+                        .anyRequest().permitAll())
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(org.springframework.security.config.Customizer.withDefaults()));
         return http.build();
     }
 }
