@@ -16,3 +16,4 @@ public class ServiceCommerceApplication {
         SpringApplication.run(ServiceCommerceApplication.class, args);
     }
 }
+

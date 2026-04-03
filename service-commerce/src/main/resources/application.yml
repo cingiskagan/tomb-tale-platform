@@ -16,11 +16,18 @@ spring:
       ddl-auto: ${JPA_DDL_AUTO:update}
     show-sql: false
     open-in-view: false
+    defer-datasource-initialization: true
     properties:
       hibernate:
         format_sql: true
         jdbc:
           time_zone: UTC
+
+  # --- Seed Data ---
+  sql:
+    init:
+      mode: ${SQL_INIT_MODE:never}
+      continue-on-error: false
 
   # --- RabbitMQ ---
   rabbitmq:

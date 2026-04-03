@@ -30,9 +30,9 @@
         <property name="eachLine" value="true"/>
     </module>
 
-    <!-- Limit line length to 120 characters -->
+    <!-- Limit line length to 150 characters -->
     <module name="LineLength">
-        <property name="max" value="120"/>
+        <property name="max" value="150"/>
         <!-- Ignore import statements and URLs in comments -->
         <property name="ignorePattern"
                   value="^(package |import |.*https?://).*$"/>

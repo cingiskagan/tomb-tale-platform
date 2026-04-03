@@ -29,6 +29,15 @@
         -->
         <exclude name="GuardLogStatement"/>
 
+        <!--
+            EXCLUDED: UnitTestContainsTooManyAsserts
+            Modern AssertJ-style tests often verify multiple properties of a
+            single result (e.g., id, status, totalPrice). Forcing one assert
+            per test method would create excessive test fragmentation with
+            zero quality benefit.
+        -->
+        <exclude name="UnitTestContainsTooManyAsserts"/>
+
     </rule>
 
     <!-- ============================== -->
