@@ -6,12 +6,12 @@
 # the repository root automatically.
 #
 # Usage:
-#   ./infrastructure/pre-pr-tests.sh
+#   ./scripts/pre-pr-tests.sh
 # ============================================================
 
 set -e
 
-# Resolve the repository root (one level up from infrastructure/)
+# Resolve the repository root (one level up from scripts/)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 

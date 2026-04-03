@@ -31,9 +31,8 @@ import java.util.UUID;
 /**
  * REST controller exposing CRUD operations for in-game purchases.
  *
- * <p>All endpoints are currently public (no JWT required) to support
- * early development and Swagger UI testing. Authentication will be
- * enforced once the frontend integrates Zitadel.
+ * <p>Endpoints are documented with bearer JWT security in OpenAPI.
+ * Runtime access control is enforced by the active Spring Security configuration.
  */
 @RestController
 @RequestMapping("/api/v1/purchases")

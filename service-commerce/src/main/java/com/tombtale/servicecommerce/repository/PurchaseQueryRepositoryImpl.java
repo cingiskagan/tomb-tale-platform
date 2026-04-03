@@ -1,6 +1,9 @@
 package com.tombtale.servicecommerce.repository;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.tombtale.servicecommerce.dto.PurchaseFilterRequest;
 import com.tombtale.servicecommerce.entity.Purchase;
@@ -10,7 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -42,6 +47,7 @@ public class PurchaseQueryRepositoryImpl implements PurchaseQueryRepository {
         List<Purchase> results = jpaQueryFactory
                 .selectFrom(purchase)
                 .where(predicate)
+                .orderBy(buildOrderSpecifiers(pageable.getSort(), purchase))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -88,5 +94,24 @@ public class PurchaseQueryRepositoryImpl implements PurchaseQueryRepository {
         }
 
         return builder;
+    }
+
+    /**
+     * Converts Spring Data {@link Sort} orders into QueryDSL {@link OrderSpecifier} array.
+     *
+     * @param sort     the sort directives from the pageable
+     * @param purchase the Q-type path expression
+     * @return an array of order specifiers (empty if unsorted)
+     */
+    private static OrderSpecifier<?>[] buildOrderSpecifiers(Sort sort, QPurchase purchase) {
+        List<OrderSpecifier<?>> orders = new ArrayList<>();
+        PathBuilder<Purchase> entityPath = new PathBuilder<>(Purchase.class, purchase.getMetadata());
+
+        for (Sort.Order order : sort) {
+            Order direction = order.isAscending() ? Order.ASC : Order.DESC;
+            orders.add(new OrderSpecifier<>(direction, entityPath.get(order.getProperty(), Comparable.class)));
+        }
+
+        return orders.toArray(new OrderSpecifier[0]);
     }
 }

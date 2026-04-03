@@ -32,7 +32,6 @@ import static org.mockito.Mockito.when;
  * {@code @WebMvcTest} — directly instantiating with mocked dependencies.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
 class PurchaseControllerTest {
 
     private static final UUID PURCHASE_ID = UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890");

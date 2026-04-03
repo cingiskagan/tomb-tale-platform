@@ -12,13 +12,13 @@ import org.springframework.security.web.SecurityFilterChain;
  * Global security configuration for the commerce service.
  *
  * <p>
- * <b>Current state (early development):</b> all endpoints are public
- * to allow Swagger UI testing without a Zitadel token. JWT authentication
- * will be re-enabled once the frontend integrates login.
+ * <b>Current state:</b> API endpoints ({@code /api/**}) require JWT
+ * authentication. Swagger UI, actuator, and other paths are public
+ * to support development and monitoring.
  *
  * <p>Key decisions:
  * <ul>
- *   <li><b>CSRF disabled</b> — this API is stateless and will eventually use
+ *   <li><b>CSRF disabled</b> — this API is stateless and uses
  *       {@code Authorization: Bearer} headers, not cookies.</li>
  *   <li><b>Stateless sessions</b> — no server-side session is created.</li>
  * </ul>

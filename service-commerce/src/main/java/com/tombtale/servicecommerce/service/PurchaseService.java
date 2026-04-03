@@ -6,6 +6,7 @@ import com.tombtale.servicecommerce.dto.PurchaseResponse;
 import com.tombtale.servicecommerce.dto.UpdatePurchaseRequest;
 import com.tombtale.servicecommerce.entity.Purchase;
 import com.tombtale.servicecommerce.entity.PurchaseStatus;
+import com.tombtale.servicecommerce.exception.InvalidStatusTransitionException;
 import com.tombtale.servicecommerce.exception.PurchaseNotFoundException;
 import com.tombtale.servicecommerce.mapper.PurchaseMapper;
 import com.tombtale.servicecommerce.repository.PurchaseRepository;
@@ -100,6 +101,10 @@ public class PurchaseService {
         Purchase purchase = findEntityById(purchaseId);
 
         if (request.status() != null) {
+            if (request.status() == PurchaseStatus.CANCELLED) {
+                throw new InvalidStatusTransitionException(
+                        "Use DELETE endpoint to cancel a purchase");
+            }
             purchase.setStatus(request.status());
         }
         if (request.quantity() != null) {

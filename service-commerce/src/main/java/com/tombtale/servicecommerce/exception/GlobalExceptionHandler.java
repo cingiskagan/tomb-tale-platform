@@ -82,4 +82,21 @@ public class GlobalExceptionHandler {
                 Instant.now()
         );
     }
+    /**
+     * Handles invalid status transition attempts (e.g., setting CANCELLED via update).
+     *
+     * @param ex the invalid transition exception
+     * @return 422 error response
+     */
+    @ExceptionHandler(InvalidStatusTransitionException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleInvalidStatusTransition(InvalidStatusTransitionException ex) {
+        LOG.warn("Invalid status transition: {}", ex.getMessage());
+        return new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Invalid Status Transition",
+                ex.getMessage(),
+                Instant.now()
+        );
+    }
 }

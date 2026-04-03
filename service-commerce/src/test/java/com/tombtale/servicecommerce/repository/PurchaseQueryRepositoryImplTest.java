@@ -24,13 +24,15 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link PurchaseQueryRepositoryImpl} using Mockito deep stubs.
+ * Unit tests for {@link PurchaseQueryRepositoryImpl} using manual fluent stubbing.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings({"PMD.JUnitTestContainsTooManyAsserts", "PMD.TooManyStaticImports", "PMD.AvoidDuplicateLiterals"})
+@SuppressWarnings({"PMD.TooManyStaticImports", "PMD.AvoidDuplicateLiterals"})
 class PurchaseQueryRepositoryImplTest {
 
     private static final int DEFAULT_PAGE_SIZE = 10;
@@ -53,8 +55,10 @@ class PurchaseQueryRepositoryImplTest {
     @SuppressWarnings("unchecked")
     void setUp() {
         // Mock the fluent API chaining using manual stubs (more robust than RETURNS_DEEP_STUBS for specific types)
-        when(jpaQueryFactory.selectFrom(Mockito.<com.querydsl.core.types.EntityPath<Purchase>>any())).thenReturn(jpaQuery);
+        when(jpaQueryFactory.selectFrom(
+                Mockito.<com.querydsl.core.types.EntityPath<Purchase>>any())).thenReturn(jpaQuery);
         when(jpaQuery.where(any(BooleanBuilder.class))).thenReturn(jpaQuery);
+        when(jpaQuery.orderBy(any(com.querydsl.core.types.OrderSpecifier[].class))).thenReturn(jpaQuery);
         when(jpaQuery.offset(anyLong())).thenReturn(jpaQuery);
         when(jpaQuery.limit(anyLong())).thenReturn(jpaQuery);
 
@@ -76,6 +80,9 @@ class PurchaseQueryRepositoryImplTest {
 
         assertThat(results.getTotalElements()).isEqualTo(1L);
         assertThat(results.getContent()).hasSize(1);
+        verify(jpaQuery).offset(pageable.getOffset());
+        verify(jpaQuery).limit(pageable.getPageSize());
+        verify(jpaQuery).where((com.querydsl.core.types.Predicate) argThat(p -> p.toString().contains("status != CANCELLED")));
     }
 
     @Test
@@ -89,6 +96,7 @@ class PurchaseQueryRepositoryImplTest {
         Page<Purchase> results = queryRepository.findByFilter(filter, pageable);
 
         assertThat(results.getTotalElements()).isZero();
+        verify(jpaQuery).where((com.querydsl.core.types.Predicate) argThat(p -> p.toString().contains("playerId = ") && p.toString().contains(PLAYER_1)));
     }
 
     @Test
@@ -102,6 +110,7 @@ class PurchaseQueryRepositoryImplTest {
         Page<Purchase> results = queryRepository.findByFilter(filter, pageable);
 
         assertThat(results.getTotalElements()).isZero();
+        verify(jpaQuery).where((com.querydsl.core.types.Predicate) argThat(p -> p.toString().contains("itemCode = ") && p.toString().contains(ITEM_SWORD)));
     }
 
     @Test
@@ -115,6 +124,7 @@ class PurchaseQueryRepositoryImplTest {
         Page<Purchase> results = queryRepository.findByFilter(filter, pageable);
 
         assertThat(results.getContent()).isEmpty();
+        verify(jpaQuery).where((com.querydsl.core.types.Predicate) argThat(p -> p.toString().contains("status = CANCELLED")));
     }
 
     @Test
@@ -130,6 +140,10 @@ class PurchaseQueryRepositoryImplTest {
 
         queryRepository.findByFilter(filter, pageable);
 
-        Mockito.verify(jpaQueryFactory).selectFrom(any());
+        verify(jpaQueryFactory).selectFrom(any());
+        verify(jpaQuery).where((com.querydsl.core.types.Predicate) argThat(p ->
+                p.toString().contains("purchasedAt") &&
+                p.toString().contains(">=") &&
+                p.toString().contains("<=")));
     }
 }

@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
  * <p>Uses Mockito to isolate the service from the repository and mapper.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings({"PMD.JUnitTestContainsTooManyAsserts", "PMD.TooManyStaticImports"})
+@SuppressWarnings("PMD.TooManyStaticImports")
 class PurchaseServiceTest {
 
     private static final UUID PURCHASE_ID = UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
