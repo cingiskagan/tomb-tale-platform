@@ -24,7 +24,8 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
         private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
-        private static final String OPTIMISTIC_LOCK_MESSAGE = "The resource was modified by another transaction. Please retry.";
+        private static final String OPTIMISTIC_LOCK_MESSAGE =
+                "The resource was modified by another transaction. Please retry.";
 
         /**
          * Handles missing purchase lookups.

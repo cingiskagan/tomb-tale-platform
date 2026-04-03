@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
  * stubbing.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings({ "PMD.TooManyStaticImports", "PMD.AvoidDuplicateLiterals" })
+@SuppressWarnings("PMD.TooManyStaticImports")
 class PurchaseQueryRepositoryImplTest {
 
     private static final int DEFAULT_PAGE_SIZE = 10;
