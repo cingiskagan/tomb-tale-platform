@@ -9,6 +9,8 @@ import java.util.UUID;
  */
 public class PurchaseNotFoundException extends RuntimeException {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * Creates an exception indicating the given purchase ID was not found.
      *

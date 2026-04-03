@@ -26,8 +26,8 @@ spring:
   # --- Seed Data ---
   sql:
     init:
-      mode: always
-      continue-on-error: true
+      mode: ${SQL_INIT_MODE:never}
+      continue-on-error: false
 
   # --- RabbitMQ ---
   rabbitmq:

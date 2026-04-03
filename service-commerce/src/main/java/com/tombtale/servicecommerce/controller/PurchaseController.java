@@ -54,7 +54,10 @@ public class PurchaseController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Create a new purchase", description = "Creates a PENDING purchase and calculates totalPrice server-side.")
+    @Operation(
+            summary = "Create a new purchase",
+            description = "Creates a PENDING purchase and calculates totalPrice server-side."
+    )
     public PurchaseResponse createPurchase(@Valid @RequestBody CreatePurchaseRequest request) {
         return purchaseService.createPurchase(request);
     }
@@ -83,7 +86,10 @@ public class PurchaseController {
      * @return a page of matching purchases
      */
     @GetMapping
-    @Operation(summary = "List purchases", description = "Paginated list with optional filters. CANCELLED purchases hidden by default.")
+    @Operation(
+            summary = "List purchases",
+            description = "Paginated list with optional filters. CANCELLED purchases hidden by default."
+    )
     public Page<PurchaseResponse> listPurchases(
             @ModelAttribute PurchaseFilterRequest filter,
             @PageableDefault(size = DEFAULT_PAGE_SIZE) Pageable pageable) {
@@ -112,7 +118,10 @@ public class PurchaseController {
      */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Soft-delete a purchase", description = "Sets status to CANCELLED — row is preserved for audit.")
+    @Operation(
+            summary = "Soft-delete a purchase",
+            description = "Sets status to CANCELLED — row is preserved for audit."
+    )
     public void deletePurchase(
             @Parameter(description = "Purchase UUID") @PathVariable UUID id) {
         purchaseService.deletePurchase(id);

@@ -26,8 +26,9 @@ echo ""
 echo "1. Generating PKCE Verifier and Challenge..."
 CODE_VERIFIER=$(python3 -c "import secrets; print(secrets.token_urlsafe(64))")
 CODE_CHALLENGE=$(echo -n "$CODE_VERIFIER" | openssl dgst -sha256 -binary | base64 -w0 | tr '+/' '-_' | tr -d '=')
+STATE=$(python3 -c "import secrets; print(secrets.token_urlsafe(32))")
 
-AUTHORIZE_URL="http://localhost:8080/oauth/v2/authorize?client_id=${CLIENT_ID}&redirect_uri=http://localhost:3000/callback&response_type=code&scope=openid+profile+email&code_challenge_method=S256&code_challenge=${CODE_CHALLENGE}"
+AUTHORIZE_URL="http://localhost:8080/oauth/v2/authorize?client_id=${CLIENT_ID}&redirect_uri=http://localhost:3000/callback&response_type=code&scope=openid+profile+email&code_challenge_method=S256&code_challenge=${CODE_CHALLENGE}&state=${STATE}"
 
 # 3. Request User Interaction
 echo ""
@@ -50,10 +51,17 @@ echo ""
 echo -n "3. Copy the 'code' value from the URL and paste it here: "
 read -r AUTH_CODE
 
-# Basic validation to handle accidentally pasting the entire URL
+# Smart parsing: handle both raw code and full callback URL
 if [[ "$AUTH_CODE" == *"code="* ]]; then
+    # Validate state parameter to prevent code substitution attacks
+    RETURNED_STATE=$(echo "$AUTH_CODE" | sed -n 's/.*state=\([^&]*\).*/\1/p')
+    if [ "$RETURNED_STATE" != "$STATE" ]; then
+        echo "ERROR: OAuth state mismatch! Expected '${STATE}' but got '${RETURNED_STATE}'."
+        echo "This could indicate a CSRF or code substitution attack. Aborting."
+        exit 1
+    fi
     AUTH_CODE=$(echo "$AUTH_CODE" | sed -n 's/.*code=\([^&]*\).*/\1/p')
-    echo "Extracted code from URL."
+    echo "Extracted and validated code from URL."
 fi
 
 if [ -z "$AUTH_CODE" ]; then
@@ -86,4 +94,5 @@ else
     echo ""
     echo "HINT: Did you remember to go to your Zitadel Application settings,"
     echo "find 'Auth Token Type', and change it from 'Bearer' to 'JWT'?"
+    exit 1
 fi

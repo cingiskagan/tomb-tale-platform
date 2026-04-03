@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
  * <p>Implementations use {@code JPAQueryFactory} to build predicates
  * from {@link PurchaseFilterRequest} fields at runtime.
  */
+@FunctionalInterface
 public interface PurchaseQueryRepository {
 
     /**

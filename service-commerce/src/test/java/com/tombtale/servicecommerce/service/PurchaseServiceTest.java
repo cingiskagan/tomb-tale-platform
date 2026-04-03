@@ -37,6 +37,7 @@ import static org.mockito.Mockito.when;
  * <p>Uses Mockito to isolate the service from the repository and mapper.
  */
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings({"PMD.JUnitTestContainsTooManyAsserts", "PMD.TooManyStaticImports"})
 class PurchaseServiceTest {
 
     private static final UUID PURCHASE_ID = UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
@@ -45,6 +46,8 @@ class PurchaseServiceTest {
     private static final int QUANTITY = 3;
     private static final BigDecimal UNIT_PRICE = new BigDecimal("150.0000");
     private static final BigDecimal EXPECTED_TOTAL = new BigDecimal("450.0000");
+    private static final int DEFAULT_PAGE_SIZE = 20;
+    private static final int NEW_UPDATE_QUANTITY = 5;
 
     @Mock
     private PurchaseRepository purchaseRepository;
@@ -101,7 +104,7 @@ class PurchaseServiceTest {
     @Test
     void shouldListPurchasesWithFilter() {
         PurchaseFilterRequest filter = new PurchaseFilterRequest(PLAYER_ID, null, null, null, null);
-        Pageable pageable = PageRequest.of(0, 20);
+        Pageable pageable = PageRequest.of(0, DEFAULT_PAGE_SIZE);
         Purchase entity = buildPurchaseEntity();
         entity.setId(PURCHASE_ID);
         Page<Purchase> entityPage = new PageImpl<>(List.of(entity), pageable, 1);
@@ -139,7 +142,7 @@ class PurchaseServiceTest {
 
     @Test
     void shouldUpdatePurchaseQuantityAndRecalculateTotal() {
-        int newQuantity = 5;
+        int newQuantity = NEW_UPDATE_QUANTITY;
         Purchase entity = buildPurchaseEntity();
         entity.setId(PURCHASE_ID);
         UpdatePurchaseRequest request = new UpdatePurchaseRequest(null, newQuantity);

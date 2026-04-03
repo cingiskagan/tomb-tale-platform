@@ -49,7 +49,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(org.springframework.security.config.Customizer.withDefaults()));
+                .oauth2ResourceServer(oauth2 -> 
+                        oauth2.jwt(org.springframework.security.config.Customizer.withDefaults()));
         return http.build();
     }
 }
