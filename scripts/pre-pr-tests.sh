@@ -31,10 +31,10 @@ if [ -d "$COMMERCE_DIR" ]; then
     echo "------------------------------------------"
 
     echo "  1. 🧹 Checkstyle & PMD..."
-    (cd "$COMMERCE_DIR" && ./mvnw -q checkstyle:check pmd:check -DskipTests)
+    (cd "$COMMERCE_DIR" && ./mvnw checkstyle:check pmd:check -DskipTests)
 
     echo "  2. 🧪 Unit Tests & Coverage..."
-    (cd "$COMMERCE_DIR" && ./mvnw -q clean test jacoco:report)
+    (cd "$COMMERCE_DIR" && ./mvnw clean test jacoco:report)
 
     echo "  ✅ service-commerce passed"
 fi
@@ -51,10 +51,10 @@ if [ -d "$PLAYER_DIR" ]; then
     echo "------------------------------------------"
 
     echo "  1. 🧹 Checkstyle & PMD..."
-    (cd "$PLAYER_DIR" && ./mvnw -q checkstyle:check pmd:check -DskipTests)
+    (cd "$PLAYER_DIR" && ./mvnw checkstyle:check pmd:check -DskipTests)
 
     echo "  2. 🧪 Unit Tests & Coverage..."
-    (cd "$PLAYER_DIR" && ./mvnw -q clean test jacoco:report)
+    (cd "$PLAYER_DIR" && ./mvnw clean test jacoco:report)
 
     echo "  ✅ service-player passed"
 fi

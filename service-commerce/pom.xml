@@ -184,7 +184,7 @@
 					<configLocation>${project.basedir}/../config/checkstyle/checkstyle.xml</configLocation>
 					<consoleOutput>true</consoleOutput>
 					<failsOnError>true</failsOnError>
-					<includeTestSourceRoots>true</includeTestSourceRoots>
+					<includeTestSourceDirectory>true</includeTestSourceDirectory>
 				</configuration>
 			</plugin>
 			<!-- === PMD (static analysis) === -->
