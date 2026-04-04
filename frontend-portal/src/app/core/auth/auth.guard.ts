@@ -10,14 +10,16 @@ import { AuthService } from './auth.service';
  * Uses Angular's functional guard API (CanActivateFn) for a lighter,
  * tree-shakeable approach vs. class-based guards.
  */
-export const authGuard: CanActivateFn = (): boolean => {
+export const authGuard: CanActivateFn = async (): Promise<boolean> => {
   const authService = inject(AuthService);
   const router = inject(Router);
+
+  await authService.initializeAuth();
 
   if (authService.isAuthenticated()) {
     return true;
   }
 
-  router.navigate(['/login']);
+  await router.navigate(['/login']);
   return false;
 };

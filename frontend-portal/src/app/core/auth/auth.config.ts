@@ -14,7 +14,7 @@ const OIDC_SCOPES = 'openid profile email offline_access';
 export const AUTH_CONFIG: AuthConfig = {
   issuer: environment.zitadelIssuerUri,
   redirectUri: `${globalThis.location.origin}/callback`,
-  postLogoutRedirectUri: globalThis.location.origin,
+  postLogoutRedirectUri: `${globalThis.location.origin}/`,
   clientId: environment.zitadelClientId,
   responseType: 'code',
   scope: OIDC_SCOPES,

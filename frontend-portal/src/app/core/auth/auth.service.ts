@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { OAuthService } from 'angular-oauth2-oidc';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { AUTH_CONFIG } from './auth.config';
 
 /** Decoded identity claims from the Zitadel ID token. */
@@ -26,19 +26,25 @@ export class AuthService {
   private readonly authenticatedSubject = new BehaviorSubject<boolean>(false);
 
   /** Emits `true` when the user holds a valid access token. */
-  readonly isAuthenticated$: Observable<boolean> =
-    this.authenticatedSubject.asObservable();
-
   private readonly oauthService = inject(OAuthService);
+  private initPromise?: Promise<void>;
+
+  constructor() {
+    this.oauthService.configure(AUTH_CONFIG);
+    this.oauthService.setupAutomaticSilentRefresh();
+  }
 
   /**
    * Bootstraps the OIDC flow: loads the discovery document from
    * Zitadel's well-known endpoint and attempts to process any
    * existing authorization code (e.g. after redirect from login).
    */
-  async initializeAuth(): Promise<void> {
-    this.oauthService.configure(AUTH_CONFIG);
+  initializeAuth(): Promise<void> {
+    this.initPromise ??= this._initializeAuth();
+    return this.initPromise;
+  }
 
+  private async _initializeAuth(): Promise<void> {
     await this.oauthService.loadDiscoveryDocumentAndTryLogin();
     this.authenticatedSubject.next(this.oauthService.hasValidAccessToken());
 

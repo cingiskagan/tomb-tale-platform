@@ -25,9 +25,13 @@ export class LoginComponent implements OnInit {
   private readonly router = inject(Router);
 
   ngOnInit(): void {
-    if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/dashboard']);
-    }
+    this.authService.initializeAuth().then(() => {
+      if (this.authService.isAuthenticated()) {
+        this.router.navigate(['/dashboard']);
+      }
+    }).catch((err) => {
+      console.error('[Login] Failed to verify auth state', err);
+    });
   }
 
   /** Initiates the OIDC PKCE login flow, redirecting to Zitadel. */
