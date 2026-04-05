@@ -1,7 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { RippleModule } from 'primeng/ripple';
 import { AuthService } from '../../core/auth';
 
 /**
@@ -16,7 +15,7 @@ import { AuthService } from '../../core/auth';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ButtonModule, RippleModule],
+  imports: [ButtonModule],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })

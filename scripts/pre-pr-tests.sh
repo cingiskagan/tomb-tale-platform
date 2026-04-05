@@ -60,6 +60,49 @@ if [ -d "$PLAYER_DIR" ]; then
 fi
 
 # -------------------------------------------------------
+# frontend-portal
+# -------------------------------------------------------
+FRONTEND_DIR="$REPO_ROOT/frontend-portal"
+
+if [ -d "$FRONTEND_DIR" ]; then
+    echo ""
+    echo "------------------------------------------"
+    echo "💻 frontend-portal"
+    echo "------------------------------------------"
+
+    # Group everything in a single subshell so nvm environment changes persist
+    (
+        cd "$FRONTEND_DIR"
+
+        # --- Ensure correct Node version ---
+        if [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]; then
+            export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+            # shellcheck source=/dev/null
+            . "$NVM_DIR/nvm.sh"
+            nvm use 2>/dev/null || echo "⚠️ Could not switch Node version via nvm"
+        fi
+
+        echo "  1. 📦 Production Build..."
+        npm run build
+
+        echo "  2. 🧪 Unit Tests..."
+        if command -v chromium >/dev/null 2>&1; then
+            export CHROME_BIN="$(command -v chromium)"
+        elif command -v chromium-browser >/dev/null 2>&1; then
+            export CHROME_BIN="$(command -v chromium-browser)"
+        elif command -v google-chrome >/dev/null 2>&1; then
+            export CHROME_BIN="$(command -v google-chrome)"
+        fi
+        npx ng test --watch=false --browsers=ChromeHeadless
+
+        echo "  3. 🧹 Lint..."
+        npx ng lint
+    )
+
+    echo "  ✅ frontend-portal passed"
+fi
+
+# -------------------------------------------------------
 # Add future services here following the same pattern
 # -------------------------------------------------------
 

@@ -46,13 +46,11 @@ ng test
 
 ## Running end-to-end tests
 
-For end-to-end (e2e) testing, run:
+End-to-end (e2e) testing is not configured yet in this project.
 
 ```bash
-ng e2e
+# TODO: add Playwright/Cypress and wire an `e2e` script
 ```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
 
 ## Additional Resources
 
