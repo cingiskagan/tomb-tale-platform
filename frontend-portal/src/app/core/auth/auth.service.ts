@@ -6,9 +6,9 @@ import { AUTH_CONFIG } from './auth.config';
 /** Decoded identity claims from the Zitadel ID token. */
 export interface UserProfile {
   readonly sub: string;
-  readonly name: string;
-  readonly email: string;
-  readonly preferred_username: string;
+  readonly name?: string;
+  readonly email?: string;
+  readonly preferred_username?: string;
 }
 
 /**
@@ -80,12 +80,21 @@ export class AuthService {
    * Returns `null` if no valid ID token is present.
    */
   getUserProfile(): UserProfile | null {
-    const claims = this.oauthService.getIdentityClaims();
+    const claims = this.oauthService.getIdentityClaims() as Record<string, unknown> | null;
     if (!claims) {
       return null;
     }
 
-    return claims as UserProfile;
+    if (typeof claims['sub'] !== 'string' || claims['sub'].trim() === '') {
+      return null;
+    }
+
+    return {
+      sub: claims['sub'],
+      name: typeof claims['name'] === 'string' ? claims['name'] : undefined,
+      email: typeof claims['email'] === 'string' ? claims['email'] : undefined,
+      preferred_username: typeof claims['preferred_username'] === 'string' ? claims['preferred_username'] : undefined,
+    };
   }
 
   /** Returns the current Bearer access token for API calls. */

@@ -94,7 +94,8 @@ if [ -d "$FRONTEND_DIR" ]; then
             nvm use 2>/dev/null || echo "⚠️ Could not switch Node version via nvm"
         fi
 
-        echo "  1. 📦 Production Build..."
+        echo "  1. 📦 Dependencies & Production Build..."
+        npm ci || npm install
         npm run build
 
         echo "  2. 🧪 Unit Tests..."
@@ -107,6 +108,10 @@ if [ -d "$FRONTEND_DIR" ]; then
         elif command -v google-chrome >/dev/null 2>&1; then
             CHROME_BIN="$(command -v google-chrome)"
             export CHROME_BIN
+        else
+            echo "❌ CRITICAL: No Chromium/Chrome browser found for CHROME_BIN." >&2
+            echo "   Please install chromium-browser or google-chrome to run headless tests." >&2
+            exit 1
         fi
         npx ng test --watch=false --browsers=ChromeHeadless
 
