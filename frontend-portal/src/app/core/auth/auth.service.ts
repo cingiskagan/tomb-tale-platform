@@ -38,9 +38,14 @@ export class AuthService {
    * Bootstraps the OIDC flow: loads the discovery document from
    * Zitadel's well-known endpoint and attempts to process any
    * existing authorization code (e.g. after redirect from login).
+   * * If initialization fails (e.g., network error), the promise cache is 
+   * cleared to allow subsequent retries.
    */
   initializeAuth(): Promise<void> {
-    this.initPromise ??= this._initializeAuth();
+    this.initPromise ??= this._initializeAuth().catch((error) => {
+      this.initPromise = undefined;
+      throw error;
+    });
     return this.initPromise;
   }
 

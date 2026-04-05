@@ -19,6 +19,18 @@ echo "=========================================="
 echo "🚀 Running Pre-Pull Request Checks..."
 echo "=========================================="
 
+echo ""
+echo "------------------------------------------"
+echo "🛠️ General Checks"
+echo "------------------------------------------"
+if command -v shellcheck >/dev/null 2>&1; then
+    echo "  1. 🐚 ShellCheck..."
+    shellcheck "$SCRIPT_DIR/"*.sh
+    echo "  ✅ Shell files passed"
+else
+    echo "  ⚠️ shellcheck not installed locally, skipping local validation"
+fi
+
 # -------------------------------------------------------
 # service-commerce
 # -------------------------------------------------------
@@ -87,11 +99,14 @@ if [ -d "$FRONTEND_DIR" ]; then
 
         echo "  2. 🧪 Unit Tests..."
         if command -v chromium >/dev/null 2>&1; then
-            export CHROME_BIN="$(command -v chromium)"
+            CHROME_BIN="$(command -v chromium)"
+            export CHROME_BIN
         elif command -v chromium-browser >/dev/null 2>&1; then
-            export CHROME_BIN="$(command -v chromium-browser)"
+            CHROME_BIN="$(command -v chromium-browser)"
+            export CHROME_BIN
         elif command -v google-chrome >/dev/null 2>&1; then
-            export CHROME_BIN="$(command -v google-chrome)"
+            CHROME_BIN="$(command -v google-chrome)"
+            export CHROME_BIN
         fi
         npx ng test --watch=false --browsers=ChromeHeadless
 
