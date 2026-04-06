@@ -39,6 +39,13 @@ out/
 .env.local
 
 # =========================
+# Angular
+# =========================
+.angular/
+dist/
+coverage/
+
+# =========================
 # Docker
 # =========================
 docker-compose.override.yml

@@ -1,0 +1,484 @@
+/* ============================================================
+   Tomb Tale — Login Page Styles
+   Dark RPG fantasy theme with glassmorphism, gold accents,
+   floating runes, and ambient mist animations.
+   ============================================================ */
+
+/* --- Design Tokens (scoped) --- */
+$color-bg-deep: #0a0a0f;
+$color-bg-card: rgba(15, 15, 25, 0.85);
+$color-gold-primary: #d4a24e;
+$color-gold-light: #f0c97e;
+$color-gold-dark: #a67c30;
+$color-emerald: #2d8a5e;
+$color-text-primary: #e8e0d4;
+$color-text-muted: #8a8078;
+$color-border-glow: rgba(212, 162, 78, 0.3);
+$color-rune: rgba(212, 162, 78, 0.15);
+
+$font-heading: 'Cinzel', 'Times New Roman', serif;
+$font-body: 'Inter', 'Segoe UI', sans-serif;
+
+/* --- Viewport Container --- */
+.login-viewport {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      ellipse at 50% 0%,
+      rgba(42, 32, 15, 0.6) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at 80% 100%,
+      rgba(45, 138, 94, 0.08) 0%,
+      transparent 50%
+    ),
+    linear-gradient(180deg, $color-bg-deep 0%, #0d0d14 100%);
+}
+
+/* --- Particle System --- */
+.particles-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(212, 162, 78, 0.6),
+    transparent
+  );
+  animation: particle-float 12s ease-in-out infinite;
+
+  &--1 {
+    width: 4px;
+    height: 4px;
+    top: 20%;
+    left: 15%;
+    animation-delay: 0s;
+    animation-duration: 14s;
+  }
+
+  &--2 {
+    width: 3px;
+    height: 3px;
+    top: 60%;
+    left: 75%;
+    animation-delay: -3s;
+    animation-duration: 11s;
+  }
+
+  &--3 {
+    width: 5px;
+    height: 5px;
+    top: 40%;
+    left: 85%;
+    animation-delay: -6s;
+    animation-duration: 16s;
+  }
+
+  &--4 {
+    width: 3px;
+    height: 3px;
+    top: 75%;
+    left: 25%;
+    animation-delay: -2s;
+    animation-duration: 13s;
+  }
+
+  &--5 {
+    width: 4px;
+    height: 4px;
+    top: 10%;
+    left: 60%;
+    animation-delay: -8s;
+    animation-duration: 15s;
+  }
+
+  &--6 {
+    width: 2px;
+    height: 2px;
+    top: 85%;
+    left: 50%;
+    animation-delay: -4s;
+    animation-duration: 10s;
+  }
+}
+
+@keyframes particle-float {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0.3;
+  }
+
+  25% {
+    transform: translateY(-40px) translateX(20px) scale(1.3);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: translateY(-20px) translateX(-15px) scale(0.9);
+    opacity: 0.5;
+  }
+
+  75% {
+    transform: translateY(-60px) translateX(10px) scale(1.1);
+    opacity: 0.7;
+  }
+}
+
+/* --- Floating Runes --- */
+.runes-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.rune {
+  position: absolute;
+  font-size: 2rem;
+  color: $color-rune;
+  animation: rune-drift 20s ease-in-out infinite;
+  user-select: none;
+
+  &--1 {
+    top: 12%;
+    left: 8%;
+    animation-delay: 0s;
+    font-size: 1.8rem;
+  }
+
+  &--2 {
+    top: 30%;
+    right: 10%;
+    animation-delay: -4s;
+    font-size: 2.2rem;
+  }
+
+  &--3 {
+    bottom: 25%;
+    left: 5%;
+    animation-delay: -8s;
+    font-size: 1.5rem;
+  }
+
+  &--4 {
+    top: 55%;
+    right: 6%;
+    animation-delay: -12s;
+    font-size: 2rem;
+  }
+
+  &--5 {
+    bottom: 10%;
+    right: 20%;
+    animation-delay: -16s;
+    font-size: 1.6rem;
+  }
+}
+
+@keyframes rune-drift {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.1;
+  }
+
+  33% {
+    transform: translateY(-30px) rotate(15deg);
+    opacity: 0.25;
+  }
+
+  66% {
+    transform: translateY(15px) rotate(-10deg);
+    opacity: 0.12;
+  }
+}
+
+/* --- Login Card (Glassmorphism) --- */
+.login-card {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3rem 2.5rem 2rem;
+  min-width: 380px;
+  max-width: 440px;
+  width: 90vw;
+  background: $color-bg-card;
+  backdrop-filter: blur(24px) saturate(120%);
+  border: 1px solid $color-border-glow;
+  border-radius: 16px;
+  box-shadow:
+    0 0 60px rgba(212, 162, 78, 0.08),
+    0 24px 64px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  animation: card-appear 0.8s ease-out;
+}
+
+@keyframes card-appear {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* --- Card Glow Effect --- */
+.login-card__glow {
+  position: absolute;
+  top: -1px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    $color-gold-primary,
+    transparent
+  );
+  border-radius: 2px;
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* --- Emblem --- */
+.login-card__emblem {
+  margin-bottom: 1.5rem;
+}
+
+.emblem-ring {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    $color-gold-dark,
+    $color-gold-primary
+  );
+  padding: 3px;
+  animation: emblem-rotate 8s linear infinite;
+
+  &__inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: $color-bg-deep;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.emblem-icon {
+  font-size: 2rem;
+  background: linear-gradient(
+    180deg,
+    $color-gold-light,
+    $color-gold-dark
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes emblem-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Title --- */
+.login-card__title {
+  font-family: $font-heading;
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  margin: 0 0 0.5rem;
+  background: linear-gradient(
+    180deg,
+    $color-gold-light 0%,
+    $color-gold-primary 50%,
+    $color-gold-dark 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 8px rgba(212, 162, 78, 0.3));
+}
+
+.login-card__subtitle {
+  font-family: $font-body;
+  font-size: 0.95rem;
+  color: $color-text-muted;
+  margin: 0 0 1.5rem;
+  letter-spacing: 0.12em;
+  font-style: italic;
+}
+
+/* --- Divider --- */
+.login-card__divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 2rem;
+  position: relative;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      $color-border-glow,
+      transparent
+    );
+  }
+}
+
+.divider-ornament {
+  padding: 0 1rem;
+  color: $color-gold-primary;
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+/* --- CTA Button --- */
+.login-card__action {
+  width: 100%;
+  margin-bottom: 1.5rem;
+
+  ::ng-deep .enter-tomb-btn {
+    width: 100%;
+    font-family: $font-heading;
+    font-size: 1.05rem;
+    letter-spacing: 0.15em;
+    padding: 0.85rem 2rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.1),
+        transparent
+      );
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    &:hover::before {
+      opacity: 1;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow:
+        0 8px 24px rgba(212, 162, 78, 0.3),
+        0 0 40px rgba(212, 162, 78, 0.15);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+/* --- Footer --- */
+.login-card__footer {
+  margin-top: 0.5rem;
+
+  small {
+    font-family: $font-body;
+    font-size: 0.75rem;
+    color: $color-text-muted;
+    opacity: 0.5;
+    letter-spacing: 0.05em;
+  }
+}
+
+/* --- Ambient Mist Overlay --- */
+.mist-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: linear-gradient(
+    0deg,
+    rgba(10, 10, 15, 0.9) 0%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* --- Responsive --- */
+@media (max-width: 480px) {
+  .login-card {
+    min-width: auto;
+    padding: 2rem 1.5rem 1.5rem;
+    border-radius: 12px;
+  }
+
+  .login-card__title {
+    font-size: 1.8rem;
+    letter-spacing: 0.2em;
+  }
+
+  .login-card__subtitle {
+    font-size: 0.85rem;
+  }
+
+  .emblem-ring {
+    width: 64px;
+    height: 64px;
+  }
+
+  .emblem-icon {
+    font-size: 1.6rem;
+  }
+}

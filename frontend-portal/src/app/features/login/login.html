@@ -1,0 +1,65 @@
+<div class="login-viewport">
+  <!-- Animated background particles -->
+  <div class="particles-container" aria-hidden="true">
+    <div class="particle particle--1"></div>
+    <div class="particle particle--2"></div>
+    <div class="particle particle--3"></div>
+    <div class="particle particle--4"></div>
+    <div class="particle particle--5"></div>
+    <div class="particle particle--6"></div>
+  </div>
+
+  <!-- Floating rune decorations -->
+  <div class="runes-container" aria-hidden="true">
+    <span class="rune rune--1">&#x16A0;</span>
+    <span class="rune rune--2">&#x16B1;</span>
+    <span class="rune rune--3">&#x16B7;</span>
+    <span class="rune rune--4">&#x16C1;</span>
+    <span class="rune rune--5">&#x16D2;</span>
+  </div>
+
+  <!-- Main login card -->
+  <main class="login-card" role="main">
+    <!-- Decorative top border glow -->
+    <div class="login-card__glow" aria-hidden="true"></div>
+
+    <!-- Logo placeholder area -->
+    <div class="login-card__emblem" aria-hidden="true">
+      <div class="emblem-ring">
+        <div class="emblem-ring__inner">
+          <span class="emblem-icon">&#x2694;</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <h1 class="login-card__title">TOMB TALE</h1>
+    <p class="login-card__subtitle">Descend into the ancient depths</p>
+
+    <!-- Divider with ornament -->
+    <div class="login-card__divider">
+      <span class="divider-ornament">&#x2726;</span>
+    </div>
+
+    <!-- CTA Button -->
+    <div class="login-card__action">
+      <p-button
+        id="login-enter-tomb-button"
+        label="Enter the Tomb"
+        icon="pi pi-sign-in"
+        severity="warn"
+        [raised]="true"
+        styleClass="enter-tomb-btn"
+        (onClick)="onEnterTomb()"
+      />
+    </div>
+
+    <!-- Footer info -->
+    <footer class="login-card__footer">
+      <small>Secured by Zitadel &bull; OIDC PKCE</small>
+    </footer>
+  </main>
+
+  <!-- Ambient bottom mist -->
+  <div class="mist-overlay" aria-hidden="true"></div>
+</div>

@@ -1,0 +1,101 @@
+/* ============================================================
+   Tomb Tale Online RPG — Global Styles
+   ============================================================ */
+
+/* --- Google Fonts --- */
+@import 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap';
+
+/* --- PrimeNG Icons --- */
+@import 'primeicons/primeicons.css';
+
+/* --- CSS Custom Properties (Design System) --- */
+:root {
+  /* Typography */
+  --tt-font-heading: 'Cinzel', 'Times New Roman', serif;
+  --tt-font-body: 'Inter', 'Segoe UI', sans-serif;
+
+  /* Colors */
+  --tt-color-bg: #0a0a0f;
+  --tt-color-gold: #d4a24e;
+  --tt-color-gold-light: #f0c97e;
+  --tt-color-gold-dark: #a67c30;
+  --tt-color-emerald: #2d8a5e;
+  --tt-color-text: #e8e0d4;
+  --tt-color-text-muted: #8a8078;
+
+  /* Spacing */
+  --tt-radius-sm: 6px;
+  --tt-radius-md: 12px;
+  --tt-radius-lg: 16px;
+}
+
+/* --- Global Reset & Base --- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizelegibility;
+}
+
+body {
+  font-family: var(--tt-font-body);
+  background-color: var(--tt-color-bg);
+  color: var(--tt-color-text);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* --- Typography --- */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--tt-font-heading);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+a {
+  color: var(--tt-color-gold);
+  text-decoration: none;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--tt-color-gold-light);
+  }
+}
+
+/* --- Scrollbar (Webkit) --- */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--tt-color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(212, 162, 78, 0.25);
+  border-radius: 4px;
+
+  &:hover {
+    background: rgba(212, 162, 78, 0.4);
+  }
+}
+
+/* --- Selection --- */
+::selection {
+  background: rgba(212, 162, 78, 0.3);
+  color: var(--tt-color-text);
+}
