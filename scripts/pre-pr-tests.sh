@@ -11,6 +11,15 @@
 
 set -e
 
+CLEAN_INSTALL=false
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --clean) CLEAN_INSTALL=true; shift ;;
+        *) echo "Unknown parameter passed: $1"; exit 1 ;;
+    esac
+done
+
 # Resolve the repository root (one level up from scripts/)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -95,7 +104,15 @@ if [ -d "$FRONTEND_DIR" ]; then
         fi
 
         echo "  1. 📦 Dependencies & Production Build..."
-        npm ci || npm install
+        if [ "$CLEAN_INSTALL" = true ]; then
+            if [ -f package-lock.json ]; then
+                npm ci
+            else
+                npm install
+            fi
+        else
+            echo "      (Skipping dependency install. Run with --clean to enforce.)"
+        fi
         npm run build
 
         echo "  2. 🧪 Unit Tests..."

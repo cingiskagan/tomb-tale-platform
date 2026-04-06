@@ -23,9 +23,9 @@ export interface UserProfile {
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  /** Emits `true` when the user holds a valid access token. */
   private readonly authenticatedSubject = new BehaviorSubject<boolean>(false);
 
-  /** Emits `true` when the user holds a valid access token. */
   private readonly oauthService = inject(OAuthService);
   private initPromise?: Promise<void>;
 
