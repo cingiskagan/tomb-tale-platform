@@ -12,10 +12,13 @@
 set -e
 
 CLEAN_INSTALL=false
+TARGET_DIR=""
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --clean) CLEAN_INSTALL=true; shift ;;
+        --dir-name) TARGET_DIR="$2"; shift 2 ;;
+        --dir-name=*) TARGET_DIR="${1#*=}"; shift ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
 done
@@ -28,16 +31,18 @@ echo "=========================================="
 echo "🚀 Running Pre-Pull Request Checks..."
 echo "=========================================="
 
-echo ""
-echo "------------------------------------------"
-echo "🛠️ General Checks"
-echo "------------------------------------------"
-if command -v shellcheck >/dev/null 2>&1; then
-    echo "  1. 🐚 ShellCheck..."
-    shellcheck "$SCRIPT_DIR/"*.sh
-    echo "  ✅ Shell files passed"
-else
-    echo "  ⚠️ shellcheck not installed locally, skipping local validation"
+if [ -z "$TARGET_DIR" ]; then
+    echo ""
+    echo "------------------------------------------"
+    echo "🛠️ General Checks"
+    echo "------------------------------------------"
+    if command -v shellcheck >/dev/null 2>&1; then
+        echo "  1. 🐚 ShellCheck..."
+        shellcheck "$SCRIPT_DIR/"*.sh
+        echo "  ✅ Shell files passed"
+    else
+        echo "  ⚠️ shellcheck not installed locally, skipping local validation"
+    fi
 fi
 
 # -------------------------------------------------------
@@ -45,7 +50,7 @@ fi
 # -------------------------------------------------------
 COMMERCE_DIR="$REPO_ROOT/service-commerce"
 
-if [ -d "$COMMERCE_DIR" ]; then
+if [ -d "$COMMERCE_DIR" ] && { [ -z "$TARGET_DIR" ] || [ "$TARGET_DIR" = "service-commerce" ]; }; then
     echo ""
     echo "------------------------------------------"
     echo "📦 service-commerce"
@@ -65,7 +70,7 @@ fi
 # -------------------------------------------------------
 PLAYER_DIR="$REPO_ROOT/service-player"
 
-if [ -d "$PLAYER_DIR" ]; then
+if [ -d "$PLAYER_DIR" ] && { [ -z "$TARGET_DIR" ] || [ "$TARGET_DIR" = "service-player" ]; }; then
     echo ""
     echo "------------------------------------------"
     echo "📦 service-player"
@@ -85,7 +90,7 @@ fi
 # -------------------------------------------------------
 FRONTEND_DIR="$REPO_ROOT/frontend-portal"
 
-if [ -d "$FRONTEND_DIR" ]; then
+if [ -d "$FRONTEND_DIR" ] && { [ -z "$TARGET_DIR" ] || [ "$TARGET_DIR" = "frontend-portal" ]; }; then
     echo ""
     echo "------------------------------------------"
     echo "💻 frontend-portal"

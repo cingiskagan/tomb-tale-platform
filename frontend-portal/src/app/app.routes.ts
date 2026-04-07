@@ -3,6 +3,8 @@ import { authGuard } from './core/auth';
 import { LoginComponent } from './features/login/login';
 import { CallbackComponent } from './features/callback/callback';
 import { DashboardComponent } from './features/dashboard/dashboard';
+import { MainLayoutComponent } from './layout/main-layout.component';
+import { PurchaseListComponent } from './features/purchases/purchase-list.component';
 
 /**
  * Top-level application routes.
@@ -17,10 +19,14 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'callback', component: CallbackComponent },
   {
-    path: 'dashboard',
-    component: DashboardComponent,
+    path: '',
+    component: MainLayoutComponent,
     canActivate: [authGuard],
+    children: [
+      { path: 'dashboard', component: DashboardComponent },
+      { path: 'purchases', component: PurchaseListComponent },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+    ],
   },
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' },
 ];
