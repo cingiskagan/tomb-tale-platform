@@ -10,7 +10,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.beans.factory.annotation.Value;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -21,21 +23,26 @@ import java.util.List;
  * authentication. Swagger UI, actuator, and other paths are public
  * to support development and monitoring.
  *
- * <p>Key decisions:
+ * <p>
+ * Key decisions:
  * <ul>
- *   <li><b>CSRF disabled</b> — this API is stateless and uses
- *       {@code Authorization: Bearer} headers, not cookies.</li>
- *   <li><b>Stateless sessions</b> — no server-side session is created.</li>
+ * <li><b>CSRF disabled</b> — this API is stateless and uses
+ * {@code Authorization: Bearer} headers, not cookies.</li>
+ * <li><b>Stateless sessions</b> — no server-side session is created.</li>
  * </ul>
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Value("${app.cors.allowed-origins:http://localhost:4200}")
+    private String[] allowedOrigins;
+
     /**
      * Configures the main security filter chain for HTTP requests.
      *
-     * <p>All paths are currently permitted (no authentication required).
+     * <p>
+     * All paths are currently permitted (no authentication required).
      * When JWT authentication is re-enabled, restrict
      * {@code anyRequest().authenticated()} and add
      * {@code .oauth2ResourceServer(…)} back.
@@ -55,8 +62,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
-                .oauth2ResourceServer(oauth2 -> 
-                        oauth2.jwt(org.springframework.security.config.Customizer.withDefaults()));
+                .oauth2ResourceServer(
+                        oauth2 -> oauth2.jwt(org.springframework.security.config.Customizer.withDefaults()));
         return http.build();
     }
 
@@ -69,12 +76,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

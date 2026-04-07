@@ -79,7 +79,7 @@ export class PurchaseService {
   }
 
   /**
-   * Partially updates an existing purchase.
+   * Updates an existing purchase (full replacement).
    *
    * @param id The purchase identifier
    * @param request The update payload

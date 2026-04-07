@@ -128,6 +128,7 @@ import { firstValueFrom } from 'rxjs';
   `],
 })
 export class PurchaseFormComponent implements OnInit {
+  private loadRequestSeq = 0;
   private readonly fb = inject(FormBuilder);
   private readonly purchaseService = inject(PurchaseService);
 
@@ -187,6 +188,8 @@ export class PurchaseFormComponent implements OnInit {
   }
 
   async loadPurchaseData() {
+    const requestSeq = ++this.loadRequestSeq;
+
     if (!this.purchaseId) {
       this.form.reset({ quantity: 1, unitPrice: 0, status: PurchaseStatus.PENDING });
       this.form.get('playerId')?.enable();
@@ -194,8 +197,10 @@ export class PurchaseFormComponent implements OnInit {
       return;
     }
 
+    const purchaseId = this.purchaseId;
     try {
-      const data = await firstValueFrom(this.purchaseService.getPurchaseById(this.purchaseId));
+      const data = await firstValueFrom(this.purchaseService.getPurchaseById(purchaseId));
+      if (requestSeq !== this.loadRequestSeq || this.purchaseId !== purchaseId || !this.visible) return;
       this.form.patchValue({
         playerId: data.playerId,
         itemCode: data.itemCode,
@@ -203,9 +208,9 @@ export class PurchaseFormComponent implements OnInit {
         unitPrice: data.unitPrice,
         status: data.status,
       });
-      // playerId and itemCode are immutable after creation on the backend usually wait...
-      // the backend DTO UpdatePurchaseRequest only has quantity, unitPrice, status.
-      // So we must disable them in the edit form or mark them readonly. The template has [readonly]="isEditMode".
+      // playerId, itemCode, and unitPrice are immutable after creation on the backend.
+      // The backend DTO UpdatePurchaseRequest only has quantity and status.
+      // So we must disable them in the edit form or mark them readonly. The template handles this via [readonly]="isEditMode".
     } catch (err) {
       console.error('Failed to load purchase data', err);
       this.close();
@@ -213,6 +218,7 @@ export class PurchaseFormComponent implements OnInit {
   }
 
   close() {
+    this.loadRequestSeq++;
     this.visible = false;
     this.visibleChange.emit(this.visible);
     this.form.reset({ quantity: 1, unitPrice: 0, status: PurchaseStatus.PENDING });

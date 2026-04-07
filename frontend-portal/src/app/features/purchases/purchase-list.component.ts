@@ -95,6 +95,7 @@ import { firstValueFrom } from 'rxjs';
             <td>{{ purchase.purchasedAt | date:'short' }}</td>
             <td>
               <p-button
+                aria-label="Edit"
                 icon="pi pi-pencil"
                 [rounded]="true"
                 [text]="true"
@@ -102,6 +103,7 @@ import { firstValueFrom } from 'rxjs';
                 (onClick)="openEditPurchase(purchase.id)"
               />
               <p-button
+                aria-label="Delete"
                 icon="pi pi-trash"
                 [rounded]="true"
                 [text]="true"
@@ -161,6 +163,7 @@ import { firstValueFrom } from 'rxjs';
   `],
 })
 export class PurchaseListComponent implements OnInit {
+  private loadRequestSeq = 0;
   private readonly purchaseService = inject(PurchaseService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
@@ -180,6 +183,7 @@ export class PurchaseListComponent implements OnInit {
   }
 
   async loadPurchases(event: TableLazyLoadEvent) {
+    const requestSeq = ++this.loadRequestSeq;
     this.lastLazyEvent = event;
     this.loading = true;
 
@@ -214,14 +218,18 @@ export class PurchaseListComponent implements OnInit {
       const response = await firstValueFrom(
         this.purchaseService.listPurchases(filters, page, size, sortParam)
       );
+      if (requestSeq !== this.loadRequestSeq) return;
 
       this.purchases = response.content;
       this.totalRecords = response.totalElements;
     } catch (err) {
+      if (requestSeq !== this.loadRequestSeq) return;
       console.error('Error loading purchases', err);
       this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to fetch purchases' });
     } finally {
-      this.loading = false;
+      if (requestSeq === this.loadRequestSeq) {
+        this.loading = false;
+      }
     }
   }
 
