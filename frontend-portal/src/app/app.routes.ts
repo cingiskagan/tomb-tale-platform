@@ -2,9 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth';
 import { LoginComponent } from './features/login/login';
 import { CallbackComponent } from './features/callback/callback';
-import { DashboardComponent } from './features/dashboard/dashboard';
 import { MainLayoutComponent } from './layout/main-layout.component';
-import { PurchaseListComponent } from './features/purchases/purchase-list.component';
 
 /**
  * Top-level application routes.
@@ -23,8 +21,14 @@ export const routes: Routes = [
     component: MainLayoutComponent,
     canActivate: [authGuard],
     children: [
-      { path: 'dashboard', component: DashboardComponent },
-      { path: 'purchases', component: PurchaseListComponent },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./features/dashboard/dashboard').then(m => m.DashboardComponent)
+      },
+      {
+        path: 'purchases',
+        loadComponent: () => import('./features/purchases/purchase-list.component').then(m => m.PurchaseListComponent)
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },

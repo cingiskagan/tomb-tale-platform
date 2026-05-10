@@ -8,6 +8,10 @@ spring:
     mongodb:
       uri: ${MONGO_URI}
 
+  # --- JPA ---
+  jpa:
+    open-in-view: false
+
   # --- RabbitMQ ---
   rabbitmq:
     host: ${RABBITMQ_HOST}
