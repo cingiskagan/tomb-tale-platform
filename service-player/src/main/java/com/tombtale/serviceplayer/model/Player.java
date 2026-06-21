@@ -1,62 +1,66 @@
 package com.tombtale.serviceplayer.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
 /**
- * Core Player document stored in MongoDB.
+ * Core Player entity stored in PostgreSQL.
  * <p>
  * The {@code zitadelUserId} links this game profile to the authenticated
  * identity managed by Zitadel (the "sub" claim in the JWT).
- * <p>
- * NOTE: We use a manual no-args constructor instead of @NoArgsConstructor
- * because Lombok's @Builder.Default steals field initializers. Without this,
- * MongoDB deserialization via the no-args constructor would set level=0.
  */
 @Data
 @Builder
 @AllArgsConstructor
-@Document(collection = "players")
-@SuppressWarnings({"PMD.RedundantFieldInitializer", "PMD.UnusedAssignment"})
+@Entity
+@Table(name = "players")
+@EntityListeners(AuditingEntityListener.class)
 public class Player {
 
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     /** Zitadel user ID — the "sub" claim from the JWT. Unique per player. */
-    @Indexed(unique = true)
+    @Column(nullable = false, unique = true)
     private String zitadelUserId;
 
     /** In-game display name chosen by the player. */
-    @Indexed(unique = true)
+    @Column(nullable = false, unique = true)
     private String displayName;
 
     /** Current player level. */
-    @Builder.Default
-    private int level = 1;
+    @Column(nullable = false)
+    private int level;
 
     /** Total experience points accumulated. */
-    @Builder.Default
-    private long experiencePoints = 0;
+    @Column(nullable = false)
+    private long experiencePoints;
 
     @CreatedDate
+    @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
     @LastModifiedDate
+    @Column(nullable = false)
     private Instant updatedAt;
 
     /**
-     * Manual no-args constructor with correct defaults.
-     * Required because @Builder.Default removes field initializers,
-     * causing MongoDB deserialization to use primitive defaults (0) instead.
+     * No-args constructor required by JPA.
+     * Sets sensible defaults for new player entities.
      */
     public Player() {
         this.level = 1;

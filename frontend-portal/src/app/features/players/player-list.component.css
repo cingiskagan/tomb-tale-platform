@@ -1,0 +1,15 @@
+.player-container {
+  background: rgba(15,15,25,0.9);
+  border: 1px solid rgba(212,162,78,0.2);
+  border-radius: 8px;
+}
+
+.page-title {
+  color: #d4a24e;
+  font-family: 'Cinzel', serif;
+  margin-bottom: 1.5rem;
+}
+
+.text-primary {
+  color: #d4a24e !important;
+}

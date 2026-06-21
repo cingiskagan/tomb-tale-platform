@@ -1,0 +1,12 @@
+::ng-deep .purchase-dialog .p-dialog-header {
+  font-family: 'Cinzel', serif;
+  color: #d4a24e;
+}
+.field {
+  margin-bottom: 1rem;
+}
+.field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #e8e0d4;
+}

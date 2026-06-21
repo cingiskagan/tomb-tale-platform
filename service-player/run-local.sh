@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------------------
-# run-local.sh — Start service-commerce against the local Docker environment.
+# run-local.sh — Start service-player against the local Docker environment.
 #
 # Usage:
 #   ./run-local.sh          # Full mode (Postgres + RabbitMQ via Docker)
@@ -24,15 +24,15 @@ else
   echo "⚠  .env file not found at ${ENV_FILE}"
 fi
 
-if [[ -z "${SERVICE_COMMERCE_PORT:-}" ]]; then
-  echo "❌  SERVICE_COMMERCE_PORT is not set. Define it in ${ENV_FILE}" >&2
+if [[ -z "${SERVICE_PLAYER_PORT:-}" ]]; then
+  echo "❌  SERVICE_PLAYER_PORT is not set. Define it in ${ENV_FILE}" >&2
   exit 1
 fi
-SERVER_PORT="${SERVICE_COMMERCE_PORT}"
+SERVER_PORT="${SERVICE_PLAYER_PORT}"
 
 # ── Test mode (H2 in-memory, no external dependencies) ─────────────────────
 if [[ "${1:-}" == "--test" ]]; then
-  echo "🧪  Starting service-commerce in TEST mode (H2, port ${SERVER_PORT})…"
+  echo "🧪  Starting service-player in TEST mode (H2, port ${SERVER_PORT})…"
   exec "${SCRIPT_DIR}/mvnw" spring-boot:test-run \
     -f "${SCRIPT_DIR}/pom.xml" \
     -Dspring-boot.run.profiles=test \
@@ -40,7 +40,7 @@ if [[ "${1:-}" == "--test" ]]; then
 fi
 
 # ── Full mode (real Postgres + RabbitMQ) ────────────────────────────────────
-echo "🚀  Starting service-commerce in FULL mode (Postgres, port ${SERVER_PORT})…"
+echo "🚀  Starting service-player in FULL mode (Postgres, port ${SERVER_PORT})…"
 exec "${SCRIPT_DIR}/mvnw" spring-boot:run \
   -f "${SCRIPT_DIR}/pom.xml" \
   -Dspring-boot.run.arguments="--server.port=${SERVER_PORT}"

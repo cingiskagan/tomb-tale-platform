@@ -1,0 +1,28 @@
+<div class="p-4 player-container">
+  <h2 class="page-title">Player Management</h2>
+  <p-table [value]="players" [lazy]="true" (onLazyLoad)="loadPlayers($event)" [paginator]="true" [rows]="20"
+    [totalRecords]="totalRecords" [loading]="loading" styleClass="p-datatable-sm">
+    <ng-template pTemplate="header">
+      <tr>
+        <th scope="col">ID</th>
+        <th scope="col" pSortableColumn="displayName">Display Name <p-sortIcon field="displayName" /></th>
+        <th scope="col" pSortableColumn="level">Level <p-sortIcon field="level" /></th>
+        <th scope="col" pSortableColumn="experiencePoints">XP <p-sortIcon field="experiencePoints" /></th>
+        <th scope="col">Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-player>
+      <tr>
+        <td>{{ player.id }}</td>
+        <td class="font-bold text-primary">{{ player.displayName }}</td>
+        <td>{{ player.level }}</td>
+        <td>{{ player.experiencePoints | number }}</td>
+        <td>
+          <p-button icon="pi pi-sliders-h" [rounded]="true" [text]="true" severity="warn" (onClick)="openEdit(player)" />
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+<app-player-stats-dialog [(visible)]="isDialogVisible" [player]="selectedPlayer" (saved)="onSaved()" />
+<p-toast />

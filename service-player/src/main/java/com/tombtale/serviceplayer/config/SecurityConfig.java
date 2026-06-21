@@ -8,6 +8,13 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.beans.factory.annotation.Value;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Security configuration for the Player Service.
@@ -22,10 +29,16 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    @Value("${app.cors.allowed-origins:http://localhost:4200}")
+    private String[] allowedOrigins;
+
     @Bean
     @SuppressWarnings({ "java:S112", "java:S1130" }) // Exception type imposed by Spring
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Enable CORS using the corsConfigurationSource bean
+                .cors(org.springframework.security.config.Customizer.withDefaults())
+
                 // Disable CSRF — stateless JWT-based API, no browser sessions
                 .csrf(AbstractHttpConfigurer::disable)
 
@@ -47,5 +60,25 @@ public class SecurityConfig {
                 }));
 
         return http.build();
+    }
+
+    /**
+     * Configures the CORS configuration source.
+     * Allows requests from localhost:4200 (Angular dev server).
+     *
+     * @return The configured CorsConfigurationSource.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
+        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }

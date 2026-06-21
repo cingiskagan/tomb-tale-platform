@@ -6,9 +6,15 @@
 
 ---
 spring:
-  data:
-    mongodb:
-      uri: mongodb://${MONGO_USER:root}:${MONGO_PASSWORD:rootpassword}@localhost:27017/tomb_tale_players?authSource=admin
+  datasource:
+    url: jdbc:postgresql://localhost:5432/tombtale
+    username: ${POSTGRES_PLAYER_USER:svc_player}
+    password: ${POSTGRES_PLAYER_PASSWORD:player_secret}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
 
   rabbitmq:
     host: localhost

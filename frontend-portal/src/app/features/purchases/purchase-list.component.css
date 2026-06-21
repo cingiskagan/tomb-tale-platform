@@ -1,0 +1,25 @@
+.purchase-container {
+  background: rgba(15, 15, 25, 0.9);
+  border: 1px solid rgba(212, 162, 78, 0.2);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.page-title {
+  font-family: 'Cinzel', serif;
+  color: #d4a24e;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+::ng-deep .purchase-table .p-datatable-header,
+::ng-deep .purchase-table .p-datatable-tbody > tr > td {
+  border-color: rgba(212, 162, 78, 0.1);
+}
