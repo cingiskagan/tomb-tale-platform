@@ -76,7 +76,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins));
+        List<String> origins = Arrays.asList(allowedOrigins);
+
+        if (origins.contains("*")) {
+            throw new IllegalArgumentException("Wildcard origins ('*') cannot be used when "
+                    + "credentials are enabled. Please specify exact origins in application.yml.");
+        }
+
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type"));
         configuration.setExposedHeaders(List.of("Authorization"));

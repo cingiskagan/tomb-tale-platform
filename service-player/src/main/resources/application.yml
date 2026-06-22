@@ -3,14 +3,24 @@ spring:
   application:
     name: service-player
 
-  # --- MongoDB ---
-  data:
-    mongodb:
-      uri: ${MONGO_URI}
+  # --- PostgreSQL ---
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/tombtale}
+    username: ${POSTGRES_PLAYER_USER}
+    password: ${POSTGRES_PLAYER_PASSWORD}
+    driver-class-name: org.postgresql.Driver
 
-  # --- JPA ---
+  # --- JPA / Hibernate ---
   jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: false
     open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
 
   # --- RabbitMQ ---
   rabbitmq:
@@ -27,7 +37,7 @@ spring:
           issuer-uri: ${ZITADEL_ISSUER_URI}
 
 server:
-  port: ${SERVER_PORT:8081}
+  port: ${SERVER_PORT}
 
 # --- Actuator ---
 management:

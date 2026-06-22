@@ -4,11 +4,11 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   CreatePurchaseRequest,
-  Page,
   PurchaseFilterRequest,
   PurchaseResponse,
   UpdatePurchaseRequest,
 } from './purchase.models';
+import { Page } from './common.model';
 
 /**
  * Service to handle CRUD operations for in-game purchases.

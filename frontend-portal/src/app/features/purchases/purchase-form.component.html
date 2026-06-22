@@ -1,0 +1,89 @@
+<p-dialog
+  [header]="isEditMode ? 'Edit Purchase' : 'New Purchase'"
+  [(visible)]="visible"
+  [modal]="true"
+  [style]="{ width: '400px' }"
+  (onHide)="close()"
+  styleClass="purchase-dialog"
+>
+  <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-column gap-3 mt-3">
+    <div class="field">
+      <label for="playerId">Player ID</label>
+      <input
+        id="playerId"
+        pInputText
+        formControlName="playerId"
+        class="w-full"
+        [readonly]="isEditMode"
+      />
+    </div>
+
+    <div class="field">
+      <label for="itemCode">Item Code</label>
+      <input
+        id="itemCode"
+        pInputText
+        formControlName="itemCode"
+        class="w-full"
+        [readonly]="isEditMode"
+      />
+    </div>
+
+    <div class="field">
+      <label for="quantity">Quantity</label>
+      <p-inputNumber
+        id="quantity"
+        formControlName="quantity"
+        class="w-full"
+        styleClass="w-full"
+        [min]="1"
+      ></p-inputNumber>
+    </div>
+
+    <div class="field">
+      <label for="unitPrice">Unit Price</label>
+      <p-inputNumber
+        id="unitPrice"
+        formControlName="unitPrice"
+        class="w-full"
+        styleClass="w-full"
+        mode="decimal"
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+        [min]="0"
+        [readonly]="isEditMode"
+      ></p-inputNumber>
+    </div>
+
+    @if (isEditMode) {
+      <div class="field">
+        <label for="status">Status</label>
+        <p-select
+          id="status"
+          formControlName="status"
+          [options]="statusOptions"
+          class="w-full"
+          styleClass="w-full"
+          appendTo="body"
+        ></p-select>
+      </div>
+    }
+  </form>
+
+  <ng-template #footer>
+    <p-button
+      label="Cancel"
+      icon="pi pi-times"
+      severity="secondary"
+      [outlined]="true"
+      (onClick)="close()"
+    />
+    <p-button
+      label="Save"
+      icon="pi pi-check"
+      [disabled]="form.invalid || isSaving"
+      [loading]="isSaving"
+      (onClick)="save()"
+    />
+  </ng-template>
+</p-dialog>

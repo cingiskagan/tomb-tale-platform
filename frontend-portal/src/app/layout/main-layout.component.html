@@ -1,0 +1,18 @@
+<div class="layout-wrapper">
+  <p-menubar [model]="items" styleClass="main-menubar">
+    <ng-template #start>
+      <div class="logo-container">
+        <span class="logo-text">Tomb Tale Online</span>
+      </div>
+    </ng-template>
+    <ng-template #end>
+      <span class="user-greeting">
+        Welcome, {{ username }}
+      </span>
+    </ng-template>
+  </p-menubar>
+  
+  <main class="layout-content">
+    <router-outlet />
+  </main>
+</div>

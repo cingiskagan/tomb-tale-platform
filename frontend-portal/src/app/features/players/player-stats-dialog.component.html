@@ -1,0 +1,23 @@
+<p-dialog header="Edit Player Stats" [(visible)]="visible" (visibleChange)="visibleChange.emit($event)" 
+  [modal]="true" [style]="{ width: '400px' }" (onHide)="close()">
+  <form [formGroup]="form" (ngSubmit)="save()" class="mt-4 p-fluid">
+    <div class="field mb-4">
+      <span class="font-bold block mb-2">Player</span>
+      <div class="p-2 bg-gray-800 rounded border border-gray-700 text-gray-300">
+        {{ player?.displayName || 'Loading...' }}
+      </div>
+    </div>
+    <div class="field mb-4">
+      <label for="level">Level</label>
+      <p-inputNumber inputId="level" formControlName="level" [min]="1" [showButtons]="true" buttonLayout="horizontal" />
+    </div>
+    <div class="field mb-6">
+      <label for="experiencePoints">Experience Points</label>
+      <p-inputNumber inputId="experiencePoints" formControlName="experiencePoints" [min]="0" [showButtons]="true" buttonLayout="horizontal" [step]="100" />
+    </div>
+    <div class="flex justify-content-end gap-2 mt-4">
+      <p-button label="Cancel" [text]="true" severity="secondary" (onClick)="close()" />
+      <p-button label="Save Stats" type="submit" [loading]="saving" [disabled]="form.invalid || saving" />
+    </div>
+  </form>
+</p-dialog>

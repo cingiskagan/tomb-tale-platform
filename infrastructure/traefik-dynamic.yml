@@ -1,0 +1,31 @@
+---
+# Traefik Dynamic Configuration — File Provider
+# Routes locally-running backend microservices through Traefik.
+# Used during development when services run outside Docker via ./run-local.sh.
+
+http:
+  routers:
+    service-player-local:
+      rule: "PathPrefix(`/api/v1/players`)"
+      entryPoints:
+        - web
+      service: service-player-local
+      priority: 300
+
+    service-commerce-local:
+      rule: "PathPrefix(`/api/v1/purchases`)"
+      entryPoints:
+        - web
+      service: service-commerce-local
+      priority: 300
+
+  services:
+    service-player-local:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8081"
+
+    service-commerce-local:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:8082"
