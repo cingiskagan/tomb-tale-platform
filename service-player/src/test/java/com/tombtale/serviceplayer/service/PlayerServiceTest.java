@@ -21,12 +21,21 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("PMD.TooManyStaticImports")
 class PlayerServiceTest {
+
+    private static final int PAGE_SIZE = 10;
+    private static final int NEW_LEVEL = 5;
+    private static final long NEW_XP = 100L;
+    private static final long NON_EXISTENT_ID = 999L;
 
     @Mock
     private PlayerRepository playerRepository;
@@ -38,10 +47,9 @@ class PlayerServiceTest {
     private PlayerService playerService;
 
     @Test
-    void listPlayers_success() {
-        // Arrange
+    void shouldListPlayersSuccessfully() {
         PlayerFilterRequest filter = new PlayerFilterRequest("test", null, null);
-        Pageable pageable = PageRequest.of(0, 10);
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE);
 
         Player player = new Player();
         player.setId(1L);
@@ -55,43 +63,37 @@ class PlayerServiceTest {
         when(playerRepository.findByFilter(filter, pageable)).thenReturn(playerPage);
         when(playerMapper.toResponse(player)).thenReturn(response);
 
-        // Act
         Page<PlayerResponse> result = playerService.listPlayers(filter, pageable);
 
-        // Assert
-        assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
-        assertEquals(response, result.getContent().get(0));
+        assertThat(result).isNotNull();
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0)).isEqualTo(response);
 
         verify(playerRepository).findByFilter(filter, pageable);
         verify(playerMapper).toResponse(player);
     }
 
     @Test
-    void updatePlayerStats_success() {
-        // Arrange
+    void shouldUpdatePlayerStatsSuccessfully() {
         Long playerId = 1L;
-        UpdatePlayerStatsRequest request = new UpdatePlayerStatsRequest(5, 100L);
+        UpdatePlayerStatsRequest request = new UpdatePlayerStatsRequest(NEW_LEVEL, NEW_XP);
 
         Player player = new Player();
         player.setId(playerId);
         player.setLevel(1);
         player.setExperiencePoints(0L);
 
-        PlayerResponse expectedResponse = new PlayerResponse(playerId, "user1", 5, 100L, Instant.now());
+        PlayerResponse expectedResponse = new PlayerResponse(playerId, "user1", NEW_LEVEL, NEW_XP, Instant.now());
 
         when(playerRepository.findById(playerId)).thenReturn(Optional.of(player));
         when(playerRepository.save(any(Player.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(playerMapper.toResponse(any(Player.class))).thenReturn(expectedResponse);
 
-        // Act
         PlayerResponse result = playerService.updatePlayerStats(playerId, request);
 
-        // Assert
-        assertNotNull(result);
-        assertEquals(expectedResponse, result);
-        assertEquals(5, player.getLevel());
-        assertEquals(100L, player.getExperiencePoints());
+        assertThat(result).isNotNull().isEqualTo(expectedResponse);
+        assertThat(player.getLevel()).isEqualTo(NEW_LEVEL);
+        assertThat(player.getExperiencePoints()).isEqualTo(NEW_XP);
 
         verify(playerRepository).findById(playerId);
         verify(playerRepository).save(player);
@@ -99,20 +101,16 @@ class PlayerServiceTest {
     }
 
     @Test
-    void updatePlayerStats_notFound_throwsException() {
-        // Arrange
-        Long playerId = 999L;
-        UpdatePlayerStatsRequest request = new UpdatePlayerStatsRequest(5, 100L);
+    void shouldThrowExceptionWhenPlayerNotFound() {
+        UpdatePlayerStatsRequest request = new UpdatePlayerStatsRequest(NEW_LEVEL, NEW_XP);
 
-        when(playerRepository.findById(playerId)).thenReturn(Optional.empty());
+        when(playerRepository.findById(NON_EXISTENT_ID)).thenReturn(Optional.empty());
 
-        // Act & Assert
-        PlayerNotFoundException exception = assertThrows(PlayerNotFoundException.class,
-                () -> playerService.updatePlayerStats(playerId, request));
+        assertThatThrownBy(() -> playerService.updatePlayerStats(NON_EXISTENT_ID, request))
+                .isInstanceOf(PlayerNotFoundException.class)
+                .hasMessage("Player not found with ID: " + NON_EXISTENT_ID);
 
-        assertEquals("Player not found with ID: " + playerId, exception.getMessage());
-
-        verify(playerRepository).findById(playerId);
+        verify(playerRepository).findById(NON_EXISTENT_ID);
         verify(playerRepository, never()).save(any(Player.class));
         verify(playerMapper, never()).toResponse(any(Player.class));
     }

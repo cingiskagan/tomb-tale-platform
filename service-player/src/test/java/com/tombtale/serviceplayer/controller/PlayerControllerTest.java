@@ -22,12 +22,21 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings({"PMD.TooManyStaticImports", "PMD.AvoidDuplicateLiterals"})
 class PlayerControllerTest {
+
+    private static final int HTTP_OK = 200;
+    private static final int PAGE_SIZE = 10;
+    private static final long INITIAL_XP = 100L;
+    private static final int NEW_LEVEL = 5;
+    private static final long NEW_XP = 500L;
 
     @Mock
     private PlayerRepository playerRepository;
@@ -42,7 +51,7 @@ class PlayerControllerTest {
     private PlayerController playerController;
 
     @Test
-    void getMyProfile_existingUser_returnsProfile() {
+    void shouldReturnExistingProfile() {
         Player player = new Player();
         player.setZitadelUserId("z1");
         
@@ -51,13 +60,13 @@ class PlayerControllerTest {
 
         ResponseEntity<Player> response = playerController.getMyProfile(jwt);
 
-        assertEquals(200, response.getStatusCode().value());
-        assertEquals("z1", response.getBody().getZitadelUserId());
+        assertThat(response.getStatusCode().value()).isEqualTo(HTTP_OK);
+        assertThat(response.getBody().getZitadelUserId()).isEqualTo("z1");
         verify(playerRepository, never()).save(any());
     }
 
     @Test
-    void getMyProfile_newUser_createsAndReturnsProfile() {
+    void shouldCreateAndReturnNewProfile() {
         Player newPlayer = new Player();
         newPlayer.setZitadelUserId("new-z1");
         newPlayer.setDisplayName("Player_new-z1");
@@ -68,37 +77,37 @@ class PlayerControllerTest {
 
         ResponseEntity<Player> response = playerController.getMyProfile(jwt);
 
-        assertEquals(200, response.getStatusCode().value());
-        assertEquals("new-z1", response.getBody().getZitadelUserId());
-        assertEquals("Player_new-z1", response.getBody().getDisplayName());
+        assertThat(response.getStatusCode().value()).isEqualTo(HTTP_OK);
+        assertThat(response.getBody().getZitadelUserId()).isEqualTo("new-z1");
+        assertThat(response.getBody().getDisplayName()).isEqualTo("Player_new-z1");
         verify(playerRepository).save(any(Player.class));
     }
 
     @Test
-    void listPlayers_returnsPage() {
+    void shouldReturnPlayerPage() {
         PlayerFilterRequest filter = new PlayerFilterRequest("test", null, null);
-        Pageable pageable = PageRequest.of(0, 10);
-        PlayerResponse dto = new PlayerResponse(1L, "test", 10, 100L, Instant.now());
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE);
+        PlayerResponse dto = new PlayerResponse(1L, "test", PAGE_SIZE, INITIAL_XP, Instant.now());
         Page<PlayerResponse> page = new PageImpl<>(List.of(dto));
 
         when(playerService.listPlayers(filter, pageable)).thenReturn(page);
 
         ResponseEntity<Page<PlayerResponse>> response = playerController.listPlayers(filter, pageable);
 
-        assertEquals(200, response.getStatusCode().value());
-        assertEquals(1, response.getBody().getTotalElements());
+        assertThat(response.getStatusCode().value()).isEqualTo(HTTP_OK);
+        assertThat(response.getBody().getTotalElements()).isEqualTo(1L);
     }
 
     @Test
-    void updatePlayerStats_updatesAndReturns() {
-        UpdatePlayerStatsRequest request = new UpdatePlayerStatsRequest(5, 500L);
-        PlayerResponse dto = new PlayerResponse(1L, "test", 5, 500L, Instant.now());
+    void shouldUpdateStatsAndReturnProfile() {
+        UpdatePlayerStatsRequest request = new UpdatePlayerStatsRequest(NEW_LEVEL, NEW_XP);
+        PlayerResponse dto = new PlayerResponse(1L, "test", NEW_LEVEL, NEW_XP, Instant.now());
 
         when(playerService.updatePlayerStats(1L, request)).thenReturn(dto);
 
         ResponseEntity<PlayerResponse> response = playerController.updatePlayerStats(1L, request);
 
-        assertEquals(200, response.getStatusCode().value());
-        assertEquals(5, response.getBody().level());
+        assertThat(response.getStatusCode().value()).isEqualTo(HTTP_OK);
+        assertThat(response.getBody().level()).isEqualTo(NEW_LEVEL);
     }
 }

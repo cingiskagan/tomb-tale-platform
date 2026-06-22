@@ -74,7 +74,8 @@ public class SecurityConfig {
         List<String> origins = Arrays.asList(allowedOrigins);
 
         if (origins.contains("*")) {
-            throw new IllegalArgumentException("Wildcard origins ('*') cannot be used when credentials are enabled. Please specify exact origins in application.yml.");
+            throw new IllegalArgumentException("Wildcard origins ('*') cannot be used when "
+                    + "credentials are enabled. Please specify exact origins in application.yml.");
         }
 
         configuration.setAllowedOrigins(origins);

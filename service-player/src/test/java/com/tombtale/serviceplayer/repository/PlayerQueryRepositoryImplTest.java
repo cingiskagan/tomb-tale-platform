@@ -21,8 +21,8 @@ import org.springframework.data.domain.Sort;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
@@ -32,6 +32,9 @@ import static org.mockito.Mockito.when;
 @MockitoSettings(strictness = Strictness.LENIENT)
 @SuppressWarnings("PMD.TooManyStaticImports")
 class PlayerQueryRepositoryImplTest {
+
+    private static final int PAGE_SIZE = 10;
+    private static final int MAX_LEVEL = 50;
 
     @Mock
     private JPAQueryFactory jpaQueryFactory;
@@ -60,9 +63,9 @@ class PlayerQueryRepositoryImplTest {
     }
 
     @Test
-    void findByFilter_returnsFilteredPage() {
-        PlayerFilterRequest filter = new PlayerFilterRequest("test", 10, 50);
-        Pageable pageable = PageRequest.of(0, 10);
+    void shouldReturnFilteredPage() {
+        PlayerFilterRequest filter = new PlayerFilterRequest("test", PAGE_SIZE, MAX_LEVEL);
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE);
         Player dummyPlayer = new Player();
 
         when(jpaQuery.fetch()).thenReturn(List.of(dummyPlayer));
@@ -70,20 +73,59 @@ class PlayerQueryRepositoryImplTest {
 
         Page<Player> results = queryRepository.findByFilter(filter, pageable);
 
-        assertEquals(1, results.getTotalElements());
-        assertEquals(1, results.getContent().size());
+        assertThat(results.getTotalElements()).isEqualTo(1L);
+        assertThat(results.getContent()).hasSize(1);
         verify(jpaQuery).offset(pageable.getOffset());
         verify(jpaQuery).limit(pageable.getPageSize());
     }
 
     @Test
-    void findByFilter_withInvalidSorting_throwsException() {
+    void shouldThrowExceptionForInvalidSorting() {
         PlayerFilterRequest filter = new PlayerFilterRequest(null, null, null);
-        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "invalidField"));
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE, Sort.by(Sort.Direction.ASC, "invalidField"));
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, 
-            () -> queryRepository.findByFilter(filter, pageable));
-            
-        assertEquals("Invalid sort field: invalidField", exception.getMessage());
+        assertThatThrownBy(() -> queryRepository.findByFilter(filter, pageable))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid sort field: invalidField");
+    }
+
+    @Test
+    void shouldReturnEmptyPageWhenTotalIsNull() {
+        PlayerFilterRequest filter = new PlayerFilterRequest(null, null, null);
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE);
+
+        when(jpaQuery.fetch()).thenReturn(List.of());
+        when(countQuery.fetchOne()).thenReturn(null);
+
+        Page<Player> results = queryRepository.findByFilter(filter, pageable);
+
+        assertThat(results.getTotalElements()).isZero();
+        assertThat(results.getContent()).isEmpty();
+    }
+
+    @Test
+    void shouldApplyValidAscendingSort() {
+        PlayerFilterRequest filter = new PlayerFilterRequest(null, null, null);
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE, Sort.by(Sort.Direction.ASC, "level"));
+
+        when(jpaQuery.fetch()).thenReturn(List.of(new Player()));
+        when(countQuery.fetchOne()).thenReturn(1L);
+
+        Page<Player> results = queryRepository.findByFilter(filter, pageable);
+
+        assertThat(results.getTotalElements()).isEqualTo(1L);
+    }
+
+    @Test
+    void shouldApplyValidDescendingSort() {
+        PlayerFilterRequest filter = new PlayerFilterRequest(null, null, null);
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "experiencePoints"));
+
+        when(jpaQuery.fetch()).thenReturn(List.of(new Player()));
+        when(countQuery.fetchOne()).thenReturn(1L);
+
+        Page<Player> results = queryRepository.findByFilter(filter, pageable);
+
+        assertThat(results.getTotalElements()).isEqualTo(1L);
     }
 }

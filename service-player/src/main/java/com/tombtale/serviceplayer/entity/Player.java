@@ -51,8 +51,7 @@ public class Player {
 
     /** Total experience points accumulated. */
     @Column(nullable = false)
-    @Builder.Default
-    private long experiencePoints = 0;
+    private Long experiencePoints;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
