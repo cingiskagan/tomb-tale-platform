@@ -1,7 +1,8 @@
 package com.tombtale.serviceplayer.mapper;
 
 import com.tombtale.serviceplayer.dto.PlayerResponse;
-import com.tombtale.serviceplayer.model.Player;
+import com.tombtale.serviceplayer.entity.Player;
+
 import org.mapstruct.Mapper;
 
 import java.util.List;

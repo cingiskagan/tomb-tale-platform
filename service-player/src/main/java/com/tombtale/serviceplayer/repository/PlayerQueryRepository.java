@@ -1,7 +1,8 @@
 package com.tombtale.serviceplayer.repository;
 
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
-import com.tombtale.serviceplayer.model.Player;
+import com.tombtale.serviceplayer.entity.Player;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

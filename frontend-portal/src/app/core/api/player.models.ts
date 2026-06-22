@@ -10,7 +10,8 @@ export interface Player {
 
 export interface PlayerFilterRequest {
     displayName?: string;
-    level?: number;
+    minLevel?: number;
+    maxLevel?: number;
 }
 
 export interface UpdatePlayerStatsRequest {

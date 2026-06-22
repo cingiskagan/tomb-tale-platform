@@ -19,7 +19,8 @@ export class PlayerService {
         let params = new HttpParams().set('page', page).set('size', size);
         if (sort) params = params.set('sort', sort);
         if (filter.displayName) params = params.set('displayName', filter.displayName);
-        if (filter.level) params = params.set('level', filter.level);
+        if (filter.minLevel !== undefined && filter.minLevel !== null) params = params.set('minLevel', filter.minLevel);
+        if (filter.maxLevel !== undefined && filter.maxLevel !== null) params = params.set('maxLevel', filter.maxLevel);
 
         return this.http.get<Page<Player>>(this.baseUrl, { params });
     }

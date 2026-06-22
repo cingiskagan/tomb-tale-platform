@@ -3,7 +3,7 @@ package com.tombtale.serviceplayer.controller;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.dto.UpdatePlayerStatsRequest;
-import com.tombtale.serviceplayer.model.Player;
+import com.tombtale.serviceplayer.entity.Player;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
 import com.tombtale.serviceplayer.service.PlayerService;
 import jakarta.validation.Valid;

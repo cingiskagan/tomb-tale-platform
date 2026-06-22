@@ -6,8 +6,8 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
-import com.tombtale.serviceplayer.model.Player;
-import com.tombtale.serviceplayer.model.QPlayer;
+import com.tombtale.serviceplayer.entity.Player;
+import com.tombtale.serviceplayer.entity.QPlayer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -16,6 +16,7 @@ import org.springframework.data.domain.Sort;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * QueryDSL implementation of {@link PlayerQueryRepository}.
@@ -102,17 +103,28 @@ public class PlayerQueryRepositoryImpl implements PlayerQueryRepository {
     private static OrderSpecifier<?>[] buildOrderSpecifiers(
             Sort sort,
             QPlayer player) {
+
+        Set<String> allowedFields = Set.of(
+                player.id.getMetadata().getName(),
+                player.displayName.getMetadata().getName(),
+                player.level.getMetadata().getName(),
+                player.experiencePoints.getMetadata().getName(),
+                player.createdAt.getMetadata().getName());
+
         List<OrderSpecifier<?>> orders = new ArrayList<>();
         PathBuilder<Player> entityPath = new PathBuilder<>(
                 Player.class, player.getMetadata());
 
         for (Sort.Order order : sort) {
-            Order direction = order.isAscending()
-                    ? Order.ASC
-                    : Order.DESC;
+            String property = order.getProperty();
+            if (!allowedFields.contains(property)) {
+                throw new IllegalArgumentException("Invalid sort field: " + property);
+            }
+
+            Order direction = order.isAscending() ? Order.ASC : Order.DESC;
             orders.add(new OrderSpecifier<>(
                     direction,
-                    entityPath.get(order.getProperty(), Comparable.class)));
+                    entityPath.get(property, Comparable.class)));
         }
 
         return orders.toArray(new OrderSpecifier[0]);

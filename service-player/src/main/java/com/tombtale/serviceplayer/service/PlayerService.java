@@ -3,8 +3,9 @@ package com.tombtale.serviceplayer.service;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.dto.UpdatePlayerStatsRequest;
+import com.tombtale.serviceplayer.entity.Player;
+import com.tombtale.serviceplayer.exception.PlayerNotFoundException;
 import com.tombtale.serviceplayer.mapper.PlayerMapper;
-import com.tombtale.serviceplayer.model.Player;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -51,12 +52,12 @@ public class PlayerService {
      * @param id      the internal database ID of the player
      * @param request the new stats payload
      * @return the updated player DTO
-     * @throws IllegalArgumentException if the player is not found
+     * @throws PlayerNotFoundException if the player is not found
      */
     @Transactional
     public PlayerResponse updatePlayerStats(Long id, UpdatePlayerStatsRequest request) {
         Player player = playerRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Player not found with ID: " + id));
+                .orElseThrow(() -> new PlayerNotFoundException(id));
         player.setLevel(request.getLevel());
         player.setExperiencePoints(request.getExperiencePoints());
         Player saved = playerRepository.save(player);

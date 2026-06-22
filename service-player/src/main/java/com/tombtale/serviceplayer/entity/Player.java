@@ -1,4 +1,4 @@
-package com.tombtale.serviceplayer.model;
+package com.tombtale.serviceplayer.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,6 +10,7 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -24,6 +25,7 @@ import java.time.Instant;
  */
 @Data
 @Builder
+@NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "players")
@@ -44,11 +46,13 @@ public class Player {
 
     /** Current player level. */
     @Column(nullable = false)
-    private int level;
+    @Builder.Default
+    private int level = 1;
 
     /** Total experience points accumulated. */
     @Column(nullable = false)
-    private long experiencePoints;
+    @Builder.Default
+    private long experiencePoints = 0;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -57,13 +61,4 @@ public class Player {
     @LastModifiedDate
     @Column(nullable = false)
     private Instant updatedAt;
-
-    /**
-     * No-args constructor required by JPA.
-     * Sets sensible defaults for new player entities.
-     */
-    public Player() {
-        this.level = 1;
-        this.experiencePoints = 0;
-    }
 }

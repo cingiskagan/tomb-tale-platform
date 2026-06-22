@@ -33,7 +33,15 @@ export class PlayerListComponent {
         try {
             const page = event.first ? Math.floor(event.first / (event.rows || 20)) : 0;
             const filters: PlayerFilterRequest = {};
-            const res = await firstValueFrom(this.playerService.listPlayers(filters, page, event.rows || 20));
+
+            let sort: string | undefined;
+            if (event.sortField) {
+                const field = Array.isArray(event.sortField) ? event.sortField[0] : event.sortField;
+                const order = event.sortOrder === -1 ? 'desc' : 'asc';
+                sort = `${field},${order}`;
+            }
+
+            const res = await firstValueFrom(this.playerService.listPlayers(filters, page, event.rows || 20, sort));
             this.players = res.content;
             this.totalRecords = res.totalElements;
         } catch (err) {
