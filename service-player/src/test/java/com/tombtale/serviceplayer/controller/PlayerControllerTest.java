@@ -18,6 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
 
+import org.mockito.ArgumentCaptor;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -80,7 +82,13 @@ class PlayerControllerTest {
         assertThat(response.getStatusCode().value()).isEqualTo(HTTP_OK);
         assertThat(response.getBody().getZitadelUserId()).isEqualTo("new-z1");
         assertThat(response.getBody().getDisplayName()).isEqualTo("Player_new-z1");
-        verify(playerRepository).save(any(Player.class));
+
+        ArgumentCaptor<Player> playerCaptor = ArgumentCaptor.forClass(Player.class);
+        verify(playerRepository).save(playerCaptor.capture());
+
+        Player savedPlayer = playerCaptor.getValue();
+        assertThat(savedPlayer.getLevel()).isEqualTo(1);
+        assertThat(savedPlayer.getExperiencePoints()).isZero();
     }
 
     @Test
