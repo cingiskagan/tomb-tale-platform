@@ -40,6 +40,11 @@ export class MainLayoutComponent {
       command: () => this.router.navigate(['/players']),
     },
     {
+      label: 'My Profile',
+      icon: 'pi pi-id-card',
+      command: () => this.router.navigate(['/profile']),
+    },
+    {
       label: 'Logout',
       icon: 'pi pi-sign-out',
       command: () => this.authService.logout(),

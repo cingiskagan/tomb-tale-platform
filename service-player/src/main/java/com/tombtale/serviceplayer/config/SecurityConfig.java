@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -54,12 +55,19 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
 
                 // Configure as OAuth2 Resource Server using JWT
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {
-                    // Uses the issuer-uri from application.yml to auto-discover
-                    // the JWKS endpoint from Zitadel's .well-known/openid-configuration
-                }));
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
         return http.build();
+    }
+
+    /**
+     * Configures the JWT converter to extract custom project roles.
+     */
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(new ZitadelRoleConverter());
+        return converter;
     }
 
     /**

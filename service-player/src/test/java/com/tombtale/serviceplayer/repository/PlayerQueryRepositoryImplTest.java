@@ -34,7 +34,6 @@ import static org.mockito.Mockito.when;
 class PlayerQueryRepositoryImplTest {
 
     private static final int PAGE_SIZE = 10;
-    private static final int MAX_LEVEL = 50;
 
     @Mock
     private JPAQueryFactory jpaQueryFactory;
@@ -64,7 +63,7 @@ class PlayerQueryRepositoryImplTest {
 
     @Test
     void shouldReturnFilteredPage() {
-        PlayerFilterRequest filter = new PlayerFilterRequest("test", PAGE_SIZE, MAX_LEVEL);
+        PlayerFilterRequest filter = new PlayerFilterRequest("test");
         Pageable pageable = PageRequest.of(0, PAGE_SIZE);
         Player dummyPlayer = new Player();
 
@@ -81,7 +80,7 @@ class PlayerQueryRepositoryImplTest {
 
     @Test
     void shouldThrowExceptionForInvalidSorting() {
-        PlayerFilterRequest filter = new PlayerFilterRequest(null, null, null);
+        PlayerFilterRequest filter = new PlayerFilterRequest(null);
         Pageable pageable = PageRequest.of(0, PAGE_SIZE, Sort.by(Sort.Direction.ASC, "invalidField"));
 
         assertThatThrownBy(() -> queryRepository.findByFilter(filter, pageable))
@@ -91,7 +90,7 @@ class PlayerQueryRepositoryImplTest {
 
     @Test
     void shouldReturnEmptyPageWhenTotalIsNull() {
-        PlayerFilterRequest filter = new PlayerFilterRequest(null, null, null);
+        PlayerFilterRequest filter = new PlayerFilterRequest(null);
         Pageable pageable = PageRequest.of(0, PAGE_SIZE);
 
         when(jpaQuery.fetch()).thenReturn(List.of());
@@ -105,8 +104,8 @@ class PlayerQueryRepositoryImplTest {
 
     @Test
     void shouldApplyValidAscendingSort() {
-        PlayerFilterRequest filter = new PlayerFilterRequest(null, null, null);
-        Pageable pageable = PageRequest.of(0, PAGE_SIZE, Sort.by(Sort.Direction.ASC, "level"));
+        PlayerFilterRequest filter = new PlayerFilterRequest(null);
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE, Sort.by(Sort.Direction.ASC, "displayName"));
 
         when(jpaQuery.fetch()).thenReturn(List.of(new Player()));
         when(countQuery.fetchOne()).thenReturn(1L);
@@ -118,8 +117,8 @@ class PlayerQueryRepositoryImplTest {
 
     @Test
     void shouldApplyValidDescendingSort() {
-        PlayerFilterRequest filter = new PlayerFilterRequest(null, null, null);
-        Pageable pageable = PageRequest.of(0, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "experiencePoints"));
+        PlayerFilterRequest filter = new PlayerFilterRequest(null);
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         when(jpaQuery.fetch()).thenReturn(List.of(new Player()));
         when(countQuery.fetchOne()).thenReturn(1L);

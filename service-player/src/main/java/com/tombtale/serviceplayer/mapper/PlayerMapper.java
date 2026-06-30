@@ -1,6 +1,8 @@
 package com.tombtale.serviceplayer.mapper;
 
+import com.tombtale.serviceplayer.dto.CharacterResponse;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
+import com.tombtale.serviceplayer.entity.GameCharacter;
 import com.tombtale.serviceplayer.entity.Player;
 
 import org.mapstruct.Mapper;
@@ -26,6 +28,14 @@ public interface PlayerMapper {
      * @return the response DTO
      */
     PlayerResponse toResponse(Player player);
+
+    /**
+     * Converts a persisted character entity to its API response representation.
+     *
+     * @param character the JPA entity
+     * @return the response DTO
+     */
+    CharacterResponse toResponse(GameCharacter character);
 
     /**
      * Converts a list of entities to a list of response DTOs.

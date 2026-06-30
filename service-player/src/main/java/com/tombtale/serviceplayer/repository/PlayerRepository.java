@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 import com.tombtale.serviceplayer.entity.Player;
 
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * JPA repository for Player entities.
@@ -19,6 +20,9 @@ public interface PlayerRepository
 
     /** Find a player by their in-game display name. */
     Optional<Player> findByDisplayName(String displayName);
+
+    /** Find a player by public ID. */
+    Optional<Player> findByPublicId(UUID publicId);
 
     /** Check if a display name is already taken. */
     boolean existsByDisplayName(String displayName);

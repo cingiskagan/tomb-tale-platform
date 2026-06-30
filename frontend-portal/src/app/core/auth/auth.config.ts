@@ -9,7 +9,7 @@ import { environment } from '../../../environments/environment';
  * The login UI is fully delegated to Zitadel's hosted login page.
  */
 
-const OIDC_SCOPES = 'openid profile email offline_access';
+const OIDC_SCOPES = 'openid profile email offline_access urn:zitadel:iam:org:project:roles';
 
 export const AUTH_CONFIG: AuthConfig = {
   issuer: environment.zitadelIssuerUri,

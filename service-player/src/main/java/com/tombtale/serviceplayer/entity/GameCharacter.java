@@ -1,44 +1,44 @@
 package com.tombtale.serviceplayer.entity;
 
 import jakarta.persistence.Column;
-import org.hibernate.annotations.ColumnDefault;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 /**
- * Core Player entity stored in PostgreSQL.
+ * Represents a playable character owned by a {@link Player}.
  * <p>
- * The {@code zitadelUserId} links this game profile to the authenticated
- * identity managed by Zitadel (the "sub" claim in the JWT).
+ * Contains RPG progression stats such as level and experience points.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "players")
+@Table(name = "characters")
 @EntityListeners(AuditingEntityListener.class)
-public class Player {
+@EqualsAndHashCode(exclude = "player")
+@ToString(exclude = "player")
+public class GameCharacter {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,27 +46,22 @@ public class Player {
 
     /** Public-facing ID, used in APIs to prevent sequential ID enumeration. */
     @Column(nullable = false, unique = true, updatable = false)
-    @ColumnDefault("gen_random_uuid()")
     private UUID publicId;
 
-    /** Zitadel user ID — the "sub" claim from the JWT. Unique per player. */
-    @Column(nullable = false, unique = true)
-    private String zitadelUserId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "player_id", nullable = false)
+    private Player player;
 
-    /** In-game display name chosen by the player. */
-    @Column(nullable = false, unique = true)
-    private String displayName;
-
-    /** Selected profile icon key (e.g., pi-user) */
     @Column(nullable = false)
-    @ColumnDefault("'pi-user'")
-    @Builder.Default
-    private String profileIcon = "pi-user";
+    private String name;
 
-    /** Characters owned by this player. */
-    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @Column(nullable = false)
     @Builder.Default
-    private List<GameCharacter> characters = new ArrayList<>();
+    private int level = 1;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Long experiencePoints = 0L;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
