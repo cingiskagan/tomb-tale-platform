@@ -1,0 +1,64 @@
+<div class="profile-container">
+  <p-toast></p-toast>
+  <p-card styleClass="profile-card">
+    <ng-template #header>
+      <div class="profile-header">
+        <h1 class="profile-title">My Profile</h1>
+      </div>
+    </ng-template>
+
+    @if (player) {
+    <div class="profile-content">
+      <div class="profile-icon-wrapper">
+        <i [class]="player.profileIcon || 'pi pi-user'" class="profile-icon"></i>
+      </div>
+
+      <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="profile-form">
+        <div class="form-field">
+          <label for="displayName">Display Name</label>
+          <input 
+            id="displayName" 
+            type="text" 
+            pInputText 
+            formControlName="displayName" 
+            class="w-full"
+            [class.ng-invalid]="profileForm.get('displayName')?.invalid && profileForm.get('displayName')?.touched"
+            [class.ng-dirty]="profileForm.get('displayName')?.touched"
+          />
+          @if (profileForm.get('displayName')?.invalid && profileForm.get('displayName')?.touched) {
+            <small class="error-text">
+              Display name must be between 3 and 30 characters.
+            </small>
+          }
+        </div>
+
+        <p-button 
+          label="Save Changes" 
+          icon="pi pi-save" 
+          type="submit" 
+          [disabled]="profileForm.invalid || profileForm.pristine || isSaving"
+          [loading]="isSaving"
+          styleClass="w-full mt-4">
+        </p-button>
+      </form>
+
+      @if (player.characters?.length) {
+      <div class="character-stats">
+        <h3 class="stats-title">Character Progression</h3>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <span class="stat-label">Level</span>
+            <span class="stat-value">{{ player.characters[0].level }}</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Experience</span>
+            <span class="stat-value">{{ player.characters[0].experiencePoints | number }}</span>
+          </div>
+        </div>
+        <p class="character-name">{{ player.characters[0].name }}</p>
+      </div>
+      }
+    </div>
+    }
+  </p-card>
+</div>

@@ -82,12 +82,6 @@ public class PlayerQueryRepositoryImpl implements PlayerQueryRepository {
             builder.and(player.displayName.containsIgnoreCase(
                     filter.displayName()));
         }
-        if (filter.minLevel() != null) {
-            builder.and(player.level.goe(filter.minLevel()));
-        }
-        if (filter.maxLevel() != null) {
-            builder.and(player.level.loe(filter.maxLevel()));
-        }
 
         return builder;
     }
@@ -106,9 +100,8 @@ public class PlayerQueryRepositoryImpl implements PlayerQueryRepository {
 
         Set<String> allowedFields = Set.of(
                 player.id.getMetadata().getName(),
+                player.publicId.getMetadata().getName(),
                 player.displayName.getMetadata().getName(),
-                player.level.getMetadata().getName(),
-                player.experiencePoints.getMetadata().getName(),
                 player.createdAt.getMetadata().getName());
 
         List<OrderSpecifier<?>> orders = new ArrayList<>();

@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UpdatePlayerStatsRequest {
+public class UpdateCharacterStatsRequest {
 
     @NotNull(message = "Level is required")
     @Min(value = 1, message = "Level must be at least 1")

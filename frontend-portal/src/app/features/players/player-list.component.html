@@ -6,17 +6,17 @@
       <tr>
         <th scope="col">ID</th>
         <th scope="col" pSortableColumn="displayName">Display Name <p-sortIcon field="displayName" /></th>
-        <th scope="col" pSortableColumn="level">Level <p-sortIcon field="level" /></th>
-        <th scope="col" pSortableColumn="experiencePoints">XP <p-sortIcon field="experiencePoints" /></th>
+        <th scope="col">Level</th>
+        <th scope="col">XP</th>
         <th scope="col">Actions</th>
       </tr>
     </ng-template>
     <ng-template pTemplate="body" let-player>
       <tr>
-        <td>{{ player.id }}</td>
+        <td class="text-sm text-gray-400 font-mono">{{ player.publicId }}</td>
         <td class="font-bold text-primary">{{ player.displayName }}</td>
-        <td>{{ player.level }}</td>
-        <td>{{ player.experiencePoints | number }}</td>
+        <td>{{ player.characters?.length ? player.characters[0].level : '-' }}</td>
+        <td>{{ player.characters?.length ? (player.characters[0].experiencePoints | number) : '-' }}</td>
         <td>
           <p-button icon="pi pi-sliders-h" [rounded]="true" [text]="true" severity="warn" (onClick)="openEdit(player)" />
         </td>

@@ -2,13 +2,14 @@ package com.tombtale.serviceplayer.service;
 
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
-import com.tombtale.serviceplayer.dto.UpdatePlayerStatsRequest;
+import com.tombtale.serviceplayer.dto.UpdateMyProfileRequest;
+import com.tombtale.serviceplayer.entity.GameCharacter;
 import com.tombtale.serviceplayer.entity.Player;
-import com.tombtale.serviceplayer.exception.PlayerNotFoundException;
 import com.tombtale.serviceplayer.mapper.PlayerMapper;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -16,26 +17,27 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("PMD.TooManyStaticImports")
+@SuppressWarnings({"PMD.TooManyStaticImports", "PMD.AvoidDuplicateLiterals"})
 class PlayerServiceTest {
 
     private static final int PAGE_SIZE = 10;
-    private static final int NEW_LEVEL = 5;
-    private static final long NEW_XP = 100L;
-    private static final long NON_EXISTENT_ID = 999L;
 
     @Mock
     private PlayerRepository playerRepository;
@@ -48,16 +50,15 @@ class PlayerServiceTest {
 
     @Test
     void shouldListPlayersSuccessfully() {
-        PlayerFilterRequest filter = new PlayerFilterRequest("test", null, null);
+        PlayerFilterRequest filter = new PlayerFilterRequest("test");
         Pageable pageable = PageRequest.of(0, PAGE_SIZE);
 
         Player player = new Player();
         player.setId(1L);
         player.setDisplayName("test");
-        player.setLevel(1);
-        player.setExperiencePoints(0L);
 
-        PlayerResponse response = new PlayerResponse(1L, "test", 1, 0L, Instant.now());
+        PlayerResponse response = new PlayerResponse(
+                UUID.randomUUID(), "test", "pi-user", new ArrayList<>(), Instant.now());
         Page<Player> playerPage = new PageImpl<>(List.of(player));
 
         when(playerRepository.findByFilter(filter, pageable)).thenReturn(playerPage);
@@ -74,44 +75,131 @@ class PlayerServiceTest {
     }
 
     @Test
-    void shouldUpdatePlayerStatsSuccessfully() {
-        Long playerId = 1L;
-        UpdatePlayerStatsRequest request = new UpdatePlayerStatsRequest(NEW_LEVEL, NEW_XP);
+    void shouldReturnExistingPlayerAndBackfillCharacter() {
+        Player existing = new Player();
+        existing.setPublicId(UUID.randomUUID());
+        existing.setDisplayName("OldName");
 
-        Player player = new Player();
-        player.setId(playerId);
-        player.setLevel(1);
-        player.setExperiencePoints(0L);
+        when(playerRepository.findByZitadelUserId("z1")).thenReturn(Optional.of(existing));
+        when(playerRepository.save(existing)).thenReturn(existing);
 
-        PlayerResponse expectedResponse = new PlayerResponse(playerId, "user1", NEW_LEVEL, NEW_XP, Instant.now());
+        Player result = playerService.getOrCreatePlayer("z1");
 
-        when(playerRepository.findById(playerId)).thenReturn(Optional.of(player));
-        when(playerRepository.save(any(Player.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(playerMapper.toResponse(any(Player.class))).thenReturn(expectedResponse);
-
-        PlayerResponse result = playerService.updatePlayerStats(playerId, request);
-
-        assertThat(result).isNotNull().isEqualTo(expectedResponse);
-        assertThat(player.getLevel()).isEqualTo(NEW_LEVEL);
-        assertThat(player.getExperiencePoints()).isEqualTo(NEW_XP);
-
-        verify(playerRepository).findById(playerId);
-        verify(playerRepository).save(player);
-        verify(playerMapper).toResponse(player);
+        assertThat(result.getCharacters()).hasSize(1);
+        assertThat(result.getCharacters().get(0).getName()).isEqualTo("OldName");
+        verify(playerRepository).save(existing);
     }
 
     @Test
-    void shouldThrowExceptionWhenPlayerNotFound() {
-        UpdatePlayerStatsRequest request = new UpdatePlayerStatsRequest(NEW_LEVEL, NEW_XP);
+    void shouldReturnExistingPlayerWithoutBackfill() {
+        Player existing = new Player();
+        GameCharacter character = new GameCharacter();
+        existing.addCharacter(character);
 
-        when(playerRepository.findById(NON_EXISTENT_ID)).thenReturn(Optional.empty());
+        when(playerRepository.findByZitadelUserId("z1")).thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> playerService.updatePlayerStats(NON_EXISTENT_ID, request))
-                .isInstanceOf(PlayerNotFoundException.class)
-                .hasMessage("Player not found with ID: " + NON_EXISTENT_ID);
+        Player result = playerService.getOrCreatePlayer("z1");
 
-        verify(playerRepository).findById(NON_EXISTENT_ID);
-        verify(playerRepository, never()).save(any(Player.class));
-        verify(playerMapper, never()).toResponse(any(Player.class));
+        assertThat(result).isEqualTo(existing);
+        verify(playerRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldCreateNewPlayerIfNotFound() {
+        when(playerRepository.findByZitadelUserId("new-z1")).thenReturn(Optional.empty());
+        
+        Player newPlayer = new Player();
+        newPlayer.setDisplayName("Player_random1");
+        
+        when(playerRepository.save(any(Player.class))).thenReturn(newPlayer);
+
+        Player result = playerService.getOrCreatePlayer("new-z1");
+
+        assertThat(result).isEqualTo(newPlayer);
+        verify(playerRepository).save(argThat(p -> 
+                p.getDisplayName() != null && p.getDisplayName().startsWith("Player_") && 
+                "new-z1".equals(p.getZitadelUserId()) &&
+                p.getCharacters().size() == 1
+        ));
+    }
+
+    @Test
+    void shouldRecoverFromConcurrentCreationConflict() {
+        when(playerRepository.findByZitadelUserId("z1"))
+                .thenReturn(Optional.empty()) // First check: not found
+                .thenReturn(Optional.of(new Player())); // Second check after exception: found
+
+        when(playerRepository.save(any(Player.class)))
+                .thenThrow(new DataIntegrityViolationException("Unique constraint violation"))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Player result = playerService.getOrCreatePlayer("z1");
+
+        assertThat(result).isNotNull();
+        // It should call find twice
+        verify(playerRepository, org.mockito.Mockito.times(2)).findByZitadelUserId("z1");
+        verify(playerRepository, org.mockito.Mockito.times(2)).save(any(Player.class));
+    }
+
+    @Test
+    void shouldThrowIfRecoverFromConcurrentCreationFails() {
+        when(playerRepository.findByZitadelUserId("z1"))
+                .thenReturn(Optional.empty()) // First check: not found
+                .thenReturn(Optional.empty()); // Second check after exception: still not found!
+
+        when(playerRepository.save(any(Player.class)))
+                .thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
+
+        assertThatThrownBy(() -> playerService.getOrCreatePlayer("z1"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Failed to find player after creation collision");
+    }
+
+    @Test
+    void shouldUpdateMyProfileSuccess() {
+        Player existing = new Player();
+        existing.setDisplayName("OldName");
+
+        UpdateMyProfileRequest request = new UpdateMyProfileRequest();
+        request.setDisplayName("NewName");
+
+        PlayerResponse response = new PlayerResponse(
+                UUID.randomUUID(), "NewName", "pi-user", new ArrayList<>(), Instant.now());
+
+        when(playerRepository.findByZitadelUserId("z1")).thenReturn(Optional.of(existing));
+        when(playerRepository.existsByDisplayNameIgnoreCase("NewName")).thenReturn(false);
+        when(playerRepository.save(existing)).thenReturn(existing);
+        when(playerMapper.toResponse(existing)).thenReturn(response);
+
+        PlayerResponse result = playerService.updateMyProfile("z1", request);
+
+        assertThat(result).isEqualTo(response);
+        assertThat(existing.getDisplayName()).isEqualTo("NewName");
+    }
+
+    @Test
+    void shouldThrowNotFoundWhenUpdatingProfile() {
+        UpdateMyProfileRequest request = new UpdateMyProfileRequest();
+        when(playerRepository.findByZitadelUserId("z1")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> playerService.updateMyProfile("z1", request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Player not found");
+    }
+
+    @Test
+    void shouldThrowConflictWhenDisplayNameTaken() {
+        Player existing = new Player();
+        existing.setDisplayName("OldName");
+
+        UpdateMyProfileRequest request = new UpdateMyProfileRequest();
+        request.setDisplayName("TakenName");
+
+        when(playerRepository.findByZitadelUserId("z1")).thenReturn(Optional.of(existing));
+        when(playerRepository.existsByDisplayNameIgnoreCase("TakenName")).thenReturn(true);
+
+        assertThatThrownBy(() -> playerService.updateMyProfile("z1", request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Display name is already taken");
     }
 }

@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { RouterOutlet, Router } from '@angular/router';
 import { MenubarModule } from 'primeng/menubar';
 import { MenuItem } from 'primeng/api';
-import { AuthService } from '../core/auth';
+import { AuthService, PlatformRole } from '../core/auth';
 
 /**
  * Main layout component for authenticated views.
@@ -21,6 +21,12 @@ export class MainLayoutComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
+  /** Roles that grant access to admin-only menu items. */
+  private static readonly ADMIN_ROLES: PlatformRole[] = [
+    PlatformRole.PLATFORM_ADMIN,
+    PlatformRole.GAME_MASTER,
+  ];
+
   readonly username: string;
 
   items: MenuItem[] = [
@@ -32,12 +38,19 @@ export class MainLayoutComponent {
     {
       label: 'Purchases',
       icon: 'pi pi-shopping-cart',
+      visible: this.authService.hasAnyRole(MainLayoutComponent.ADMIN_ROLES),
       command: () => this.router.navigate(['/purchases']),
     },
     {
       label: 'Players',
       icon: 'pi pi-user',
+      visible: this.authService.hasAnyRole(MainLayoutComponent.ADMIN_ROLES),
       command: () => this.router.navigate(['/players']),
+    },
+    {
+      label: 'My Profile',
+      icon: 'pi pi-id-card',
+      command: () => this.router.navigate(['/profile']),
     },
     {
       label: 'Logout',

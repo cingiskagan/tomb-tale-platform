@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { OAuthService } from 'angular-oauth2-oidc';
 import { BehaviorSubject } from 'rxjs';
 import { AUTH_CONFIG } from './auth.config';
+import { PlatformRole } from './auth.models';
 
 /** Decoded identity claims from the Zitadel ID token. */
 export interface UserProfile {
@@ -9,6 +10,7 @@ export interface UserProfile {
   readonly name?: string;
   readonly email?: string;
   readonly preferred_username?: string;
+  readonly roles: PlatformRole[];
 }
 
 /**
@@ -89,12 +91,37 @@ export class AuthService {
       return null;
     }
 
+    let parsedRoles: PlatformRole[] = [];
+    const rolesClaim = claims['urn:zitadel:iam:org:project:roles'] ?? claims['roles'];
+
+    if (rolesClaim && typeof rolesClaim === 'object') {
+      if (Array.isArray(rolesClaim)) {
+        parsedRoles = rolesClaim as PlatformRole[];
+      } else {
+        parsedRoles = Object.keys(rolesClaim) as PlatformRole[];
+      }
+    }
+
+    // Filter to ensure only valid PlatformRole values are retained
+    const validRoles = Object.values(PlatformRole) as string[];
+    parsedRoles = parsedRoles.filter(r => validRoles.includes(r as string));
+
     return {
       sub: claims['sub'],
       name: typeof claims['name'] === 'string' ? claims['name'] : undefined,
       email: typeof claims['email'] === 'string' ? claims['email'] : undefined,
       preferred_username: typeof claims['preferred_username'] === 'string' ? claims['preferred_username'] : undefined,
+      roles: parsedRoles,
     };
+  }
+
+  /** Checks if the currently authenticated user has at least one of the specified roles. */
+  hasAnyRole(roles: PlatformRole[]): boolean {
+    const profile = this.getUserProfile();
+    if (!profile) {
+      return false;
+    }
+    return roles.some(role => profile.roles.includes(role));
   }
 
   /** Returns the current Bearer access token for API calls. */

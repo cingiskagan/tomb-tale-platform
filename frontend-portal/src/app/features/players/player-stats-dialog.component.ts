@@ -5,7 +5,7 @@ import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { MessageService } from 'primeng/api';
-import { PlayerService, Player, UpdatePlayerStatsRequest } from '../../core/api';
+import { PlayerService, Player, UpdateCharacterStatsRequest } from '../../core/api';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -18,7 +18,17 @@ export class PlayerStatsDialogComponent {
     @Input() visible = false;
     @Input() set player(val: Player | null) {
         this._player = val;
-        if (val) this.form.patchValue({ level: val.level, experiencePoints: val.experiencePoints });
+        if (val?.characters && val.characters.length > 0) {
+            const firstCharacter = val.characters[0];
+            this.form.patchValue({
+                level: firstCharacter.level,
+                experiencePoints: firstCharacter.experiencePoints
+            });
+            this.form.enable();
+        } else {
+            this.form.reset({ level: 1, experiencePoints: 0 });
+            this.form.disable();
+        }
     }
     get player() { return this._player; }
     private _player: Player | null = null;
@@ -39,10 +49,17 @@ export class PlayerStatsDialogComponent {
     close() { this.visibleChange.emit(false); }
 
     async save() {
-        if (this.form.invalid || !this.player) return;
+        if (this.form.invalid || !this.player?.characters || this.player.characters.length === 0) return;
         this.saving = true;
+
+        const characterPublicId = this.player.characters[0].publicId;
+
         try {
-            await firstValueFrom(this.playerService.updatePlayerStats(this.player.id, this.form.value as UpdatePlayerStatsRequest));
+            await firstValueFrom(this.playerService.updateCharacterStats(
+                this.player.publicId,
+                characterPublicId,
+                this.form.value as UpdateCharacterStatsRequest
+            ));
             this.saved.emit();
             this.close();
         } catch (err) {

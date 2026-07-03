@@ -1,8 +1,9 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth';
+import { authGuard, roleGuard, PlatformRole } from './core/auth';
 import { LoginComponent } from './features/login/login';
 import { CallbackComponent } from './features/callback/callback';
 import { MainLayoutComponent } from './layout/main-layout.component';
+import { playerProfileResolver } from './core/api/player.resolver';
 
 /**
  * Top-level application routes.
@@ -20,17 +21,26 @@ export const routes: Routes = [
     path: '',
     component: MainLayoutComponent,
     canActivate: [authGuard],
+    resolve: { playerProfile: playerProfileResolver },
     children: [
       {
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/dashboard').then(m => m.DashboardComponent)
       },
       {
+        path: 'profile',
+        loadComponent: () => import('./features/profile/my-profile.component').then(m => m.MyProfileComponent)
+      },
+      {
         path: 'purchases',
+        canActivate: [roleGuard],
+        data: { roles: [PlatformRole.PLATFORM_ADMIN, PlatformRole.GAME_MASTER] },
         loadComponent: () => import('./features/purchases/purchase-list.component').then(m => m.PurchaseListComponent)
       },
       {
         path: 'players',
+        canActivate: [roleGuard],
+        data: { roles: [PlatformRole.PLATFORM_ADMIN, PlatformRole.GAME_MASTER] },
         loadComponent: () => import('./features/players/player-list.component').then(m => m.PlayerListComponent)
       },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
