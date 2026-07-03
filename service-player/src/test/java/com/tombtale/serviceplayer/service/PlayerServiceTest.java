@@ -9,6 +9,7 @@ import com.tombtale.serviceplayer.mapper.PlayerMapper;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -78,7 +79,6 @@ class PlayerServiceTest {
         Player existing = new Player();
         existing.setPublicId(UUID.randomUUID());
         existing.setDisplayName("OldName");
-        existing.setCharacters(new ArrayList<>());
 
         when(playerRepository.findByZitadelUserId("z1")).thenReturn(Optional.of(existing));
         when(playerRepository.save(existing)).thenReturn(existing);
@@ -94,7 +94,7 @@ class PlayerServiceTest {
     void shouldReturnExistingPlayerWithoutBackfill() {
         Player existing = new Player();
         GameCharacter character = new GameCharacter();
-        existing.getCharacters().add(character);
+        existing.addCharacter(character);
 
         when(playerRepository.findByZitadelUserId("z1")).thenReturn(Optional.of(existing));
 
@@ -109,7 +109,7 @@ class PlayerServiceTest {
         when(playerRepository.findByZitadelUserId("new-z1")).thenReturn(Optional.empty());
         
         Player newPlayer = new Player();
-        newPlayer.setDisplayName("Player_new-z1");
+        newPlayer.setDisplayName("Player_random1");
         
         when(playerRepository.save(any(Player.class))).thenReturn(newPlayer);
 
@@ -117,10 +117,42 @@ class PlayerServiceTest {
 
         assertThat(result).isEqualTo(newPlayer);
         verify(playerRepository).save(argThat(p -> 
-                "Player_new-z1".equals(p.getDisplayName()) && 
+                p.getDisplayName() != null && p.getDisplayName().startsWith("Player_") && 
                 "new-z1".equals(p.getZitadelUserId()) &&
                 p.getCharacters().size() == 1
         ));
+    }
+
+    @Test
+    void shouldRecoverFromConcurrentCreationConflict() {
+        when(playerRepository.findByZitadelUserId("z1"))
+                .thenReturn(Optional.empty()) // First check: not found
+                .thenReturn(Optional.of(new Player())); // Second check after exception: found
+
+        when(playerRepository.save(any(Player.class)))
+                .thenThrow(new DataIntegrityViolationException("Unique constraint violation"))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Player result = playerService.getOrCreatePlayer("z1");
+
+        assertThat(result).isNotNull();
+        // It should call find twice
+        verify(playerRepository, org.mockito.Mockito.times(2)).findByZitadelUserId("z1");
+        verify(playerRepository, org.mockito.Mockito.times(2)).save(any(Player.class));
+    }
+
+    @Test
+    void shouldThrowIfRecoverFromConcurrentCreationFails() {
+        when(playerRepository.findByZitadelUserId("z1"))
+                .thenReturn(Optional.empty()) // First check: not found
+                .thenReturn(Optional.empty()); // Second check after exception: still not found!
+
+        when(playerRepository.save(any(Player.class)))
+                .thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
+
+        assertThatThrownBy(() -> playerService.getOrCreatePlayer("z1"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Failed to find player after creation collision");
     }
 
     @Test
@@ -130,13 +162,12 @@ class PlayerServiceTest {
 
         UpdateMyProfileRequest request = new UpdateMyProfileRequest();
         request.setDisplayName("NewName");
-        request.setProfileIcon("new-icon");
 
         PlayerResponse response = new PlayerResponse(
-                UUID.randomUUID(), "NewName", "new-icon", new ArrayList<>(), Instant.now());
+                UUID.randomUUID(), "NewName", "pi-user", new ArrayList<>(), Instant.now());
 
         when(playerRepository.findByZitadelUserId("z1")).thenReturn(Optional.of(existing));
-        when(playerRepository.existsByDisplayName("NewName")).thenReturn(false);
+        when(playerRepository.existsByDisplayNameIgnoreCase("NewName")).thenReturn(false);
         when(playerRepository.save(existing)).thenReturn(existing);
         when(playerMapper.toResponse(existing)).thenReturn(response);
 
@@ -144,7 +175,6 @@ class PlayerServiceTest {
 
         assertThat(result).isEqualTo(response);
         assertThat(existing.getDisplayName()).isEqualTo("NewName");
-        assertThat(existing.getProfileIcon()).isEqualTo("new-icon");
     }
 
     @Test
@@ -166,7 +196,7 @@ class PlayerServiceTest {
         request.setDisplayName("TakenName");
 
         when(playerRepository.findByZitadelUserId("z1")).thenReturn(Optional.of(existing));
-        when(playerRepository.existsByDisplayName("TakenName")).thenReturn(true);
+        when(playerRepository.existsByDisplayNameIgnoreCase("TakenName")).thenReturn(true);
 
         assertThatThrownBy(() -> playerService.updateMyProfile("z1", request))
                 .isInstanceOf(ResponseStatusException.class)

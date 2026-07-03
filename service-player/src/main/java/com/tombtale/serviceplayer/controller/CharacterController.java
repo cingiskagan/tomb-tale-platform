@@ -33,7 +33,7 @@ public class CharacterController {
      * Updates the core progression stats of a character.
      * Restricted to admin/game master roles.
      *
-     * @param publicId           player public ID (used for routing context)
+     * @param publicId           player public ID (used for routing context and ownership validation)
      * @param characterPublicId  character public ID
      * @param request            the new stats
      * @return the updated character
@@ -44,9 +44,9 @@ public class CharacterController {
             @PathVariable UUID publicId,
             @PathVariable UUID characterPublicId,
             @Valid @RequestBody UpdateCharacterStatsRequest request) {
-        log.info("Admin updating stats for character: {}, new level: {}, new XP: {}",
-                characterPublicId, request.getLevel(), request.getExperiencePoints());
-        CharacterResponse updated = characterService.updateCharacterStats(characterPublicId, request);
+        log.info("Admin updating stats for character: {} (Player: {}), new level: {}, new XP: {}",
+                characterPublicId, publicId, request.getLevel(), request.getExperiencePoints());
+        CharacterResponse updated = characterService.updateCharacterStats(publicId, characterPublicId, request);
         return ResponseEntity.ok(updated);
     }
 }

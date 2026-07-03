@@ -11,7 +11,10 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.AccessLevel;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -22,6 +25,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -64,6 +68,8 @@ public class Player {
     private String profileIcon = "pi-user";
 
     /** Characters owned by this player. */
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
     private List<GameCharacter> characters = new ArrayList<>();
@@ -85,5 +91,31 @@ public class Player {
         if (publicId == null) {
             publicId = UUID.randomUUID();
         }
+    }
+
+    /**
+     * Returns an unmodifiable view of the characters list.
+     * @return unmodifiable list of characters
+     */
+    public List<GameCharacter> getCharacters() {
+        return Collections.unmodifiableList(characters);
+    }
+
+    /**
+     * Adds a character to this player.
+     * @param character the character to add
+     */
+    public void addCharacter(GameCharacter character) {
+        characters.add(character);
+        character.setPlayer(this);
+    }
+
+    /**
+     * Removes a character from this player.
+     * @param character the character to remove
+     */
+    public void removeCharacter(GameCharacter character) {
+        characters.remove(character);
+        character.setPlayer(null);
     }
 }

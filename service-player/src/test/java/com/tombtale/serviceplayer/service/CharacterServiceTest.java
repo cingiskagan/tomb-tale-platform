@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -37,6 +38,7 @@ class CharacterServiceTest {
 
     @Test
     void shouldUpdateCharacterStatsSuccessfully() {
+        UUID playerPublicId = UUID.randomUUID();
         UUID publicId = UUID.randomUUID();
         GameCharacter existing = new GameCharacter();
         existing.setPublicId(publicId);
@@ -47,11 +49,11 @@ class CharacterServiceTest {
         CharacterResponse response = new CharacterResponse(
                 publicId, "TestChar", TEST_LEVEL, TEST_XP, Instant.now());
 
-        when(characterRepository.findByPublicId(publicId)).thenReturn(Optional.of(existing));
+        when(characterRepository.findByPublicIdAndPlayerPublicId(publicId, playerPublicId)).thenReturn(Optional.of(existing));
         when(characterRepository.save(existing)).thenReturn(existing);
         when(playerMapper.toResponse(existing)).thenReturn(response);
 
-        CharacterResponse result = characterService.updateCharacterStats(publicId, request);
+        CharacterResponse result = characterService.updateCharacterStats(playerPublicId, publicId, request);
 
         assertThat(result).isEqualTo(response);
         assertThat(existing.getLevel()).isEqualTo(TEST_LEVEL);
@@ -61,13 +63,14 @@ class CharacterServiceTest {
 
     @Test
     void shouldThrowWhenCharacterNotFound() {
+        UUID playerPublicId = UUID.randomUUID();
         UUID publicId = UUID.randomUUID();
         UpdateCharacterStatsRequest request = new UpdateCharacterStatsRequest(TEST_LEVEL, TEST_XP);
 
-        when(characterRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+        when(characterRepository.findByPublicIdAndPlayerPublicId(publicId, playerPublicId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> characterService.updateCharacterStats(publicId, request))
-                .isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> characterService.updateCharacterStats(playerPublicId, publicId, request))
+                .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Character not found");
     }
 }

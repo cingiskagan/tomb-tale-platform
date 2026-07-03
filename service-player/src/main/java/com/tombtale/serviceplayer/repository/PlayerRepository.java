@@ -24,6 +24,6 @@ public interface PlayerRepository
     /** Find a player by public ID. */
     Optional<Player> findByPublicId(UUID publicId);
 
-    /** Check if a display name is already taken. */
-    boolean existsByDisplayName(String displayName);
+    /** Check if a display name is already taken (case-insensitive). */
+    boolean existsByDisplayNameIgnoreCase(String displayName);
 }

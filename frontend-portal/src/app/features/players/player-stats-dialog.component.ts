@@ -24,8 +24,10 @@ export class PlayerStatsDialogComponent {
                 level: firstCharacter.level,
                 experiencePoints: firstCharacter.experiencePoints
             });
+            this.form.enable();
         } else {
             this.form.reset({ level: 1, experiencePoints: 0 });
+            this.form.disable();
         }
     }
     get player() { return this._player; }

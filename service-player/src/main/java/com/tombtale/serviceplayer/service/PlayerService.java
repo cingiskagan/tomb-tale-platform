@@ -12,8 +12,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -64,11 +66,20 @@ public class PlayerService {
      * @param zitadelUserId the subject claim from the JWT
      * @return the existing or newly created player
      */
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Player getOrCreatePlayer(String zitadelUserId) {
         return playerRepository.findByZitadelUserId(zitadelUserId)
                 .map(this::backfillCharacterIfMissing)
-                .orElseGet(() -> createNewPlayerWithCharacter(zitadelUserId));
+                .orElseGet(() -> {
+                    try {
+                        return createNewPlayerWithCharacter(zitadelUserId);
+                    } catch (DataIntegrityViolationException e) {
+                        log.warn("Concurrent creation detected for zitadel user: {}. Fetching existing record.", zitadelUserId);
+                        return playerRepository.findByZitadelUserId(zitadelUserId)
+                                .map(this::backfillCharacterIfMissing)
+                                .orElseThrow(() -> new IllegalStateException("Failed to find player after creation collision"));
+                    }
+                });
     }
 
     /**
@@ -92,7 +103,7 @@ public class PlayerService {
                 .player(player)
                 .build();
 
-        player.getCharacters().add(backfilledCharacter);
+        player.addCharacter(backfilledCharacter);
         return playerRepository.save(player);
     }
 
@@ -104,8 +115,7 @@ public class PlayerService {
      */
     private Player createNewPlayerWithCharacter(String zitadelUserId) {
         log.info("Creating new player profile for Zitadel user");
-        String defaultDisplayName = "Player_" + zitadelUserId.substring(
-                0, Math.min(zitadelUserId.length(), DISPLAY_NAME_ID_PREFIX_LENGTH));
+        String defaultDisplayName = "Player_" + java.util.UUID.randomUUID().toString().substring(0, DISPLAY_NAME_ID_PREFIX_LENGTH);
 
         Player newPlayer = Player.builder()
                 .zitadelUserId(zitadelUserId)
@@ -117,7 +127,7 @@ public class PlayerService {
                 .player(newPlayer)
                 .build();
 
-        newPlayer.getCharacters().add(initialCharacter);
+        newPlayer.addCharacter(initialCharacter);
 
         return playerRepository.save(newPlayer);
     }
@@ -135,15 +145,11 @@ public class PlayerService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found"));
 
         if (!player.getDisplayName().equalsIgnoreCase(request.getDisplayName()) &&
-                playerRepository.existsByDisplayName(request.getDisplayName())) {
+                playerRepository.existsByDisplayNameIgnoreCase(request.getDisplayName())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Display name is already taken");
         }
 
         player.setDisplayName(request.getDisplayName());
-
-        if (request.getProfileIcon() != null && !request.getProfileIcon().isBlank()) {
-            player.setProfileIcon(request.getProfileIcon());
-        }
 
         Player saved = playerRepository.save(player);
         return playerMapper.toResponse(saved);

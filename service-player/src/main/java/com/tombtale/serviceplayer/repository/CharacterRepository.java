@@ -17,4 +17,6 @@ public interface CharacterRepository extends JpaRepository<GameCharacter, Long> 
     List<GameCharacter> findByPlayerId(Long playerId);
 
     Optional<GameCharacter> findByPublicId(UUID publicId);
+
+    Optional<GameCharacter> findByPublicIdAndPlayerPublicId(UUID publicId, UUID playerPublicId);
 }

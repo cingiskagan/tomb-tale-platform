@@ -35,17 +35,17 @@ class CharacterControllerTest {
         UUID publicId = UUID.randomUUID();
         UUID characterPublicId = UUID.randomUUID();
         UpdateCharacterStatsRequest request = new UpdateCharacterStatsRequest(TEST_LEVEL, TEST_XP);
-        
+
         CharacterResponse responseDto = new CharacterResponse(
                 characterPublicId, "TestChar", TEST_LEVEL, TEST_XP, Instant.now());
 
-        when(characterService.updateCharacterStats(characterPublicId, request)).thenReturn(responseDto);
+        when(characterService.updateCharacterStats(publicId, characterPublicId, request)).thenReturn(responseDto);
 
         ResponseEntity<CharacterResponse> response = characterController.updateCharacterStats(
                 publicId, characterPublicId, request);
 
         assertThat(response.getStatusCode().value()).isEqualTo(HTTP_OK);
         assertThat(response.getBody()).isEqualTo(responseDto);
-        verify(characterService).updateCharacterStats(characterPublicId, request);
+        verify(characterService).updateCharacterStats(publicId, characterPublicId, request);
     }
 }

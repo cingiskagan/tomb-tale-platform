@@ -41,6 +41,9 @@ public class PlayerController {
      * <p>
      * Returns the current authenticated player's profile.
      * If the player doesn't exist yet, creates a new profile automatically.
+     *
+     * @param jwt the injected JWT token from the authenticated request
+     * @return the player profile DTO
      */
     @GetMapping("/me")
     public ResponseEntity<PlayerResponse> getMyProfile(@AuthenticationPrincipal Jwt jwt) {
@@ -55,8 +58,11 @@ public class PlayerController {
     /**
      * PATCH /api/v1/players/me
      * <p>
-     * Updates the current authenticated player's profile (e.g., displayName,
-     * profileIcon).
+     * Updates the current authenticated player's profile (e.g., displayName).
+     *
+     * @param jwt     the injected JWT token from the authenticated request
+     * @param request the profile update request payload
+     * @return the updated player profile DTO
      */
     @PatchMapping("/me")
     public ResponseEntity<PlayerResponse> updateMyProfile(

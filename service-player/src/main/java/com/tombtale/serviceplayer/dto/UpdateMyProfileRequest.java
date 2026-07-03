@@ -19,6 +19,4 @@ public class UpdateMyProfileRequest {
     @NotBlank(message = "Display name cannot be blank")
     @Size(min = 3, max = 30, message = "Display name must be between 3 and 30 characters")
     private String displayName;
-
-    private String profileIcon;
 }
