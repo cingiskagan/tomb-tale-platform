@@ -10,7 +10,7 @@
     @if (player) {
     <div class="profile-content">
       <div class="profile-icon-wrapper">
-        <i [class]="player.profileIcon || 'pi pi-user'" class="profile-icon"></i>
+        <i class="profile-icon pi" [ngClass]="player.profileIcon || 'pi-user'"></i>
       </div>
 
       <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="profile-form">
