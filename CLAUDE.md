@@ -107,3 +107,4 @@ Traefik proxies Zitadel (API + v2 login UI) on port 8080. The frontend runs the 
 
 - Strict typing and explicit formatting are mandatory across the stack (per README).
 - MegaLinter also runs shellcheck on `scripts/*.sh`, yamllint, markdownlint, hadolint, gitleaks, and checkov in CI — new shell scripts and YAML must pass those.
+- use plain language, short sentences, and avoid dense or overly compressed phrasing.
