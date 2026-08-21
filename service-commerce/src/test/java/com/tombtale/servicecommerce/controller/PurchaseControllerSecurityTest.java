@@ -7,8 +7,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.context.ActiveProfiles;
@@ -16,6 +14,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.tombtale.servicecommerce.config.SecurityConfig;
+import com.tombtale.servicecommerce.config.ZitadelRoleConverter;
 import com.tombtale.servicecommerce.dto.CreatePurchaseRequest;
 import com.tombtale.servicecommerce.dto.PurchaseResponse;
 import com.tombtale.servicecommerce.entity.PurchaseStatus;
@@ -36,9 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -49,10 +46,14 @@ import java.util.UUID;
 @Import(SecurityConfig.class)
 @ActiveProfiles("test")
 // PMD suppressions — each a deliberate false-positive call:
-//  - TooManyStaticImports / TooManyMethods: inherent to an 18-case MockMvc matrix.
-//  - UnitTestShouldIncludeAssert: PMD does not recognise MockMvc's andExpect(...) as an assertion.
-//  - LinguisticNaming: the getById* methods are test names, not getters returning a value.
-//  - UseConcurrentHashMap: the token helper's LinkedHashMap is a local, single-threaded builder.
+// - TooManyStaticImports / TooManyMethods: inherent to an 18-case MockMvc
+// matrix.
+// - UnitTestShouldIncludeAssert: PMD does not recognise MockMvc's
+// andExpect(...) as an assertion.
+// - LinguisticNaming: the getById* methods are test names, not getters
+// returning a value.
+// - UseConcurrentHashMap: the token helper's LinkedHashMap is a local,
+// single-threaded builder.
 @SuppressWarnings({
                 "PMD.TooManyStaticImports",
                 "PMD.TooManyMethods",
@@ -99,29 +100,25 @@ class PurchaseControllerSecurityTest {
          * project roles.
          *
          * <p>
-         * Roles are placed in Zitadel's roles claim, the way real tokens carry them.
-         * The claim value shape in production is
-         * {@code {"role_name": {"org_id": "org_domain"}}};
-         * only the keys matter to the role converter, so tests use empty maps.
+         * Roles go into Zitadel's roles claim, the way real tokens carry them. The
+         * production claim value is {@code {"role_name": {"org_id": "org_domain"}}};
+         * only the keys matter to the converter, so tests use empty maps.
          *
          * <p>
-         * NOTE (until commit A2): the jwt() post-processor bypasses the application's
-         * JwtAuthenticationConverter, so authorities are also set explicitly here. A2
-         * wires
-         * ZitadelRoleConverter into commerce and this helper switches to
-         * {@code .authorities(new ZitadelRoleConverter())}, making the claim the single
-         * source of truth.
+         * Authorities are derived by running the real {@link ZitadelRoleConverter}
+         * over that claim, so the claim is the single source of truth here exactly
+         * as it is in production. The {@code jwt()} post-processor still bypasses
+         * the decoder — no token is signed or validated — but everything from claim
+         * parsing onwards is the production path.
          */
         private static JwtRequestPostProcessor tokenWithRoles(String... roles) {
                 Map<String, Object> rolesClaim = new LinkedHashMap<>();
-                List<GrantedAuthority> authorities = new ArrayList<>();
                 for (String role : roles) {
                         rolesClaim.put(role, Map.of());
-                        authorities.add(new SimpleGrantedAuthority(role));
                 }
                 return jwt()
                                 .jwt(token -> token.subject(SUBJECT).claim(ZITADEL_ROLES_CLAIM, rolesClaim))
-                                .authorities(authorities);
+                                .authorities(new ZitadelRoleConverter());
         }
 
         private static PurchaseResponse aPurchaseResponse() {
@@ -312,7 +309,7 @@ class PurchaseControllerSecurityTest {
                 mockMvc.perform(delete(PURCHASES_URL + "/" + PURCHASE_ID)
                                 .with(tokenWithRoles(ROLE_PLATFORM_ADMIN)))
                                 .andExpect(status().isNoContent());
-                                
+
                 verify(purchaseService).deletePurchase(PURCHASE_ID);
         }
 }
