@@ -155,31 +155,61 @@ if [ -d "$FRONTEND_DIR" ] && { [ -z "$TARGET_DIR" ] || [ "$TARGET_DIR" = "fronte
         npm run build
 
         echo "  2. 🧪 Unit Tests..."
-        # Karma needs a real browser executable. On snap-based systems
-        # /snap/bin/chromium is a symlink to the snap launcher: Karma spawns it,
-        # snap starts the browser in a separate process tree, the wrapper exits,
-        # and Karma reports "crashed" while the orphaned browser keeps holding
-        # port 9222. Prefer an explicit CHROME_BIN, then the real snap binary.
+        # Karma needs the real browser executable. On snap systems
+        # /snap/bin/chromium is a symlink to /usr/bin/snap, the launcher: Karma
+        # spawns it, snap starts the browser in a separate process tree, the
+        # launcher exits, and Karma reports "crashed" while the orphaned browser
+        # keeps holding port 9222. Every candidate is screened, because an
+        # exported CHROME_BIN and a PATH lookup can each resolve to the launcher.
+        is_snap_launcher() {
+            local resolved
+            case "$1" in
+                /snap/bin/*) return 0 ;;
+            esac
+            resolved="$(readlink -f "$1" 2>/dev/null || true)"
+            if [ -n "$resolved" ] && [ "$(basename "$resolved")" = "snap" ]; then
+                return 0
+            fi
+            return 1
+        }
+
+        # Preference order: an explicit CHROME_BIN, the real binary inside the
+        # snap, then whatever is on PATH.
         SNAP_CHROME="/snap/chromium/current/usr/lib/chromium-browser/chrome"
-        if [ -n "${CHROME_BIN:-}" ] && [ -x "${CHROME_BIN:-}" ]; then
-            export CHROME_BIN
-        elif [ -x "$SNAP_CHROME" ]; then
-            CHROME_BIN="$SNAP_CHROME"
-            export CHROME_BIN
-        elif command -v chromium >/dev/null 2>&1; then
-            CHROME_BIN="$(command -v chromium)"
-            export CHROME_BIN
-        elif command -v chromium-browser >/dev/null 2>&1; then
-            CHROME_BIN="$(command -v chromium-browser)"
-            export CHROME_BIN
-        elif command -v google-chrome >/dev/null 2>&1; then
-            CHROME_BIN="$(command -v google-chrome)"
-            export CHROME_BIN
-        else
-            echo "❌ CRITICAL: No Chromium/Chrome browser found for CHROME_BIN." >&2
-            echo "   Please install chromium-browser or google-chrome to run headless tests." >&2
+        CHROME_CANDIDATES=()
+        if [ -n "${CHROME_BIN:-}" ]; then
+            CHROME_CANDIDATES+=("$CHROME_BIN")
+        fi
+        CHROME_CANDIDATES+=("$SNAP_CHROME")
+        for chrome_name in chromium chromium-browser google-chrome; do
+            chrome_path="$(command -v "$chrome_name" 2>/dev/null || true)"
+            if [ -n "$chrome_path" ]; then
+                CHROME_CANDIDATES+=("$chrome_path")
+            fi
+        done
+
+        CHROME_BIN=""
+        for chrome_candidate in "${CHROME_CANDIDATES[@]}"; do
+            if [ ! -x "$chrome_candidate" ]; then
+                continue
+            fi
+            if is_snap_launcher "$chrome_candidate"; then
+                echo "      (ignoring snap launcher: $chrome_candidate)"
+                continue
+            fi
+            CHROME_BIN="$chrome_candidate"
+            break
+        done
+
+        if [ -z "$CHROME_BIN" ]; then
+            echo "❌ CRITICAL: No usable Chromium/Chrome binary found for CHROME_BIN." >&2
+            echo "   Note that /snap/bin/chromium is a launcher, not the browser," >&2
+            echo "   and Karma cannot drive it. Install chromium-browser or" >&2
+            echo "   google-chrome, or point CHROME_BIN at a real binary." >&2
             exit 1
         fi
+        export CHROME_BIN
+        echo "      Using CHROME_BIN=$CHROME_BIN"
         npx ng test --watch=false --browsers=ChromeHeadless
 
         echo "  3. 🧹 Lint..."
