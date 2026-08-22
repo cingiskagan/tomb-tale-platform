@@ -14,6 +14,11 @@ set -e
 CLEAN_INSTALL=false
 TARGET_DIR=""
 
+# Pinned so every machine runs the same rules. MegaLinter builds its own image
+# and does not publish which markdownlint it bundles, so this is not a guarantee
+# of exact CI parity — bump it if CI ever reports a rule this version lacks.
+MARKDOWNLINT_VERSION="0.45.0"
+
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --clean) CLEAN_INSTALL=true; shift ;;
@@ -42,6 +47,35 @@ if [ -z "$TARGET_DIR" ]; then
         echo "  ✅ Shell files passed"
     else
         echo "  ⚠️ shellcheck not installed locally, skipping local validation"
+    fi
+
+    # Markdown is linted in CI by MegaLinter, and on pushes to main it lints
+    # every file in the repo rather than only the changed ones. Checking here
+    # keeps a formatting slip from turning main red after a merge.
+    echo "  2. 📝 Markdownlint..."
+    # Lint exactly the files git tracks, which is what CI checks out. Globbing
+    # the working tree instead would also flag ignored files such as
+    # docs/reviews and service-player/HELP.md that MegaLinter never sees.
+    mapfile -t MD_FILES < <(git -C "$REPO_ROOT" ls-files '*.md')
+
+    # Resolve the pinned version first. A global markdownlint is used only when
+    # it already matches the pin, otherwise whatever version happens to be
+    # installed would quietly decide the rule set instead.
+    MARKDOWNLINT_CMD=()
+    if command -v markdownlint >/dev/null 2>&1 &&
+        [ "$(markdownlint --version 2>/dev/null)" = "$MARKDOWNLINT_VERSION" ]; then
+        MARKDOWNLINT_CMD=(markdownlint)
+    elif command -v npx >/dev/null 2>&1; then
+        MARKDOWNLINT_CMD=(npx --yes "markdownlint-cli@$MARKDOWNLINT_VERSION")
+    fi
+
+    if [ ${#MD_FILES[@]} -eq 0 ]; then
+        echo "  ⚠️ no tracked markdown files found, skipping markdown validation"
+    elif [ ${#MARKDOWNLINT_CMD[@]} -eq 0 ]; then
+        echo "  ⚠️ no npx and no markdownlint $MARKDOWNLINT_VERSION, skipping markdown validation"
+    else
+        (cd "$REPO_ROOT" && "${MARKDOWNLINT_CMD[@]}" "${MD_FILES[@]}")
+        echo "  ✅ Markdown files passed"
     fi
 fi
 
