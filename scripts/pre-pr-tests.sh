@@ -14,6 +14,11 @@ set -e
 CLEAN_INSTALL=false
 TARGET_DIR=""
 
+# Pinned so every machine runs the same rules. MegaLinter builds its own image
+# and does not publish which markdownlint it bundles, so this is not a guarantee
+# of exact CI parity — bump it if CI ever reports a rule this version lacks.
+MARKDOWNLINT_VERSION="0.45.0"
+
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --clean) CLEAN_INSTALL=true; shift ;;
@@ -42,6 +47,35 @@ if [ -z "$TARGET_DIR" ]; then
         echo "  ✅ Shell files passed"
     else
         echo "  ⚠️ shellcheck not installed locally, skipping local validation"
+    fi
+
+    # Markdown is linted in CI by MegaLinter, and on pushes to main it lints
+    # every file in the repo rather than only the changed ones. Checking here
+    # keeps a formatting slip from turning main red after a merge.
+    echo "  2. 📝 Markdownlint..."
+    # Lint exactly the files git tracks, which is what CI checks out. Globbing
+    # the working tree instead would also flag ignored files such as
+    # docs/reviews and service-player/HELP.md that MegaLinter never sees.
+    mapfile -t MD_FILES < <(git -C "$REPO_ROOT" ls-files '*.md')
+
+    # Resolve the pinned version first. A global markdownlint is used only when
+    # it already matches the pin, otherwise whatever version happens to be
+    # installed would quietly decide the rule set instead.
+    MARKDOWNLINT_CMD=()
+    if command -v markdownlint >/dev/null 2>&1 &&
+        [ "$(markdownlint --version 2>/dev/null)" = "$MARKDOWNLINT_VERSION" ]; then
+        MARKDOWNLINT_CMD=(markdownlint)
+    elif command -v npx >/dev/null 2>&1; then
+        MARKDOWNLINT_CMD=(npx --yes "markdownlint-cli@$MARKDOWNLINT_VERSION")
+    fi
+
+    if [ ${#MD_FILES[@]} -eq 0 ]; then
+        echo "  ⚠️ no tracked markdown files found, skipping markdown validation"
+    elif [ ${#MARKDOWNLINT_CMD[@]} -eq 0 ]; then
+        echo "  ⚠️ no npx and no markdownlint $MARKDOWNLINT_VERSION, skipping markdown validation"
+    else
+        (cd "$REPO_ROOT" && "${MARKDOWNLINT_CMD[@]}" "${MD_FILES[@]}")
+        echo "  ✅ Markdown files passed"
     fi
 fi
 
@@ -121,20 +155,61 @@ if [ -d "$FRONTEND_DIR" ] && { [ -z "$TARGET_DIR" ] || [ "$TARGET_DIR" = "fronte
         npm run build
 
         echo "  2. 🧪 Unit Tests..."
-        if command -v chromium >/dev/null 2>&1; then
-            CHROME_BIN="$(command -v chromium)"
-            export CHROME_BIN
-        elif command -v chromium-browser >/dev/null 2>&1; then
-            CHROME_BIN="$(command -v chromium-browser)"
-            export CHROME_BIN
-        elif command -v google-chrome >/dev/null 2>&1; then
-            CHROME_BIN="$(command -v google-chrome)"
-            export CHROME_BIN
-        else
-            echo "❌ CRITICAL: No Chromium/Chrome browser found for CHROME_BIN." >&2
-            echo "   Please install chromium-browser or google-chrome to run headless tests." >&2
+        # Karma needs the real browser executable. On snap systems
+        # /snap/bin/chromium is a symlink to /usr/bin/snap, the launcher: Karma
+        # spawns it, snap starts the browser in a separate process tree, the
+        # launcher exits, and Karma reports "crashed" while the orphaned browser
+        # keeps holding port 9222. Every candidate is screened, because an
+        # exported CHROME_BIN and a PATH lookup can each resolve to the launcher.
+        is_snap_launcher() {
+            local resolved
+            case "$1" in
+                /snap/bin/*) return 0 ;;
+            esac
+            resolved="$(readlink -f "$1" 2>/dev/null || true)"
+            if [ -n "$resolved" ] && [ "$(basename "$resolved")" = "snap" ]; then
+                return 0
+            fi
+            return 1
+        }
+
+        # Preference order: an explicit CHROME_BIN, the real binary inside the
+        # snap, then whatever is on PATH.
+        SNAP_CHROME="/snap/chromium/current/usr/lib/chromium-browser/chrome"
+        CHROME_CANDIDATES=()
+        if [ -n "${CHROME_BIN:-}" ]; then
+            CHROME_CANDIDATES+=("$CHROME_BIN")
+        fi
+        CHROME_CANDIDATES+=("$SNAP_CHROME")
+        for chrome_name in chromium chromium-browser google-chrome; do
+            chrome_path="$(command -v "$chrome_name" 2>/dev/null || true)"
+            if [ -n "$chrome_path" ]; then
+                CHROME_CANDIDATES+=("$chrome_path")
+            fi
+        done
+
+        CHROME_BIN=""
+        for chrome_candidate in "${CHROME_CANDIDATES[@]}"; do
+            if [ ! -x "$chrome_candidate" ]; then
+                continue
+            fi
+            if is_snap_launcher "$chrome_candidate"; then
+                echo "      (ignoring snap launcher: $chrome_candidate)"
+                continue
+            fi
+            CHROME_BIN="$chrome_candidate"
+            break
+        done
+
+        if [ -z "$CHROME_BIN" ]; then
+            echo "❌ CRITICAL: No usable Chromium/Chrome binary found for CHROME_BIN." >&2
+            echo "   Note that /snap/bin/chromium is a launcher, not the browser," >&2
+            echo "   and Karma cannot drive it. Install chromium-browser or" >&2
+            echo "   google-chrome, or point CHROME_BIN at a real binary." >&2
             exit 1
         fi
+        export CHROME_BIN
+        echo "      Using CHROME_BIN=$CHROME_BIN"
         npx ng test --watch=false --browsers=ChromeHeadless
 
         echo "  3. 🧹 Lint..."

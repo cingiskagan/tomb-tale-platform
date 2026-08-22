@@ -67,7 +67,6 @@ export class MyProfileComponent implements OnInit {
     this.isSaving = true;
     const request = {
       displayName: this.profileForm.value.displayName,
-      profileIcon: this.player?.profileIcon
     };
 
     this.playerService.updateMyProfile(request).subscribe({

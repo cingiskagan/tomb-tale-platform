@@ -9,6 +9,6 @@
   "MD013": false,
   "MD025": true,
   "MD030": { "ul_single": 1, "ol_single": 1, "ul_multi": 1, "ol_multi": 1 },
-  "MD041": false,
-  "MD060": { "style": "compact" }
+  "MD033": false,
+  "MD041": false
 }

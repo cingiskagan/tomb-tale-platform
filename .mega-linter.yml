@@ -85,12 +85,12 @@ YAML_YAMLLINT_CONFIG_DATA: |
     truthy:
       check-keys: false
 
-# Markdown: relax some rules for README files
-MARKDOWN_MARKDOWNLINT_CONFIG_DATA:
-  MD013:
-    line_length: 200
-  MD033: false    # Allow inline HTML
-  MD041: false    # First line doesn't have to be h1
+# Markdown: point at the repo ruleset explicitly.
+# Do not inline rules here. markdownlint has no "config data" CLI flag, so an
+# inline block is silently ignored while .markdownlint.json is what actually
+# runs. Every markdown rule belongs in .markdownlint.json, which the local
+# pre-PR script uses too, so CI and local runs cannot drift apart.
+MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .markdownlint.json
 
 # Checkstyle: use project-specific rules instead of sun_checks.xml
 JAVA_CHECKSTYLE_CONFIG_FILE: config/checkstyle/checkstyle.xml
