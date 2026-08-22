@@ -121,7 +121,18 @@ if [ -d "$FRONTEND_DIR" ] && { [ -z "$TARGET_DIR" ] || [ "$TARGET_DIR" = "fronte
         npm run build
 
         echo "  2. 🧪 Unit Tests..."
-        if command -v chromium >/dev/null 2>&1; then
+        # Karma needs a real browser executable. On snap-based systems
+        # /snap/bin/chromium is a symlink to the snap launcher: Karma spawns it,
+        # snap starts the browser in a separate process tree, the wrapper exits,
+        # and Karma reports "crashed" while the orphaned browser keeps holding
+        # port 9222. Prefer an explicit CHROME_BIN, then the real snap binary.
+        SNAP_CHROME="/snap/chromium/current/usr/lib/chromium-browser/chrome"
+        if [ -n "${CHROME_BIN:-}" ] && [ -x "${CHROME_BIN:-}" ]; then
+            export CHROME_BIN
+        elif [ -x "$SNAP_CHROME" ]; then
+            CHROME_BIN="$SNAP_CHROME"
+            export CHROME_BIN
+        elif command -v chromium >/dev/null 2>&1; then
             CHROME_BIN="$(command -v chromium)"
             export CHROME_BIN
         elif command -v chromium-browser >/dev/null 2>&1; then
