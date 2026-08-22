@@ -18,13 +18,16 @@ Both services use Java 21 and Spring Boot 4. The frontend requires the Node vers
 ## Common Commands
 
 ### Infrastructure (start first)
+
 ```bash
 cd infrastructure
 docker compose up -d
 ```
+
 All service ports, credentials, and Zitadel settings come from `infrastructure/.env` (copy from `.env.example`).
 
 ### Backend services (service-player, service-commerce)
+
 ```bash
 cd service-player            # or service-commerce
 ./run-local.sh               # full mode: real Postgres + RabbitMQ from Docker
@@ -32,6 +35,7 @@ cd service-player            # or service-commerce
 ```
 
 Maven, from within each service directory:
+
 ```bash
 ./mvnw clean test                                       # unit tests
 ./mvnw test -Dtest=CharacterServiceTest                 # single test class
@@ -39,9 +43,11 @@ Maven, from within each service directory:
 ./mvnw checkstyle:check pmd:check -DskipTests           # style/static analysis only
 ./mvnw clean verify                                     # tests + Jacoco report (what CI runs)
 ```
+
 Checkstyle/PMD rulesets live in `config/checkstyle/checkstyle.xml` and `config/pmd/pmd-ruleset.xml`, referenced relatively from each `pom.xml` — one copy governs both services.
 
 ### Frontend (frontend-portal)
+
 ```bash
 npm start                    # ng serve → http://localhost:4200
 npm run build
@@ -51,19 +57,22 @@ npm run lint                 # angular-eslint
 ```
 
 ### Full pre-PR check (mirrors CI)
+
 ```bash
 ./scripts/pre-pr-tests.sh                              # all modules
 ./scripts/pre-pr-tests.sh --dir-name service-player    # one module only
 ./scripts/pre-pr-tests.sh --clean                      # also runs npm ci
 ```
+
 Run this before opening a PR — CI (`test-and-coverage.yml`, `mega-linter.yml`) enforces the same checks, plus Codecov coverage upload.
 
 ## Architecture
 
 ### Backend services
+
 Both services follow an identical layering — copy the sibling service's pattern when adding anything new:
 
-```
+```text
 controller/  → REST endpoints under /api/v1/..., @PreAuthorize role checks
 service/     → business logic, transactional boundaries
 repository/  → Spring Data JPA; dynamic filtering via QueryDSL (…QueryRepository + …QueryRepositoryImpl)
@@ -83,9 +92,10 @@ Both services share one Postgres instance but each has its own DB user (`service
 Jacoco excludes `config/`, `entity|model/`, `dto/`, `exception/`, `mapper/`, and `*Application` from coverage (configured per-service in `pom.xml`) — coverage targets land on controllers, services, and repository impls.
 
 ### Frontend
+
 Angular 20 with standalone components (no NgModules), PrimeNG UI, `angular-oauth2-oidc`.
 
-```
+```text
 core/auth/   → AuthService, authGuard (requires login), roleGuard (requires roles from route data),
                auth.interceptor (attaches bearer token), PlatformRole enum
 core/api/    → typed HTTP clients per backend resource (player.service.ts, purchase.service.ts),
@@ -101,6 +111,7 @@ layout/      → MainLayoutComponent — authenticated shell
 Prettier config is inline in `package.json`: `singleQuote: true`, `printWidth: 100`, Angular parser for `.html`.
 
 ### Auth flow end-to-end
+
 Traefik proxies Zitadel (API + v2 login UI) on port 8080. The frontend runs the OIDC code flow against Zitadel, then calls the backend services directly with the resulting JWT; backends only contact Zitadel via `issuer-uri` for token validation. Adding a protected backend endpoint means a `@PreAuthorize` check with the lowercase Zitadel role names; adding the corresponding frontend route means `roleGuard` with the matching `PlatformRole` values.
 
 ## Conventions
