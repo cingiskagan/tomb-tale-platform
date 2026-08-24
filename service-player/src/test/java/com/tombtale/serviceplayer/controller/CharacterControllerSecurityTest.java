@@ -39,7 +39,6 @@ import java.util.UUID;
 @ActiveProfiles("test")
 @SuppressWarnings({
         "PMD.TooManyStaticImports",
-        "PMD.UnitTestShouldIncludeAssert",
         "PMD.UseConcurrentHashMap" })
 class CharacterControllerSecurityTest {
 
