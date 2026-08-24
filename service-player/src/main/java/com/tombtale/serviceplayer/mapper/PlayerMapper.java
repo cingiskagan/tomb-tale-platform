@@ -35,6 +35,7 @@ public interface PlayerMapper {
      * @param character the JPA entity
      * @return the response DTO
      */
+    //TODO: move to CharacterMapper
     CharacterResponse toResponse(GameCharacter character);
 
     /**
