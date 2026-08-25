@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
@@ -18,6 +19,7 @@ import com.tombtale.servicecommerce.config.ZitadelRoleConverter;
 import com.tombtale.servicecommerce.dto.CreatePurchaseRequest;
 import com.tombtale.servicecommerce.dto.PurchaseResponse;
 import com.tombtale.servicecommerce.entity.PurchaseStatus;
+import com.tombtale.servicecommerce.exception.InvalidStatusTransitionException;
 import com.tombtale.servicecommerce.service.PurchaseService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -276,6 +278,20 @@ class PurchaseControllerSecurityTest {
                                 .content(VALID_UPDATE_BODY))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.id").value(PURCHASE_ID.toString()));
+        }
+
+        @Test
+        void updateWithIllegalTransitionReturns400() throws Exception {
+                when(purchaseService.updatePurchase(any(), any()))
+                                .thenThrow(new InvalidStatusTransitionException("Cannot change purchase status from CANCELLED to PENDING"));
+
+                mockMvc.perform(put(PURCHASES_URL + "/" + PURCHASE_ID)
+                                .with(tokenWithRoles(ROLE_PLATFORM_ADMIN))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_UPDATE_BODY))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.error").value("Invalid Status Transition"))
+                                .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()));
         }
 
         @Test

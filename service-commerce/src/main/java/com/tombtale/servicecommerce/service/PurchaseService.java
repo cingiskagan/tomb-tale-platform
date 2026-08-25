@@ -24,7 +24,8 @@ import java.util.UUID;
 /**
  * Business-logic layer for purchase lifecycle operations.
  *
- * <p>All mutating methods are transactional. Read-only methods default
+ * <p>
+ * All mutating methods are transactional. Read-only methods default
  * to {@code readOnly = true} for Hibernate flush-mode optimisation.
  */
 @Service
@@ -40,7 +41,8 @@ public class PurchaseService {
     /**
      * Creates a new purchase with status {@code PENDING}.
      *
-     * <p>The {@code totalPrice} is computed as {@code quantity × unitPrice}
+     * <p>
+     * The {@code totalPrice} is computed as {@code quantity × unitPrice}
      * to guarantee ledger consistency regardless of client-supplied values.
      *
      * @param request the validated creation request
@@ -72,7 +74,8 @@ public class PurchaseService {
     /**
      * Returns a paginated, filtered list of purchases.
      *
-     * <p>Delegates dynamic predicate construction to the QueryDSL
+     * <p>
+     * Delegates dynamic predicate construction to the QueryDSL
      * repository fragment.
      *
      * @param filter   optional filter criteria (all fields nullable)
@@ -87,7 +90,8 @@ public class PurchaseService {
     /**
      * Applies a partial update to an existing purchase.
      *
-     * <p>Only non-null fields in the request are written. When
+     * <p>
+     * Only non-null fields in the request are written. When
      * {@code quantity} changes, {@code totalPrice} is recalculated
      * from the existing {@code unitPrice}.
      *
@@ -100,12 +104,14 @@ public class PurchaseService {
     public PurchaseResponse updatePurchase(UUID purchaseId, UpdatePurchaseRequest request) {
         Purchase purchase = findEntityById(purchaseId);
 
-        if (request.status() != null) {
+        if (request.status() != null
+                && purchase.getStatus() != request.status()) {
+
             if (request.status() == PurchaseStatus.CANCELLED) {
                 throw new InvalidStatusTransitionException(
                         "Use DELETE endpoint to cancel a purchase");
             }
-            purchase.setStatus(request.status());
+            changeStatus(purchase, request.status());
         }
         if (request.quantity() != null) {
             purchase.setQuantity(request.quantity());
@@ -117,10 +123,22 @@ public class PurchaseService {
         return purchaseMapper.toResponse(saved);
     }
 
+    private void changeStatus(Purchase purchase, PurchaseStatus target) {
+        if (purchase.getStatus() == target) {
+            return;
+        }
+        if (!purchase.getStatus().canTransitionTo(target)) {
+            String msg = "Cannot change purchase status from %s to %s".formatted(purchase.getStatus(), target);
+            throw new InvalidStatusTransitionException(msg);
+        }
+        purchase.setStatus(target);
+    }
+
     /**
      * Soft-deletes a purchase by setting its status to {@code CANCELLED}.
      *
-     * <p>The row is not physically removed — it is simply excluded from
+     * <p>
+     * The row is not physically removed — it is simply excluded from
      * default list queries by the QueryDSL filter.
      *
      * @param purchaseId the purchase UUID to cancel
@@ -129,7 +147,7 @@ public class PurchaseService {
     @Transactional
     public void deletePurchase(UUID purchaseId) {
         Purchase purchase = findEntityById(purchaseId);
-        purchase.setStatus(PurchaseStatus.CANCELLED);
+        changeStatus(purchase, PurchaseStatus.CANCELLED);
         purchaseRepository.save(purchase);
         LOG.info("Soft-deleted (cancelled) purchase id={}", purchaseId);
     }
