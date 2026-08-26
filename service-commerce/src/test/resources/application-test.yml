@@ -17,6 +17,11 @@ spring:
     open-in-view: false
     defer-datasource-initialization: true
 
+  # H2 + create-drop until B3 brings in Testcontainers; the baseline is
+  # Postgres SQL and does not belong on H2.
+  flyway:
+    enabled: false
+
   # --- Seed Data ---
   sql:
     init:
