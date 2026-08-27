@@ -47,9 +47,18 @@ jobs:
           build-mode: ${{ matrix.build-mode }}
           config-file: ./.github/codeql/codeql-config.yml
 
+      # Both services must be compiled here. With build-mode: manual,
+      # CodeQL only analyses classes compiled while its tracer is
+      # attached. Anything left unbuilt is skipped in silence, and the
+      # scan still reports success.
       - name: Build service-player
         if: matrix.build-mode == 'manual'
         working-directory: service-player
+        run: ./mvnw clean compile -DskipTests
+
+      - name: Build service-commerce
+        if: matrix.build-mode == 'manual'
+        working-directory: service-commerce
         run: ./mvnw clean compile -DskipTests
 
       - name: Perform CodeQL Analysis
