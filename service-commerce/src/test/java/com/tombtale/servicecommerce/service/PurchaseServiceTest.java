@@ -6,6 +6,7 @@ import com.tombtale.servicecommerce.dto.PurchaseResponse;
 import com.tombtale.servicecommerce.dto.UpdatePurchaseRequest;
 import com.tombtale.servicecommerce.entity.Purchase;
 import com.tombtale.servicecommerce.entity.PurchaseStatus;
+import com.tombtale.servicecommerce.exception.InvalidStatusTransitionException;
 import com.tombtale.servicecommerce.exception.PurchaseNotFoundException;
 import com.tombtale.servicecommerce.mapper.PurchaseMapper;
 import com.tombtale.servicecommerce.repository.PurchaseRepository;
@@ -28,16 +29,18 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link PurchaseService}.
  *
- * <p>Uses Mockito to isolate the service from the repository and mapper.
+ * <p>
+ * Uses Mockito to isolate the service from the repository and mapper.
  */
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("PMD.TooManyStaticImports")
+@SuppressWarnings({"PMD.TooManyStaticImports", "PMD.TooManyMethods"})
 class PurchaseServiceTest {
 
     private static final UUID PURCHASE_ID = UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
@@ -57,6 +60,25 @@ class PurchaseServiceTest {
 
     @InjectMocks
     private PurchaseService purchaseService;
+
+    private static Purchase buildPurchaseEntity() {
+        return Purchase.builder()
+                .playerId(PLAYER_ID)
+                .itemCode(ITEM_CODE)
+                .quantity(QUANTITY)
+                .unitPrice(UNIT_PRICE)
+                .totalPrice(EXPECTED_TOTAL)
+                .status(PurchaseStatus.PENDING)
+                .purchasedAt(Instant.now())
+                .version(0)
+                .build();
+    }
+
+    private static PurchaseResponse buildPurchaseResponse() {
+        return new PurchaseResponse(
+                PURCHASE_ID, PLAYER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE, EXPECTED_TOTAL,
+                PurchaseStatus.PENDING, Instant.now());
+    }
 
     @Test
     void shouldCreatePurchaseWithCalculatedTotalPrice() {
@@ -127,8 +149,7 @@ class PurchaseServiceTest {
         UpdatePurchaseRequest request = new UpdatePurchaseRequest(PurchaseStatus.COMPLETED, null);
         PurchaseResponse expectedResponse = new PurchaseResponse(
                 PURCHASE_ID, PLAYER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE, EXPECTED_TOTAL,
-                PurchaseStatus.COMPLETED, Instant.now()
-        );
+                PurchaseStatus.COMPLETED, Instant.now());
 
         when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
         when(purchaseRepository.save(entity)).thenReturn(entity);
@@ -149,8 +170,7 @@ class PurchaseServiceTest {
         BigDecimal expectedNewTotal = UNIT_PRICE.multiply(BigDecimal.valueOf(newQuantity));
         PurchaseResponse expectedResponse = new PurchaseResponse(
                 PURCHASE_ID, PLAYER_ID, ITEM_CODE, newQuantity, UNIT_PRICE, expectedNewTotal,
-                PurchaseStatus.PENDING, Instant.now()
-        );
+                PurchaseStatus.PENDING, Instant.now());
 
         when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
         when(purchaseRepository.save(entity)).thenReturn(entity);
@@ -184,23 +204,95 @@ class PurchaseServiceTest {
                 .isInstanceOf(PurchaseNotFoundException.class);
     }
 
-    private static Purchase buildPurchaseEntity() {
-        return Purchase.builder()
-                .playerId(PLAYER_ID)
-                .itemCode(ITEM_CODE)
-                .quantity(QUANTITY)
-                .unitPrice(UNIT_PRICE)
-                .totalPrice(EXPECTED_TOTAL)
-                .status(PurchaseStatus.PENDING)
-                .purchasedAt(Instant.now())
-                .version(0)
-                .build();
+    @Test
+    void shouldRejectBackwardStatusTransition() {
+        Purchase entity = buildPurchaseEntity();
+        entity.setStatus(PurchaseStatus.COMPLETED);
+
+        UpdatePurchaseRequest request = new UpdatePurchaseRequest(PurchaseStatus.PENDING, null);
+
+        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> purchaseService.updatePurchase(PURCHASE_ID, request))
+                .isInstanceOf(InvalidStatusTransitionException.class)
+                .hasMessageContaining("COMPLETED")
+                .hasMessageContaining("PENDING");
+
+        assertThat(entity.getStatus()).isEqualTo(PurchaseStatus.COMPLETED);
+        verify(purchaseRepository, never()).save(any());
     }
 
-    private static PurchaseResponse buildPurchaseResponse() {
-        return new PurchaseResponse(
-                PURCHASE_ID, PLAYER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE, EXPECTED_TOTAL,
-                PurchaseStatus.PENDING, Instant.now()
-        );
+    @Test
+    void shouldRejectSkippingPendingToRefunded() {
+        Purchase entity = buildPurchaseEntity();
+        entity.setStatus(PurchaseStatus.PENDING);
+
+        UpdatePurchaseRequest request = new UpdatePurchaseRequest(PurchaseStatus.REFUNDED, null);
+
+        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> purchaseService.updatePurchase(PURCHASE_ID, request))
+                .isInstanceOf(InvalidStatusTransitionException.class)
+                .hasMessageContaining("PENDING")
+                .hasMessageContaining("REFUNDED");
+
+        assertThat(entity.getStatus()).isEqualTo(PurchaseStatus.PENDING);
+        verify(purchaseRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldRejectCancelViaUpdateEndpoint() {
+        Purchase entity = buildPurchaseEntity();
+        entity.setStatus(PurchaseStatus.PENDING);
+
+        UpdatePurchaseRequest request = new UpdatePurchaseRequest(PurchaseStatus.CANCELLED, null);
+
+        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
+
+        assertThatThrownBy(() -> purchaseService.updatePurchase(PURCHASE_ID, request))
+                .isInstanceOf(InvalidStatusTransitionException.class)
+                .hasMessageContaining("DELETE");
+
+        assertThat(entity.getStatus()).isEqualTo(PurchaseStatus.PENDING);
+        verify(purchaseRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldTreatSameStatusAsNoOp() {
+        Purchase entity = buildPurchaseEntity();
+        entity.setStatus(PurchaseStatus.COMPLETED);
+
+        int newQuantity = NEW_UPDATE_QUANTITY;
+        UpdatePurchaseRequest request = new UpdatePurchaseRequest(PurchaseStatus.COMPLETED, newQuantity);
+
+        BigDecimal expectedNewTotal = UNIT_PRICE.multiply(BigDecimal.valueOf(newQuantity));
+        PurchaseResponse expectedResponse = new PurchaseResponse(
+                PURCHASE_ID, PLAYER_ID, ITEM_CODE, newQuantity, UNIT_PRICE, expectedNewTotal,
+                PurchaseStatus.COMPLETED, Instant.now());
+
+        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
+        when(purchaseRepository.save(entity)).thenReturn(entity);
+        when(purchaseMapper.toResponse(entity)).thenReturn(expectedResponse);
+
+        PurchaseResponse result = purchaseService.updatePurchase(PURCHASE_ID, request);
+
+        assertThat(entity.getStatus()).isEqualTo(PurchaseStatus.COMPLETED);
+        assertThat(result.quantity()).isEqualTo(newQuantity);
+        assertThat(result.totalPrice()).isEqualByComparingTo(expectedNewTotal);
+        verify(purchaseRepository).save(entity);
+    }
+
+    @Test
+    void shouldAllowCancellingARefundedPurchase() {
+        Purchase entity = buildPurchaseEntity();
+        entity.setStatus(PurchaseStatus.REFUNDED);
+
+        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
+        when(purchaseRepository.save(entity)).thenReturn(entity);
+
+        purchaseService.deletePurchase(PURCHASE_ID);
+
+        assertThat(entity.getStatus()).isEqualTo(PurchaseStatus.CANCELLED);
+        verify(purchaseRepository).save(entity);
     }
 }

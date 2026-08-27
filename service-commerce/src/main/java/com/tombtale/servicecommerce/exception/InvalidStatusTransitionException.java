@@ -6,7 +6,7 @@ package com.tombtale.servicecommerce.exception;
  * <p>For example, setting status to {@code CANCELLED} via the update endpoint
  * instead of using the dedicated soft-delete (DELETE) endpoint.
  *
- * <p>Caught by {@code GlobalExceptionHandler} and mapped to HTTP 422.
+ * <p>Caught by {@code GlobalExceptionHandler} and mapped to HTTP 400.
  */
 public class InvalidStatusTransitionException extends RuntimeException {
 
