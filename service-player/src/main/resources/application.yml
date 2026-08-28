@@ -18,20 +18,16 @@ spring:
     open-in-view: false
     properties:
       hibernate:
+        default_schema: player
         format_sql: true
         jdbc:
           time_zone: UTC
-          
+
   # --- Flyway (owns the schema; Hibernate only validates it) ---
   flyway:
     enabled: true
     locations: classpath:db/migration
-    # Both services still share the `public` schema, so each needs its own
-    # history table and must baseline over the other's tables. B2 gives each
-    # service its own schema and both of these settings can then go away.
-    table: flyway_schema_history_player
-    baseline-on-migrate: true
-    baseline-version: 0
+    schemas: player
 
   # --- RabbitMQ ---
   rabbitmq:

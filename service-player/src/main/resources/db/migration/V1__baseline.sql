@@ -18,9 +18,10 @@
 --      stayed invisible forever. They are NOT NULL with no default, which
 --      means an insert of a new player against that schema fails.
 --
---   2. Table and column names are unqualified. Both services still share the
---      `public` schema; commit B2 moves each into its own, and a hardcoded
---      `public.` prefix here would break that.
+--   2. Table and column names are unqualified, which keeps the migration
+--      schema agnostic. Each service now owns a schema of its own (B2) and
+--      Flyway targets it via spring.flyway.schemas; a hardcoded `public.`
+--      prefix here would have pinned these tables to the wrong schema.
 -- =============================================================================
 
 CREATE TABLE players (

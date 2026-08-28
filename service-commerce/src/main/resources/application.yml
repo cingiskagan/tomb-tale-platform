@@ -24,6 +24,7 @@ spring:
     # H2 + data.sql path; on Postgres, Flyway owns the schema.
     properties:
       hibernate:
+        default_schema: commerce
         format_sql: true
         jdbc:
           time_zone: UTC
@@ -32,12 +33,7 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
-    # Both services still share the `public` schema, so each needs its own
-    # history table and must baseline over the other's tables. B2 gives each
-    # service its own schema and both of these settings can then go away.
-    table: flyway_schema_history_commerce
-    baseline-on-migrate: true
-    baseline-version: 0
+    schemas: commerce
 
   # --- Seed Data ---
   sql:

@@ -9,9 +9,10 @@
 -- contents and refuses to start when they no longer match. Change the schema
 -- by adding V2, V3, ... — never by editing this file.
 --
--- Table and column names are unqualified: both services still share the
--- `public` schema, and commit B2 moves each into its own. A hardcoded
--- `public.` prefix here would break that.
+-- Table and column names are unqualified, which keeps the migration schema
+-- agnostic. Each service now owns a schema of its own (B2) and Flyway targets
+-- it via spring.flyway.schemas; a hardcoded `public.` prefix here would have
+-- pinned this table to the wrong schema.
 --
 -- purchases_status_check is Hibernate's own doing — @Enumerated(EnumType.STRING)
 -- makes it emit a CHECK listing every enum constant. It is a real safety net
