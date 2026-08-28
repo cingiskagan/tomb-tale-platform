@@ -87,7 +87,7 @@ Entities expose a public-facing `publicId` (UUID) distinct from the internal DB 
 
 **Auth model**: both services are stateless OAuth2 resource servers validating Zitadel JWTs (`SecurityConfig`). Zitadel places project roles in the claim `urn:zitadel:iam:org:project:roles`; `ZitadelRoleConverter` turns those into Spring authorities, so endpoints guard with `@PreAuthorize("hasAuthority('platform_admin') or hasAuthority('game_master')")`. The three roles are `player`, `game_master`, `platform_admin` — kept in sync with the frontend's `PlatformRole` enum.
 
-Both services share one Postgres instance but each has its own DB user (`service_player`, `service_commerce`), provisioned by `infrastructure/init-db.sh`. `JPA_DDL_AUTO` defaults to `update`. service-commerce seeds `data.sql` when `SQL_INIT_MODE=always`.
+Both services share one Postgres instance, and each has its own DB user and its own schema (`svc_player`/`player`, `svc_commerce`/`commerce`), provisioned by `infrastructure/init-db.sh`. Each user owns its schema and has no rights in the other's. Flyway owns the schema and Hibernate only validates it (`ddl-auto: validate`, hardcoded); the schema each service targets is set by `spring.jpa.properties.hibernate.default_schema` and `spring.flyway.schemas`. service-commerce seeds `data.sql` when `SQL_INIT_MODE=always`.
 
 Jacoco excludes `config/`, `entity|model/`, `dto/`, `exception/`, `mapper/`, and `*Application` from coverage (configured per-service in `pom.xml`) — coverage targets land on controllers, services, and repository impls.
 

@@ -13,15 +13,27 @@ spring:
   # --- JPA / Hibernate ---
   jpa:
     hibernate:
-      ddl-auto: ${JPA_DDL_AUTO:update}
+      ddl-auto: validate
     show-sql: false
     open-in-view: false
-    defer-datasource-initialization: true
+    # NOTE: no defer-datasource-initialization here. It exists to let data.sql
+    # run after Hibernate has built the schema, and it works by removing the
+    # EntityManagerFactory's dependency on the database initializers — Flyway
+    # included. With it set, Hibernate validates before Flyway migrates and
+    # fails on an empty schema. The test profile keeps its own copy for the
+    # H2 + data.sql path; on Postgres, Flyway owns the schema.
     properties:
       hibernate:
+        default_schema: commerce
         format_sql: true
         jdbc:
           time_zone: UTC
+
+  # --- Flyway (owns the schema; Hibernate only validates it) ---
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    schemas: commerce
 
   # --- Seed Data ---
   sql:

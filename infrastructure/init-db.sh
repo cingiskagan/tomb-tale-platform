@@ -29,20 +29,20 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     CREATE USER ${POSTGRES_COMMERCE_USER}
         WITH PASSWORD '${POSTGRES_COMMERCE_PASSWORD}';
 
-    -- Grant both service users full DDL+DML on public schema
-    -- (required for Hibernate ddl-auto: update)
-    GRANT ALL PRIVILEGES ON SCHEMA public TO ${POSTGRES_PLAYER_USER};
-    GRANT ALL PRIVILEGES ON SCHEMA public TO ${POSTGRES_COMMERCE_USER};
+    -- Each service owns its own schema and has no rights in the other's.
+    -- Ownership covers CREATE/ALTER/DROP inside the schema, so no per-table
+    -- grants or ALTER DEFAULT PRIVILEGES are needed.
+    CREATE SCHEMA player   AUTHORIZATION ${POSTGRES_PLAYER_USER};
+    CREATE SCHEMA commerce AUTHORIZATION ${POSTGRES_COMMERCE_USER};
 
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public
-        GRANT ALL ON TABLES TO ${POSTGRES_PLAYER_USER};
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public
-        GRANT ALL ON TABLES TO ${POSTGRES_COMMERCE_USER};
+    REVOKE ALL ON SCHEMA public FROM ${POSTGRES_PLAYER_USER};
+    REVOKE ALL ON SCHEMA public FROM ${POSTGRES_COMMERCE_USER};
 
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public
-        GRANT ALL ON SEQUENCES TO ${POSTGRES_PLAYER_USER};
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public
-        GRANT ALL ON SEQUENCES TO ${POSTGRES_COMMERCE_USER};
+    -- Belt and braces for psql sessions and any unqualified SQL (data.sql).
+    -- The authoritative setting is spring.jpa.properties.hibernate.default_schema
+    -- in each service's application.yml, where a reviewer can see it.
+    ALTER ROLE ${POSTGRES_PLAYER_USER}   SET search_path = player;
+    ALTER ROLE ${POSTGRES_COMMERCE_USER} SET search_path = commerce;
 
     GRANT CONNECT ON DATABASE ${POSTGRES_DB} TO ${POSTGRES_PLAYER_USER};
     GRANT CONNECT ON DATABASE ${POSTGRES_DB} TO ${POSTGRES_COMMERCE_USER};
