@@ -31,7 +31,6 @@ All service ports, credentials, and Zitadel settings come from `infrastructure/.
 ```bash
 cd service-player            # or service-commerce
 ./run-local.sh               # full mode: real Postgres + RabbitMQ from Docker
-./run-local.sh --test        # test mode: H2 in-memory, no Docker deps
 ```
 
 Maven, from within each service directory:

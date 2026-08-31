@@ -3,15 +3,12 @@ package com.tombtale.servicecommerce;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
+
+import com.tombtale.servicecommerce.support.PostgresTestBase;
 
 @SpringBootTest
 @ActiveProfiles("test")
-class ServiceCommerceApplicationTests {
-
-    @MockitoBean
-    private JwtDecoder jwtDecoder;
+class ServiceCommerceApplicationTests extends PostgresTestBase {
 
     @Test
     @SuppressWarnings("PMD")
