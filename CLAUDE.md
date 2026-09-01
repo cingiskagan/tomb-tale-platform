@@ -31,7 +31,6 @@ All service ports, credentials, and Zitadel settings come from `infrastructure/.
 ```bash
 cd service-player            # or service-commerce
 ./run-local.sh               # full mode: real Postgres + RabbitMQ from Docker
-./run-local.sh --test        # test mode: H2 in-memory, no Docker deps
 ```
 
 Maven, from within each service directory:
@@ -59,8 +58,9 @@ npm run lint                 # angular-eslint
 ### Full pre-PR check (mirrors CI)
 
 ```bash
-./scripts/pre-pr-tests.sh                              # all modules
-./scripts/pre-pr-tests.sh --dir-name service-player    # one module only
+./scripts/pre-pr-tests.sh                              # everything
+./scripts/pre-pr-tests.sh --scope general              # shellcheck, markdownlint, yamllint only
+./scripts/pre-pr-tests.sh --scope service-player       # one module only
 ./scripts/pre-pr-tests.sh --clean                      # also runs npm ci
 ```
 

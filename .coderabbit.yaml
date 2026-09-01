@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+---
+# =============================================
+# CodeRabbit Configuration
+# https://coderabbit.ai/integrations/schema.v2.json
+# =============================================
+
+language: "en-US"
+
+reviews:
+  pre_merge_checks:
+    # Turned off rather than lowered.
+    #
+    # Javadoc is already enforced by config/checkstyle/checkstyle.xml, which is
+    # both stricter and better aimed: MissingJavadocType and MissingJavadocMethod
+    # require it on public types and methods and FAIL THE BUILD, while
+    # deliberately exempting package-private helpers and anything annotated
+    # @Test. This check has no path scoping, so it measures test methods too and
+    # reports around 10% coverage on any test-heavy PR. B4, D1 and D2 are all
+    # test-heavy. A warning that is always dismissed only trains us to skim.
+    docstrings:
+      mode: "off"
+
+  path_instructions:
+    - path: "**/src/test/java/**/*.java"
+      instructions: |
+        Do not request Javadoc on methods annotated @Test or on package-private
+        test helpers. Checkstyle exempts both on purpose: the test name is the
+        documentation. Comments are welcome only where they explain something
+        the code cannot say itself, such as why persist() clears the
+        persistence context.
+
+        Repository tests inject the Spring Data repository interface, never the
+        ...QueryRepositoryImpl class, so that exception translation and the base
+        fragment behave as they do for real callers. Do not suggest testing the
+        Impl directly.
+
+    - path: "**/src/test/java/**/support/PostgresTestBase.java"
+      instructions: |
+        This project uses Testcontainers 2.x, where the Postgres container moved
+        to org.testcontainers.postgresql.PostgreSQLContainer and is NOT generic.
+        The self-typed PostgreSQLContainer<SELF> belongs to the 1.x class in
+        org.testcontainers.containers. Suggesting PostgreSQLContainer<?> here
+        does not compile: "type PostgreSQLContainer does not take parameters".
+
+        The container is intentionally a static field started in a static
+        initializer, with no @Testcontainers or @Container annotation. That is
+        the singleton pattern: one container shared by the whole module, reaped
+        by Ryuk at JVM exit. Do not suggest per-class lifecycle annotations.

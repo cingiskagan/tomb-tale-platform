@@ -4,7 +4,6 @@
 #
 # Usage:
 #   ./run-local.sh          # Full mode (Postgres + RabbitMQ via Docker)
-#   ./run-local.sh --test   # Test mode  (H2 in-memory, no Docker deps)
 # ---------------------------------------------------------------------------
 set -euo pipefail
 
@@ -29,15 +28,6 @@ if [[ -z "${SERVICE_COMMERCE_PORT:-}" ]]; then
   exit 1
 fi
 SERVER_PORT="${SERVICE_COMMERCE_PORT}"
-
-# ── Test mode (H2 in-memory, no external dependencies) ─────────────────────
-if [[ "${1:-}" == "--test" ]]; then
-  echo "🧪  Starting service-commerce in TEST mode (H2, port ${SERVER_PORT})…"
-  exec "${SCRIPT_DIR}/mvnw" spring-boot:test-run \
-    -f "${SCRIPT_DIR}/pom.xml" \
-    -Dspring-boot.run.profiles=test \
-    -Dspring-boot.run.arguments="--server.port=${SERVER_PORT}"
-fi
 
 # ── Full mode (real Postgres + RabbitMQ) ────────────────────────────────────
 echo "🚀  Starting service-commerce in FULL mode (Postgres, port ${SERVER_PORT})…"

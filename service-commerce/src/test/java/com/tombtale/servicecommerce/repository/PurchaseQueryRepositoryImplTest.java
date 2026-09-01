@@ -1,154 +1,196 @@
 package com.tombtale.servicecommerce.repository;
 
-import com.querydsl.core.BooleanBuilder;
-import com.querydsl.jpa.impl.JPAQuery;
-import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.tombtale.servicecommerce.config.QueryDslConfig;
 import com.tombtale.servicecommerce.dto.PurchaseFilterRequest;
 import com.tombtale.servicecommerce.entity.Purchase;
 import com.tombtale.servicecommerce.entity.PurchaseStatus;
-import org.junit.jupiter.api.BeforeEach;
+import com.tombtale.servicecommerce.support.PostgresTestBase;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
+import org.springframework.context.annotation.Import;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.test.context.ActiveProfiles;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Unit tests for {@link PurchaseQueryRepositoryImpl} using manual fluent
- * stubbing.
+ * Integration tests for {@link PurchaseQueryRepositoryImpl} against a real
+ * Postgres started by Testcontainers.
+ *
+ * <p>The repository is injected as {@link PurchaseRepository} — the composed
+ * Spring Data proxy that callers actually receive — so exception translation
+ * and the base fragment are in play exactly as they are in production.
  */
-@ExtendWith(MockitoExtension.class)
-@SuppressWarnings("PMD.TooManyStaticImports")
-class PurchaseQueryRepositoryImplTest {
+@DataJpaTest(showSql = false)
+@ActiveProfiles("test")
+@Import(QueryDslConfig.class)
+// Test-data builders push the method count past PMD's default of 10; splitting a
+// cohesive test class to satisfy a counter would not improve it.
+@SuppressWarnings("PMD.TooManyMethods")
+class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
 
-    private static final int DEFAULT_PAGE_SIZE = 10;
-    private static final String PLAYER_1 = "player-1";
-    private static final String ITEM_SWORD = "SWORD";
+    private static final int PAGE_SIZE = 10;
+    private static final int DAYS_AGO = 10;
 
-    @Mock
-    private JPAQueryFactory jpaQueryFactory;
+    private static final String PLAYER_ONE = "Player_0";
+    private static final String PLAYER_TWO = "Player_1";
 
-    @Mock
-    private JPAQuery<Purchase> jpaQuery;
+    private static final String ARKENSTONE = "arkenstone";
+    private static final String NENYA = "nenya";
+    private static final String SILMARIL = "silmaril";
+    private static final String ONERING = "onering";
 
-    @Mock
-    private JPAQuery<Long> countQuery;
+    private static final String PRICE_HIGH = "999999.0000";
+    private static final String PRICE_LOW = "100000.0000";
 
-    @InjectMocks
-    private PurchaseQueryRepositoryImpl queryRepository;
+    @Autowired
+    private PurchaseRepository purchaseRepository;
 
-    @BeforeEach
-    @SuppressWarnings("unchecked")
-    void setUp() {
-        // Mock the fluent API chaining using manual stubs (more robust than
-        // RETURNS_DEEP_STUBS for specific types)
-        when(jpaQueryFactory.selectFrom(
-                Mockito.<com.querydsl.core.types.EntityPath<Purchase>>any())).thenReturn(jpaQuery);
-        when(jpaQuery.where(any(BooleanBuilder.class))).thenReturn(jpaQuery);
-        when(jpaQuery.orderBy(any(com.querydsl.core.types.OrderSpecifier[].class))).thenReturn(jpaQuery);
-        when(jpaQuery.offset(anyLong())).thenReturn(jpaQuery);
-        when(jpaQuery.limit(anyLong())).thenReturn(jpaQuery);
+    @Autowired
+    private TestEntityManager entityManager;
 
-        when(jpaQueryFactory.select(any(com.querydsl.core.types.Expression.class))).thenReturn(countQuery);
-        when(countQuery.from(any(com.querydsl.core.types.EntityPath.class))).thenReturn(countQuery);
-        when(countQuery.where(any(BooleanBuilder.class))).thenReturn(countQuery);
+    @Test
+    void shouldSeeNoSeedData() {
+        Page<Purchase> page = purchaseRepository.findByFilter(noFilter(), PageRequest.of(0, PAGE_SIZE));
+
+        assertThat(page.getTotalElements()).isZero();
     }
 
     @Test
-    void shouldFindAllFilteringOutCancelledByDefault() {
-        PurchaseFilterRequest filter = new PurchaseFilterRequest(null, null, null, null, null);
-        Pageable pageable = PageRequest.of(0, DEFAULT_PAGE_SIZE);
+    void shouldExcludeCancelledByDefault() {
+        Instant now = nowInDatabasePrecision();
+        persist(
+                aPurchase(PLAYER_ONE, ARKENSTONE, 1, PRICE_HIGH, PurchaseStatus.CANCELLED, now),
+                aPurchase(PLAYER_ONE, NENYA, 1, PRICE_LOW, PurchaseStatus.COMPLETED, now));
 
-        Purchase dummyPurchase = new Purchase();
-        when(jpaQuery.fetch()).thenReturn(List.of(dummyPurchase));
-        when(countQuery.fetchOne()).thenReturn(1L);
+        Page<Purchase> page = purchaseRepository.findByFilter(noFilter(), PageRequest.of(0, PAGE_SIZE));
 
-        Page<Purchase> results = queryRepository.findByFilter(filter, pageable);
-
-        assertThat(results.getTotalElements()).isEqualTo(1L);
-        assertThat(results.getContent()).hasSize(1);
-        verify(jpaQuery).offset(pageable.getOffset());
-        verify(jpaQuery).limit(pageable.getPageSize());
-        verify(jpaQuery)
-                .where((com.querydsl.core.types.Predicate) argThat(p -> p.toString().contains("status != CANCELLED")));
+        assertThat(page.getTotalElements()).isEqualTo(1L);
+        assertThat(page.getContent()).extracting(Purchase::getStatus).containsExactly(PurchaseStatus.COMPLETED);
     }
 
     @Test
-    void shouldFilterByPlayerId() {
-        PurchaseFilterRequest filter = new PurchaseFilterRequest(PLAYER_1, null, null, null, null);
-        Pageable pageable = PageRequest.of(0, DEFAULT_PAGE_SIZE);
+    void shouldIncludeCancelledWhenAsked() {
+        Instant now = nowInDatabasePrecision();
+        persist(
+                aPurchase(PLAYER_ONE, ARKENSTONE, 1, PRICE_HIGH, PurchaseStatus.CANCELLED, now),
+                aPurchase(PLAYER_ONE, NENYA, 1, PRICE_LOW, PurchaseStatus.COMPLETED, now));
 
-        when(jpaQuery.fetch()).thenReturn(List.of());
-        when(countQuery.fetchOne()).thenReturn(0L);
+        Page<Purchase> page = purchaseRepository.findByFilter(
+                byStatus(PurchaseStatus.CANCELLED), PageRequest.of(0, PAGE_SIZE));
 
-        Page<Purchase> results = queryRepository.findByFilter(filter, pageable);
-
-        assertThat(results.getTotalElements()).isZero();
-        verify(jpaQuery).where((com.querydsl.core.types.Predicate) argThat(
-                p -> p.toString().contains("playerId = ") && p.toString().contains(PLAYER_1)));
+        assertThat(page.getTotalElements()).isEqualTo(1L);
+        assertThat(page.getContent()).extracting(Purchase::getStatus).containsExactly(PurchaseStatus.CANCELLED);
     }
 
     @Test
-    void shouldFilterByItemCode() {
-        PurchaseFilterRequest filter = new PurchaseFilterRequest(null, ITEM_SWORD, null, null, null);
-        Pageable pageable = PageRequest.of(0, DEFAULT_PAGE_SIZE);
+    void shouldFilterByDateRange() {
+        Instant now = nowInDatabasePrecision();
+        Instant yesterday = now.minus(1, ChronoUnit.DAYS);
+        Instant tenDaysAgo = now.minus(DAYS_AGO, ChronoUnit.DAYS);
 
-        when(jpaQuery.fetch()).thenReturn(List.of());
-        when(countQuery.fetchOne()).thenReturn(null); // Testing the null safety branch: total != null ? total : 0L
+        persist(
+                aPurchase(PLAYER_ONE, SILMARIL, 2, PRICE_HIGH, PurchaseStatus.PENDING, tenDaysAgo),
+                aPurchase(PLAYER_ONE, ONERING, 2, PRICE_LOW, PurchaseStatus.REFUNDED, now));
 
-        Page<Purchase> results = queryRepository.findByFilter(filter, pageable);
+        Page<Purchase> page = purchaseRepository.findByFilter(
+                purchasedBetween(yesterday, now), PageRequest.of(0, PAGE_SIZE));
 
-        assertThat(results.getTotalElements()).isZero();
-        verify(jpaQuery).where((com.querydsl.core.types.Predicate) argThat(
-                p -> p.toString().contains("itemCode = ") && p.toString().contains(ITEM_SWORD)));
+        assertThat(page.getTotalElements()).isEqualTo(1L);
+        assertThat(page.getContent()).extracting(Purchase::getPurchasedAt).containsExactly(now);
     }
 
     @Test
-    void shouldIncludeCancelledWhenStatusExplicitlyRequested() {
-        PurchaseFilterRequest filter = new PurchaseFilterRequest(null, null, PurchaseStatus.CANCELLED, null, null);
-        Pageable pageable = PageRequest.of(0, DEFAULT_PAGE_SIZE);
+    void shouldFilterByPlayerIdAndItemCode() {
+        Instant now = nowInDatabasePrecision();
+        persist(
+                aPurchase(PLAYER_ONE, ARKENSTONE, 1, PRICE_HIGH, PurchaseStatus.COMPLETED, now),
+                aPurchase(PLAYER_ONE, NENYA, 1, PRICE_LOW, PurchaseStatus.COMPLETED, now),
+                aPurchase(PLAYER_TWO, SILMARIL, 2, PRICE_HIGH, PurchaseStatus.PENDING, now));
 
-        when(jpaQuery.fetch()).thenReturn(List.of());
-        when(countQuery.fetchOne()).thenReturn(0L);
+        Page<Purchase> page = purchaseRepository.findByFilter(
+                byPlayerAndItem(PLAYER_ONE, NENYA), PageRequest.of(0, PAGE_SIZE));
 
-        Page<Purchase> results = queryRepository.findByFilter(filter, pageable);
-
-        assertThat(results.getContent()).isEmpty();
-        verify(jpaQuery)
-                .where((com.querydsl.core.types.Predicate) argThat(p -> p.toString().contains("status = CANCELLED")));
+        assertThat(page.getTotalElements()).isEqualTo(1L);
+        assertThat(page.getContent()).extracting(Purchase::getItemCode).containsExactly(NENYA);
     }
 
+    /**
+     * Pins today's behaviour, which is a finding rather than a feature: commerce
+     * has no sort-field allow-list, so an unknown property reaches Hibernate and
+     * surfaces as a 500. Player rejects the same input with its own message.
+     * The fix belongs with the shared error contract, not with this commit.
+     */
     @Test
-    void shouldFilterByDateRanges() {
-        Instant after = Instant.now().minus(2, ChronoUnit.DAYS);
-        Instant before = Instant.now().plus(2, ChronoUnit.DAYS);
+    void shouldFailOnUnknownSortField() {
+        PageRequest pageable = PageRequest.of(0, PAGE_SIZE, Sort.by("nonsense"));
 
-        PurchaseFilterRequest filter = new PurchaseFilterRequest(null, null, null, after, before);
-        Pageable pageable = PageRequest.of(0, DEFAULT_PAGE_SIZE);
+        assertThatThrownBy(() -> purchaseRepository.findByFilter(noFilter(), pageable))
+                .isInstanceOf(InvalidDataAccessApiUsageException.class)
+                .hasMessageContaining("nonsense");
+    }
 
-        when(jpaQuery.fetch()).thenReturn(List.of());
-        when(countQuery.fetchOne()).thenReturn(0L);
+    /**
+     * Saves the given rows, then flushes and clears the persistence context.
+     *
+     * <p>The clear matters: without it the repository would answer from
+     * Hibernate's first-level cache and the test would never touch Postgres.
+     * Clearing forces every later read to go to the database, which is the
+     * whole point of running these tests against a real one.
+     */
+    private void persist(Purchase... purchases) {
+        for (Purchase purchase : purchases) {
+            entityManager.persist(purchase);
+        }
+        entityManager.flush();
+        entityManager.clear();
+    }
 
-        queryRepository.findByFilter(filter, pageable);
+    /**
+     * {@code purchased_at} is {@code timestamp(6)}, so Postgres keeps microseconds.
+     * Truncating here makes what we assert equal to what comes back.
+     */
+    private static Instant nowInDatabasePrecision() {
+        return Instant.now().truncatedTo(ChronoUnit.MICROS);
+    }
 
-        verify(jpaQueryFactory).selectFrom(any());
-        verify(jpaQuery).where((com.querydsl.core.types.Predicate) argThat(p -> p.toString().contains("purchasedAt") &&
-                p.toString().contains(">=") &&
-                p.toString().contains("<=")));
+    private static Purchase aPurchase(String playerId, String itemCode, int quantity,
+            String unitPrice, PurchaseStatus status, Instant purchasedAt) {
+        BigDecimal price = new BigDecimal(unitPrice);
+        return Purchase.builder()
+                .playerId(playerId)
+                .itemCode(itemCode)
+                .quantity(quantity)
+                .unitPrice(price)
+                .totalPrice(price.multiply(BigDecimal.valueOf(quantity)))
+                .status(status)
+                .purchasedAt(purchasedAt)
+                .build();
+    }
+
+    private static PurchaseFilterRequest noFilter() {
+        return new PurchaseFilterRequest(null, null, null, null, null);
+    }
+
+    private static PurchaseFilterRequest byStatus(PurchaseStatus status) {
+        return new PurchaseFilterRequest(null, null, status, null, null);
+    }
+
+    private static PurchaseFilterRequest purchasedBetween(Instant after, Instant before) {
+        return new PurchaseFilterRequest(null, null, null, after, before);
+    }
+
+    private static PurchaseFilterRequest byPlayerAndItem(String playerId, String itemCode) {
+        return new PurchaseFilterRequest(playerId, itemCode, null, null, null);
     }
 }

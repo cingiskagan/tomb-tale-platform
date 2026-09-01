@@ -1,25 +1,14 @@
 ---
-# Test profile: uses H2 in-memory database so tests run
-# without real PostgreSQL or RabbitMQ infrastructure.
+# Test profile: the database is a real Postgres in Docker, started by
+# Testcontainers (see PostgresTestBase). @ServiceConnection supplies the url,
+# username, and password, so there is no datasource block here at all.
+#
+# Flyway and ddl-auto: validate are inherited from application.yml on purpose:
+# the tests now build the schema from V1__baseline.sql and Hibernate validates
+# the entities against it.
 server:
   port: 0
 spring:
-  datasource:
-    url: "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;INIT=CREATE SCHEMA IF NOT EXISTS player"
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    open-in-view: false
-
-  # H2 + create-drop until B3 brings in Testcontainers; the baseline is
-  # Postgres SQL and does not belong on H2.
-  flyway:
-    enabled: false
-
   rabbitmq:
     host: localhost
     port: 5672

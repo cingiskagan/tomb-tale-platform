@@ -6,27 +6,58 @@
 # the repository root automatically.
 #
 # Usage:
-#   ./scripts/pre-pr-tests.sh
+#   ./scripts/pre-pr-tests.sh                          # everything
+#   ./scripts/pre-pr-tests.sh --scope general          # shellcheck, markdownlint, yamllint
+#   ./scripts/pre-pr-tests.sh --scope service-player   # one module
+#   ./scripts/pre-pr-tests.sh --clean                  # also runs npm ci
+#
+# --scope takes exactly one of: all (default), general, service-commerce,
+# service-player, frontend-portal. An unrecognised value is an error rather
+# than a silent no-op, so a typo cannot look like a clean run.
 # ============================================================
 
 set -e
 
 CLEAN_INSTALL=false
-TARGET_DIR=""
+SCOPE="all"
 
 # Pinned so every machine runs the same rules. MegaLinter builds its own image
 # and does not publish which markdownlint it bundles, so this is not a guarantee
 # of exact CI parity — bump it if CI ever reports a rule this version lacks.
 MARKDOWNLINT_VERSION="0.45.0"
 
+# yamllint ships no npm package, so the fallback here is pipx rather than npx.
+# The rules come from .yamllint.yml, which MegaLinter reads too — that file,
+# not this pin, is what keeps local runs and CI agreeing.
+YAMLLINT_VERSION="1.35.1"
+
+VALID_SCOPES=("all" "general" "service-commerce" "service-player" "frontend-portal")
+
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --clean) CLEAN_INSTALL=true; shift ;;
-        --dir-name) TARGET_DIR="$2"; shift 2 ;;
-        --dir-name=*) TARGET_DIR="${1#*=}"; shift ;;
+        --scope) SCOPE="$2"; shift 2 ;;
+        --scope=*) SCOPE="${1#*=}"; shift ;;
         *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
 done
+
+# Reject a scope we do not know. Without this a typo selects nothing, every
+# section is skipped, and the script still prints "All checks passed".
+scope_is_valid=false
+for valid_scope in "${VALID_SCOPES[@]}"; do
+    [ "$SCOPE" = "$valid_scope" ] && scope_is_valid=true
+done
+if [ "$scope_is_valid" = false ]; then
+    echo "Unknown scope: $SCOPE"
+    echo "Valid scopes: ${VALID_SCOPES[*]}"
+    exit 1
+fi
+
+# True when the requested scope covers the given section.
+in_scope() {
+    [ "$SCOPE" = "all" ] || [ "$SCOPE" = "$1" ]
+}
 
 # Resolve the repository root (one level up from scripts/)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -36,7 +67,7 @@ echo "=========================================="
 echo "🚀 Running Pre-Pull Request Checks..."
 echo "=========================================="
 
-if [ -z "$TARGET_DIR" ]; then
+if in_scope general; then
     echo ""
     echo "------------------------------------------"
     echo "🛠️ General Checks"
@@ -77,6 +108,30 @@ if [ -z "$TARGET_DIR" ]; then
         (cd "$REPO_ROOT" && "${MARKDOWNLINT_CMD[@]}" "${MD_FILES[@]}")
         echo "  ✅ Markdown files passed"
     fi
+
+    # YAML is linted in CI by MegaLinter. A Spring profile with the wrong
+    # indentation still parses and still runs the tests, so nothing else in
+    # this script would notice it.
+    echo "  3. 📐 Yamllint..."
+    # Same file list CI sees: tracked YAML, minus MegaLinter's FILTER_REGEX_EXCLUDE.
+    mapfile -t YAML_FILES < <(git -C "$REPO_ROOT" ls-files '*.yml' '*.yaml' | grep -v '^\.mvn/')
+
+    YAMLLINT_CMD=()
+    if command -v yamllint >/dev/null 2>&1 &&
+        [ "$(yamllint --version 2>/dev/null)" = "yamllint $YAMLLINT_VERSION" ]; then
+        YAMLLINT_CMD=(yamllint)
+    elif command -v pipx >/dev/null 2>&1; then
+        YAMLLINT_CMD=(pipx run "yamllint==$YAMLLINT_VERSION")
+    fi
+
+    if [ ${#YAML_FILES[@]} -eq 0 ]; then
+        echo "  ⚠️ no tracked YAML files found, skipping YAML validation"
+    elif [ ${#YAMLLINT_CMD[@]} -eq 0 ]; then
+        echo "  ⚠️ no pipx and no yamllint $YAMLLINT_VERSION, skipping YAML validation"
+    else
+        (cd "$REPO_ROOT" && "${YAMLLINT_CMD[@]}" "${YAML_FILES[@]}")
+        echo "  ✅ YAML files passed"
+    fi
 fi
 
 # -------------------------------------------------------
@@ -84,7 +139,7 @@ fi
 # -------------------------------------------------------
 COMMERCE_DIR="$REPO_ROOT/service-commerce"
 
-if [ -d "$COMMERCE_DIR" ] && { [ -z "$TARGET_DIR" ] || [ "$TARGET_DIR" = "service-commerce" ]; }; then
+if [ -d "$COMMERCE_DIR" ] && in_scope service-commerce; then
     echo ""
     echo "------------------------------------------"
     echo "📦 service-commerce"
@@ -104,7 +159,7 @@ fi
 # -------------------------------------------------------
 PLAYER_DIR="$REPO_ROOT/service-player"
 
-if [ -d "$PLAYER_DIR" ] && { [ -z "$TARGET_DIR" ] || [ "$TARGET_DIR" = "service-player" ]; }; then
+if [ -d "$PLAYER_DIR" ] && in_scope service-player; then
     echo ""
     echo "------------------------------------------"
     echo "📦 service-player"
@@ -124,7 +179,7 @@ fi
 # -------------------------------------------------------
 FRONTEND_DIR="$REPO_ROOT/frontend-portal"
 
-if [ -d "$FRONTEND_DIR" ] && { [ -z "$TARGET_DIR" ] || [ "$TARGET_DIR" = "frontend-portal" ]; }; then
+if [ -d "$FRONTEND_DIR" ] && in_scope frontend-portal; then
     echo ""
     echo "------------------------------------------"
     echo "💻 frontend-portal"
