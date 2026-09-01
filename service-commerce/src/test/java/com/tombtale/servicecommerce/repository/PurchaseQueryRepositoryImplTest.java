@@ -140,6 +140,14 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
                 .hasMessageContaining("nonsense");
     }
 
+    /**
+     * Saves the given rows, then flushes and clears the persistence context.
+     *
+     * <p>The clear matters: without it the repository would answer from
+     * Hibernate's first-level cache and the test would never touch Postgres.
+     * Clearing forces every later read to go to the database, which is the
+     * whole point of running these tests against a real one.
+     */
     private void persist(Purchase... purchases) {
         for (Purchase purchase : purchases) {
             entityManager.persist(purchase);
