@@ -1,0 +1,18 @@
+---
+# =============================================
+# Shared yamllint rules
+# =============================================
+# Both MegaLinter (YAML_YAMLLINT) in CI and scripts/pre-pr-tests.sh read this
+# file, so the two agree by construction.
+#
+# Without it they do not: MegaLinter's bundled default relaxes line-length,
+# while a plain `yamllint` uses the stock default and reports 29 long lines in
+# infrastructure/docker-compose.yml that CI has never complained about. Pinning
+# the rules here is what makes a local run trustworthy.
+extends: default
+
+rules:
+  # Compose commands, Traefik router labels and workflow `run:` steps are
+  # single unwrappable values. Breaking them at 80 columns costs readability
+  # and buys nothing.
+  line-length: disable
