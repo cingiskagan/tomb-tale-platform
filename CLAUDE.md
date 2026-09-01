@@ -58,8 +58,9 @@ npm run lint                 # angular-eslint
 ### Full pre-PR check (mirrors CI)
 
 ```bash
-./scripts/pre-pr-tests.sh                              # all modules
-./scripts/pre-pr-tests.sh --dir-name service-player    # one module only
+./scripts/pre-pr-tests.sh                              # everything
+./scripts/pre-pr-tests.sh --scope general              # shellcheck, markdownlint, yamllint only
+./scripts/pre-pr-tests.sh --scope service-player       # one module only
 ./scripts/pre-pr-tests.sh --clean                      # also runs npm ci
 ```
 
