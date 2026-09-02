@@ -12,8 +12,11 @@
 # detection was already on; detection alone never opens a PR.
 #
 # Version updates still close most alerts as a side effect, since moving to
-# the latest release picks up the patched version. The groups below apply to
-# both features, so turning security updates on later inherits them.
+# the latest release picks up the patched version. The groups below cover
+# version updates only: `applies-to` defaults to version updates when it is
+# left out. Switching security updates on later would need its own groups,
+# each marked `applies-to: security-updates`, or every advisory arrives as a
+# separate PR regardless of what is grouped here.
 #
 # Everything is grouped on purpose. The frontend alone carried 82 open alerts
 # when this was written, almost all of them transitive dev tooling, so one PR
