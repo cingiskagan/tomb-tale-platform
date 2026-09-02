@@ -90,9 +90,11 @@ class ServiceCommerceApplicationTests extends PostgresTestBase {
      */
     @AfterEach
     void removeCommittedPurchase() {
+        // No reset afterwards: JUnit builds a fresh instance per test method, so
+        // the field starts null again on its own. The guard is for contextLoads,
+        // which never creates anything.
         if (createdPurchaseId != null) {
             purchaseRepository.findById(createdPurchaseId).ifPresent(purchaseRepository::delete);
-            createdPurchaseId = null;
         }
     }
 
