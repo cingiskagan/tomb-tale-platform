@@ -17,6 +17,7 @@ import org.springframework.data.domain.Sort;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * QueryDSL implementation of {@link PurchaseQueryRepository}.
@@ -99,17 +100,39 @@ public class PurchaseQueryRepositoryImpl implements PurchaseQueryRepository {
     /**
      * Converts Spring Data {@link Sort} orders into QueryDSL {@link OrderSpecifier} array.
      *
+     * <p>Sort properties arrive straight from the {@code ?sort=} query parameter, and
+     * {@link PathBuilder#get(String, Class)} does not validate them. Anything not on the
+     * allow-list is rejected before it can reach the query, so a caller cannot steer the
+     * generated HQL through the order-by clause.
+     *
      * @param sort     the sort directives from the pageable
      * @param purchase the Q-type path expression
      * @return an array of order specifiers (empty if unsorted)
+     * @throws IllegalArgumentException if a sort property is not an allowed field
      */
     private static OrderSpecifier<?>[] buildOrderSpecifiers(Sort sort, QPurchase purchase) {
+
+        Set<String> allowedFields = Set.of(
+                purchase.id.getMetadata().getName(),
+                purchase.playerId.getMetadata().getName(),
+                purchase.itemCode.getMetadata().getName(),
+                purchase.quantity.getMetadata().getName(),
+                purchase.unitPrice.getMetadata().getName(),
+                purchase.totalPrice.getMetadata().getName(),
+                purchase.status.getMetadata().getName(),
+                purchase.purchasedAt.getMetadata().getName());
+
         List<OrderSpecifier<?>> orders = new ArrayList<>();
         PathBuilder<Purchase> entityPath = new PathBuilder<>(Purchase.class, purchase.getMetadata());
 
         for (Sort.Order order : sort) {
+            String property = order.getProperty();
+            if (!allowedFields.contains(property)) {
+                throw new IllegalArgumentException("Invalid sort field: " + property);
+            }
+
             Order direction = order.isAscending() ? Order.ASC : Order.DESC;
-            orders.add(new OrderSpecifier<>(direction, entityPath.get(order.getProperty(), Comparable.class)));
+            orders.add(new OrderSpecifier<>(direction, entityPath.get(property, Comparable.class)));
         }
 
         return orders.toArray(new OrderSpecifier[0]);
