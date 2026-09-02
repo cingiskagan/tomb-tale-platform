@@ -53,3 +53,8 @@ infrastructure/.client-id
 infrastructure/.personal_access_token
 infrastructure/*.json
 docs/reviews
+
+# =========================
+# Claude Code
+# =========================
+.claude/settings.local.json
