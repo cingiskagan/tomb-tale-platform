@@ -3,8 +3,10 @@ package com.tombtale.servicecommerce;
 import com.jayway.jsonpath.JsonPath;
 import com.tombtale.servicecommerce.config.ZitadelRoleConverter;
 import com.tombtale.servicecommerce.entity.PurchaseStatus;
+import com.tombtale.servicecommerce.repository.PurchaseRepository;
 import com.tombtale.servicecommerce.support.PostgresTestBase;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,6 +19,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
@@ -71,6 +74,28 @@ class ServiceCommerceApplicationTests extends PostgresTestBase {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private PurchaseRepository purchaseRepository;
+
+    private UUID createdPurchaseId;
+
+    /**
+     * Removes the row this class commits.
+     *
+     * <p>Every other test in this suite is transactional and rolls itself back.
+     * This one is not: the service transaction commits, and the container is
+     * shared by the whole suite, so a leftover purchase changes the counts that
+     * {@code PurchaseQueryRepositoryImplTest} asserts — a failure that only
+     * appears when Surefire happens to run this class first.
+     */
+    @AfterEach
+    void removeCommittedPurchase() {
+        if (createdPurchaseId != null) {
+            purchaseRepository.findById(createdPurchaseId).ifPresent(purchaseRepository::delete);
+            createdPurchaseId = null;
+        }
+    }
+
     @Test
     @SuppressWarnings("PMD")
     void contextLoads() {
@@ -110,6 +135,7 @@ class ServiceCommerceApplicationTests extends PostgresTestBase {
         assertThat(totalPrice).isEqualByComparingTo(new BigDecimal(EXPECTED_TOTAL_PRICE));
 
         String id = JsonPath.read(json, "$.id");
+        createdPurchaseId = UUID.fromString(id);
 
         mockMvc.perform(get(PURCHASES_URL + "/{id}", id)
                 .with(adminToken()))

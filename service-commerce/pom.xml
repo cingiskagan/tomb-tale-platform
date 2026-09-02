@@ -32,6 +32,15 @@
 		<mapstruct.version>1.6.3</mapstruct.version>
 		<!-- Must match the PMD shipped in the MegaLinter image pinned in .github/workflows/mega-linter.yml -->
 		<pmd.version>7.22.0</pmd.version>
+		<!--
+			Pin the test order rather than leaving it to the filesystem. The smoke
+			tests in Service*ApplicationTests commit rows that outlive the request,
+			while the repository tests assert absolute row counts. Under the default
+			order those two can run either way round, so a genuine conflict shows up
+			on CI and not locally. Alphabetical puts the smoke class first, which is
+			the order that catches it.
+		-->
+		<surefire.runOrder>alphabetical</surefire.runOrder>
 	</properties>
 	<dependencies>
 		<!-- === Spring Boot Starters === -->

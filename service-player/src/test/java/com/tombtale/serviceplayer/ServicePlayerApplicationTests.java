@@ -2,8 +2,11 @@ package com.tombtale.serviceplayer;
 
 import com.jayway.jsonpath.JsonPath;
 import com.tombtale.serviceplayer.config.ZitadelRoleConverter;
+import com.tombtale.serviceplayer.repository.PlayerRepository;
 import com.tombtale.serviceplayer.support.PostgresTestBase;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -56,6 +59,31 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private PlayerRepository playerRepository;
+
+    private String subject;
+
+    @BeforeEach
+    void newSubject() {
+        subject = "smoke-" + UUID.randomUUID();
+    }
+
+    /**
+     * Removes the row this class commits.
+     *
+     * <p>Every other test in this suite is transactional and rolls itself back.
+     * These are not: {@code getOrCreatePlayer} runs with
+     * {@code Propagation.NOT_SUPPORTED}, so the insert commits and outlives the
+     * request. The container is shared by the whole suite, so a leftover player
+     * changes the row count that {@code PlayerQueryRepositoryImplTest} asserts —
+     * a failure that only appears when Surefire happens to run this class first.
+     */
+    @AfterEach
+    void removeCommittedPlayer() {
+        playerRepository.findByZitadelUserId(subject).ifPresent(playerRepository::delete);
+    }
+
     @Test
     @SuppressWarnings("PMD")
     void contextLoads() {
@@ -73,9 +101,7 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
      */
     @Test
     void firstProfileCallCreatesThePlayerAndTheSecondReturnsTheSameOne() throws Exception {
-        String subject = "smoke-" + UUID.randomUUID();
-
-        MvcResult created = mockMvc.perform(get(ME_URL).with(tokenFor(subject)))
+        MvcResult created = mockMvc.perform(get(ME_URL).with(playerToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.publicId").isNotEmpty())
                 .andExpect(jsonPath("$.displayName").isNotEmpty())
@@ -85,7 +111,7 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
         String publicId = JsonPath.read(created.getResponse().getContentAsString(), "$.publicId");
         assertThat(publicId).isNotBlank();
 
-        mockMvc.perform(get(ME_URL).with(tokenFor(subject)))
+        mockMvc.perform(get(ME_URL).with(playerToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.publicId").value(publicId));
     }
@@ -95,11 +121,11 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
      * {@link ZitadelRoleConverter} the application uses — so the claim shape is
      * the single source of truth here as well as in production.
      *
-     * <p>Callers pass a fresh subject per run. The shared container is not wiped
-     * between test classes, and both zitadelUserId and displayName are unique
-     * columns, so reusing a fixed subject would fail on the second run.
+     * <p>The subject is fresh per test. The shared container is not wiped between
+     * test classes, and both zitadelUserId and displayName are unique columns, so
+     * a fixed subject would fail on the second run.
      */
-    private static JwtRequestPostProcessor tokenFor(String subject) {
+    private JwtRequestPostProcessor playerToken() {
         return jwt()
                 .jwt(token -> token.subject(subject).claim(ZITADEL_ROLES_CLAIM, Map.of(ROLE_PLAYER, Map.of())))
                 .authorities(new ZitadelRoleConverter());
