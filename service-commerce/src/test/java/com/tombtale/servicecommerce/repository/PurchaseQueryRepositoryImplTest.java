@@ -126,18 +126,53 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
     }
 
     /**
-     * Pins today's behaviour, which is a finding rather than a feature: commerce
-     * has no sort-field allow-list, so an unknown property reaches Hibernate and
-     * surfaces as a 500. Player rejects the same input with its own message.
-     * The fix belongs with the shared error contract, not with this commit.
+     * An unknown sort property is rejected by the allow-list before it reaches the
+     * query, so it can never steer the generated HQL. Mirrors the same guard in
+     * player, down to the message.
      */
     @Test
-    void shouldFailOnUnknownSortField() {
+    void shouldRejectUnknownSortField() {
         PageRequest pageable = PageRequest.of(0, PAGE_SIZE, Sort.by("nonsense"));
 
         assertThatThrownBy(() -> purchaseRepository.findByFilter(noFilter(), pageable))
                 .isInstanceOf(InvalidDataAccessApiUsageException.class)
-                .hasMessageContaining("nonsense");
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid sort field: nonsense");
+    }
+
+    /**
+     * The allow-list rejects an HQL-injection attempt through {@code ?sort=} rather
+     * than letting the payload reach {@code PathBuilder}, which does not validate it.
+     */
+    @Test
+    void shouldRejectInjectionAttemptInSortField() {
+        PageRequest pageable = PageRequest.of(
+                0, PAGE_SIZE, Sort.by("id, (select p.playerId from Purchase p)"));
+
+        assertThatThrownBy(() -> purchaseRepository.findByFilter(noFilter(), pageable))
+                .isInstanceOf(InvalidDataAccessApiUsageException.class)
+                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid sort field:");
+    }
+
+    /**
+     * Every allow-listed field is genuinely sortable — the guard rejects bad input
+     * without also blocking the columns callers are meant to use.
+     */
+    @Test
+    void shouldAcceptEveryAllowedSortField() {
+        persist(aPurchase(PLAYER_ONE, ARKENSTONE, 1, PRICE_HIGH,
+                PurchaseStatus.COMPLETED, nowInDatabasePrecision()));
+
+        for (String field : new String[] {
+            "id", "playerId", "itemCode", "quantity",
+            "unitPrice", "totalPrice", "status", "purchasedAt", }) {
+            PageRequest pageable = PageRequest.of(0, PAGE_SIZE, Sort.by(field));
+
+            assertThat(purchaseRepository.findByFilter(noFilter(), pageable).getContent())
+                    .as("sorting by %s", field)
+                    .hasSize(1);
+        }
     }
 
     /**

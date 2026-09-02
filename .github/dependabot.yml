@@ -1,0 +1,183 @@
+---
+# =============================================
+# Dependabot version updates
+# =============================================
+# Two separate Dependabot features get called the same thing. This file
+# configures *version updates*: PRs on a schedule that keep dependencies
+# current, whether or not anything is vulnerable.
+#
+# It does not enable *security updates* -- the alert-triggered fix PRs. Those
+# are a repository setting, not config, and they were off when this was
+# written, which is why no Dependabot PR had ever been opened here. Alert
+# detection was already on; detection alone never opens a PR.
+#
+# Version updates still close most alerts as a side effect, since moving to
+# the latest release picks up the patched version. The groups below cover
+# version updates only: `applies-to` defaults to version updates when it is
+# left out. Switching security updates on later would need its own groups,
+# each marked `applies-to: security-updates`, or every advisory arrives as a
+# separate PR regardless of what is grouped here.
+#
+# Everything is grouped on purpose. The frontend alone carried 82 open alerts
+# when this was written, almost all of them transitive dev tooling, so one PR
+# per advisory would bury the repository. Grouped PRs keep a whole family --
+# and its lockfile churn -- in a single reviewable change.
+
+version: 2
+
+updates:
+  # ----- Angular portal -------------------------------------------------
+  - package-ecosystem: "npm"
+    directory: "/frontend-portal"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "frontend-portal"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      # The Angular packages pin each other to an exact version, so they can
+      # only ever move together. Splitting them produces PRs that cannot merge.
+      angular:
+        patterns:
+          - "@angular/*"
+          - "@angular-devkit/*"
+          - "angular-eslint"
+      primeng:
+        patterns:
+          - "primeng"
+          - "primeicons"
+          - "@primeuix/*"
+      # Build and test tooling never ships to a browser, so these updates are
+      # low risk and are better reviewed in bulk than one at a time.
+      dev-tooling:
+        dependency-type: "development"
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@angular/*"
+          - "@angular-devkit/*"
+          - "angular-eslint"
+      production:
+        dependency-type: "production"
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@angular/*"
+          - "primeng"
+          - "primeicons"
+          - "@primeuix/*"
+
+  # ----- Java services --------------------------------------------------
+  # There is no aggregator pom at the root -- each service builds on its own,
+  # so each needs its own entry here.
+  - package-ecosystem: "maven"
+    directory: "/service-player"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "service-player"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+          - "org.springframework:*"
+          - "org.springframework.security:*"
+      test-tooling:
+        patterns:
+          - "org.junit*:*"
+          - "org.mockito:*"
+          - "org.assertj:*"
+          - "org.testcontainers:*"
+      build-plugins:
+        patterns:
+          - "org.apache.maven.plugins:*"
+          - "org.jacoco:*"
+          - "com.puppycrawl.tools:*"
+          - "net.sourceforge.pmd:*"
+
+  - package-ecosystem: "maven"
+    directory: "/service-commerce"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "service-commerce"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+          - "org.springframework:*"
+          - "org.springframework.security:*"
+      test-tooling:
+        patterns:
+          - "org.junit*:*"
+          - "org.mockito:*"
+          - "org.assertj:*"
+          - "org.testcontainers:*"
+      build-plugins:
+        patterns:
+          - "org.apache.maven.plugins:*"
+          - "org.jacoco:*"
+          - "com.puppycrawl.tools:*"
+          - "net.sourceforge.pmd:*"
+
+  # ----- CI workflows ---------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "ci(deps)"
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # ----- Local stack images ---------------------------------------------
+  # Only reaches the literal tags in infrastructure/docker-compose.yml, which
+  # today means mongo and rabbitmq. Traefik, Postgres, Redis, Zitadel and the
+  # OTEL collector are written as ${VAR} and read from infrastructure/.env, and
+  # Dependabot does not expand those -- they still need bumping by hand.
+  - package-ecosystem: "docker"
+    directory: "/infrastructure"
+    schedule:
+      interval: "monthly"
+      time: "06:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "infrastructure"
+    commit-message:
+      prefix: "chore(docker)"
+    groups:
+      images:
+        patterns:
+          - "*"
