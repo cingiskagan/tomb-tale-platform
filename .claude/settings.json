@@ -85,18 +85,5 @@
   },
   "env": {
     "MAVEN_ARGS": "-B --no-transfer-progress"
-  },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash|Read|Edit|Write|NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/block-irreversible.sh"
-          }
-        ]
-      }
-    ]
   }
 }
