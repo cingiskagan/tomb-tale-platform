@@ -60,12 +60,17 @@ WHY_DESTRUCTIVE="This destroys data and cannot be undone. If it is genuinely wan
 WHY_SECRET_READ="The read itself is reversible; the disclosure is not. Once a credential is in the transcript it cannot be taken back. For variable names use the .env.example file instead."
 WHY_SECRET_WRITE="These credentials exist only on this machine and are not in git, so an overwrite cannot be recovered from the repository."
 
-# Secret files in this repo, from .gitignore. `.env` must not match
-# `.env.example`, hence the trailing non-word guard.
-SECRET_RE='(^|/)\.env([^.[:alnum:]_-]|$)'
+# Secret files in this repo, from .gitignore.
+#
+# The leading guard is a character class, not (^|/): inside a command the name
+# is preceded by a space, so `cat .env` run from infrastructure/ has neither a
+# slash nor a string start in front of it. Excluding alnum, _, . and - keeps
+# `myapp.env` out. The trailing guard keeps `.env.example` out.
+SECRET_EDGE='(^|[^[:alnum:]_.-])'
+SECRET_RE="${SECRET_EDGE}"'\.env([^.[:alnum:]_-]|$)'
 SECRET_RE+='|\.zitadel-masterkey'
 SECRET_RE+='|\.personal_access_token'
-SECRET_RE+='|(^|/)\.client-id'
+SECRET_RE+="|${SECRET_EDGE}"'\.client-id'
 SECRET_RE+='|\.pem([^[:alnum:]]|$)'
 SECRET_RE+='|\.key([^[:alnum:]]|$)'
 
@@ -98,7 +103,10 @@ Bash)
 
     # 2. `docker compose down -v` -- wipes the volumes, taking Zitadel's org,
     #    project, roles and OAuth client with them. Slow to rebuild by hand.
-    if grep -Eq 'docker([[:space:]]+compose|-compose)([[:space:]]+-[^[:space:]]+)*[[:space:]]+down' <<<"$cmd"; then
+    #    Anything may sit between `compose` and `down`, because options that
+    #    take a value (-f <file>, -p <name>) put a non-flag token in between.
+    #    Stopping at | ; & keeps it inside one command.
+    if grep -Eq 'docker([[:space:]]+compose|-compose)[^|;&]*[[:space:]]down' <<<"$cmd"; then
         if grep -Eq -- '(^|[[:space:]])(--volumes|-[[:alpha:]]*v)([[:space:]]|$)' <<<"$cmd"; then
             deny "docker compose down with volume removal" "$WHY_DESTRUCTIVE"
         fi
