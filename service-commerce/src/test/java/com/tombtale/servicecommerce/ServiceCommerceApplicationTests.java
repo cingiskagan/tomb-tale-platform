@@ -15,7 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -118,17 +118,22 @@ class ServiceCommerceApplicationTests extends PostgresTestBase {
      */
     @Test
     void createdPurchaseIsPersistedAndReadableById() throws Exception {
-        MvcResult created = mockMvc.perform(post(PURCHASES_URL)
+        ResultActions created = mockMvc.perform(post(PURCHASES_URL)
                 .with(adminToken())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(NEW_PURCHASE_BODY))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").isNotEmpty())
-                .andExpect(jsonPath("$.playerId").value(PLAYER_ID))
-                .andExpect(jsonPath("$.status").value(PurchaseStatus.PENDING.name()))
-                .andReturn();
+                .andExpect(status().isCreated());
 
-        String json = created.getResponse().getContentAsString();
+        // The row is committed the moment the POST returns 201, so capture its
+        // id before asserting anything else. A failure in the assertions below
+        // would otherwise leave createdPurchaseId unset, skip the delete in
+        // @AfterEach, and leak the row into the next test class — the exact
+        // contamination this suite was fixed for two commits ago.
+        String json = created.andReturn().getResponse().getContentAsString();
+        createdPurchaseId = UUID.fromString(JsonPath.read(json, "$.id"));
+
+        created.andExpect(jsonPath("$.playerId").value(PLAYER_ID))
+                .andExpect(jsonPath("$.status").value(PurchaseStatus.PENDING.name()));
 
         // Read via toString rather than a typed read: the JsonPath provider may
         // return a Double or a BigDecimal depending on configuration, and both
@@ -136,13 +141,10 @@ class ServiceCommerceApplicationTests extends PostgresTestBase {
         BigDecimal totalPrice = new BigDecimal(JsonPath.read(json, "$.totalPrice").toString());
         assertThat(totalPrice).isEqualByComparingTo(new BigDecimal(EXPECTED_TOTAL_PRICE));
 
-        String id = JsonPath.read(json, "$.id");
-        createdPurchaseId = UUID.fromString(id);
-
-        mockMvc.perform(get(PURCHASES_URL + "/{id}", id)
+        mockMvc.perform(get(PURCHASES_URL + "/{id}", createdPurchaseId)
                 .with(adminToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.id").value(createdPurchaseId.toString()))
                 .andExpect(jsonPath("$.itemCode").value(ITEM_CODE))
                 .andExpect(jsonPath("$.status").value(PurchaseStatus.PENDING.name()));
     }

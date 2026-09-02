@@ -42,12 +42,12 @@
 		<!-- Must match the PMD shipped in the MegaLinter image pinned in .github/workflows/mega-linter.yml -->
 		<pmd.version>7.22.0</pmd.version>
 		<!--
-			Pin the test order rather than leaving it to the filesystem. The smoke
-			tests in Service*ApplicationTests commit rows that outlive the request,
-			while the repository tests assert absolute row counts. Under the default
-			order those two can run either way round, so a genuine conflict shows up
-			on CI and not locally. Alphabetical puts the smoke class first, which is
-			the order that catches it.
+			Deterministic test order. Surefire's default is filesystem order, which
+			differs between a developer machine and CI, so an ordering-sensitive
+			suite can pass in one place and fail in the other. Pinning it makes any
+			such failure reproducible, and reproducible in the same place for
+			everyone. Alphabetical happens to put the @SpringBootTest classes ahead
+			of the slice tests, which is the stricter of the two orders.
 		-->
 		<surefire.runOrder>alphabetical</surefire.runOrder>
 	</properties>
