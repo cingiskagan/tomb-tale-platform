@@ -52,5 +52,8 @@
     "karma-jasmine-html-reporter": "~2.1.0",
     "typescript": "~5.9.2",
     "typescript-eslint": "8.46.4"
+  },
+  "overrides": {
+    "qs": "^6.16.0"
   }
 }
