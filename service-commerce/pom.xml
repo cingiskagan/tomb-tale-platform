@@ -41,7 +41,7 @@
 			build cannot even read the POM. The fork gets its own property.
 		-->
 		<querydsl.version>5.1.0</querydsl.version>
-		<querydsl-openfeign.version>5.6.1</querydsl-openfeign.version>
+		<querydsl-openfeign.version>7.6</querydsl-openfeign.version>
 		<mapstruct.version>1.6.3</mapstruct.version>
 		<!-- Must match the PMD shipped in the MegaLinter image pinned in .github/workflows/mega-linter.yml -->
 		<pmd.version>7.27.0</pmd.version>
