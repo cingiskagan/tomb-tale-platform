@@ -28,7 +28,20 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<!--
+			CVE-2024-49203 (HQL injection through orderBy) has no fix upstream:
+			com.querydsl stopped at 5.1.0 and the advisory lists no patched
+			version. io.github.openfeign.querydsl is the maintained fork and
+			patched it in 5.6.1. The Java packages stay com.querydsl.*, so only
+			the Maven coordinate moves, with no source change.
+
+			Two properties are needed because spring-boot-dependencies imports
+			com.querydsl:querydsl-bom itself, keyed on querydsl.version. That
+			property has to keep naming a version that exists upstream, or the
+			build cannot even read the POM. The fork gets its own property.
+		-->
 		<querydsl.version>5.1.0</querydsl.version>
+		<querydsl-openfeign.version>5.6.1</querydsl-openfeign.version>
 		<mapstruct.version>1.6.3</mapstruct.version>
 		<!-- Must match the PMD shipped in the MegaLinter image pinned in .github/workflows/mega-linter.yml -->
 		<pmd.version>7.27.0</pmd.version>
@@ -82,15 +95,15 @@
 
 		<!-- === QueryDSL (type-safe JPA queries) === -->
 		<dependency>
-			<groupId>com.querydsl</groupId>
+			<groupId>io.github.openfeign.querydsl</groupId>
 			<artifactId>querydsl-jpa</artifactId>
-			<version>${querydsl.version}</version>
+			<version>${querydsl-openfeign.version}</version>
 			<classifier>jakarta</classifier>
 		</dependency>
 		<dependency>
-			<groupId>com.querydsl</groupId>
+			<groupId>io.github.openfeign.querydsl</groupId>
 			<artifactId>querydsl-apt</artifactId>
-			<version>${querydsl.version}</version>
+			<version>${querydsl-openfeign.version}</version>
 			<classifier>jakarta</classifier>
 			<scope>provided</scope>
 		</dependency>
@@ -200,9 +213,9 @@
 							<version>0.2.0</version>
 						</path>
 						<path>
-							<groupId>com.querydsl</groupId>
+							<groupId>io.github.openfeign.querydsl</groupId>
 							<artifactId>querydsl-apt</artifactId>
-							<version>${querydsl.version}</version>
+							<version>${querydsl-openfeign.version}</version>
 							<classifier>jakarta</classifier>
 						</path>
 						<path>
