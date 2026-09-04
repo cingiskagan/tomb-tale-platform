@@ -39,3 +39,54 @@ jobs:
           files: ./${{ matrix.service }}/target/site/jacoco/jacoco.xml
           flags: backend
           fail_ci_if_error: true
+
+  frontend:
+    name: Build & Test Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          # `npm ci` runs lifecycle scripts from the whole dependency tree.
+          # Without this, checkout leaves the job token in .git/config where
+          # any of those scripts could read it. Nothing here touches git after
+          # the checkout, so there is no reason to keep the credentials.
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          # .nvmrc is the single source of truth, so CI and a local `nvm use`
+          # can never drift apart.
+          node-version-file: frontend-portal/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend-portal/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend-portal
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend-portal
+        run: npm run lint
+
+      - name: Production build
+        working-directory: frontend-portal
+        run: npm run build
+
+      - name: Resolve Chrome for Karma
+        # Karma launches the browser itself and needs a real executable. The
+        # runner image ships Google Chrome; fail loudly if that ever changes,
+        # rather than letting the tests silently not run.
+        run: |
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$CHROME_BIN" ]; then
+            echo "No Chrome or Chromium on the runner." >&2
+            exit 1
+          fi
+          echo "CHROME_BIN=$CHROME_BIN" >> "$GITHUB_ENV"
+
+      - name: Unit tests
+        working-directory: frontend-portal
+        run: npx ng test --watch=false --browsers=ChromeHeadless

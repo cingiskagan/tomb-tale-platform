@@ -41,6 +41,24 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       prefix-development: "chore(deps-dev)"
+    ignore:
+      # npm majors here are migrations, not bumps, and they arrive coupled.
+      # The first run of this file produced four of them -- Angular 20 -> 22,
+      # primeng 20 -> 22, angular-oauth2-oidc 20 -> 22 and TypeScript 5 -> 7 --
+      # which were one Angular 22 upgrade split by package family. Not one
+      # could merge alone: primeng 22 peers on @angular/core ^22, and Angular
+      # 20's compiler-cli peers on typescript <6.0. `ng update` runs schematics
+      # that rewrite application source, and Dependabot only rewrites
+      # package.json, so its version of that upgrade is always half a migration.
+      #
+      # Minors and patches still arrive weekly. Majors become a deliberate
+      # piece of work rather than a PR that reopens every Monday.
+      #
+      # This suppresses pull requests only. Alert detection reads the
+      # dependency graph and the advisory database, not this file, so nothing
+      # here can hide a vulnerability.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       # The Angular packages pin each other to an exact version, so they can
       # only ever move together. Splitting them produces PRs that cannot merge.
@@ -96,6 +114,8 @@ updates:
           - "org.springframework.boot:*"
           - "org.springframework:*"
           - "org.springframework.security:*"
+          - "org.springframework.amqp:*"
+          - "org.springdoc:*"
       test-tooling:
         patterns:
           - "org.junit*:*"
@@ -103,8 +123,30 @@ updates:
           - "org.assertj:*"
           - "org.testcontainers:*"
       build-plugins:
+        # The trailing wildcard on the group id matters: the plugins live under
+        # org.apache.maven.plugins, but the Maven distribution the wrapper
+        # downloads is org.apache.maven:apache-maven.
         patterns:
-          - "org.apache.maven.plugins:*"
+          - "org.apache.maven*:*"
+          - "org.jacoco:*"
+          - "com.puppycrawl.tools:*"
+          - "net.sourceforge.pmd:*"
+      # Catch-all for the rest -- QueryDSL, Flyway, MapStruct, Lombok, the
+      # Postgres driver, Jakarta APIs. Without it each one arrives as its own
+      # PR, which is how springdoc and the wrapper's Maven slipped through the
+      # first version of this file. The exclusions repeat the patterns above so
+      # the grouping never depends on which group Dependabot tries first.
+      libraries:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "org.springframework*:*"
+          - "org.springdoc:*"
+          - "org.junit*:*"
+          - "org.mockito:*"
+          - "org.assertj:*"
+          - "org.testcontainers:*"
+          - "org.apache.maven*:*"
           - "org.jacoco:*"
           - "com.puppycrawl.tools:*"
           - "net.sourceforge.pmd:*"
@@ -128,6 +170,8 @@ updates:
           - "org.springframework.boot:*"
           - "org.springframework:*"
           - "org.springframework.security:*"
+          - "org.springframework.amqp:*"
+          - "org.springdoc:*"
       test-tooling:
         patterns:
           - "org.junit*:*"
@@ -135,8 +179,30 @@ updates:
           - "org.assertj:*"
           - "org.testcontainers:*"
       build-plugins:
+        # The trailing wildcard on the group id matters: the plugins live under
+        # org.apache.maven.plugins, but the Maven distribution the wrapper
+        # downloads is org.apache.maven:apache-maven.
         patterns:
-          - "org.apache.maven.plugins:*"
+          - "org.apache.maven*:*"
+          - "org.jacoco:*"
+          - "com.puppycrawl.tools:*"
+          - "net.sourceforge.pmd:*"
+      # Catch-all for the rest -- QueryDSL, Flyway, MapStruct, Lombok, the
+      # Postgres driver, Jakarta APIs. Without it each one arrives as its own
+      # PR, which is how springdoc and the wrapper's Maven slipped through the
+      # first version of this file. The exclusions repeat the patterns above so
+      # the grouping never depends on which group Dependabot tries first.
+      libraries:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "org.springframework*:*"
+          - "org.springdoc:*"
+          - "org.junit*:*"
+          - "org.mockito:*"
+          - "org.assertj:*"
+          - "org.testcontainers:*"
+          - "org.apache.maven*:*"
           - "org.jacoco:*"
           - "com.puppycrawl.tools:*"
           - "net.sourceforge.pmd:*"
