@@ -47,6 +47,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          # `npm ci` runs lifecycle scripts from the whole dependency tree.
+          # Without this, checkout leaves the job token in .git/config where
+          # any of those scripts could read it. Nothing here touches git after
+          # the checkout, so there is no reason to keep the credentials.
+          persist-credentials: false
 
       - name: Set up Node
         uses: actions/setup-node@v7
