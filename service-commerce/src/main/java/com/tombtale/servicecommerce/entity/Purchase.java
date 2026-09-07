@@ -1,5 +1,6 @@
 package com.tombtale.servicecommerce.entity;
 
+import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

@@ -1,11 +1,11 @@
 package com.tombtale.servicecommerce.service;
 
+import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import com.tombtale.servicecommerce.dto.CreatePurchaseRequest;
 import com.tombtale.servicecommerce.dto.PurchaseFilterRequest;
 import com.tombtale.servicecommerce.dto.PurchaseResponse;
 import com.tombtale.servicecommerce.dto.UpdatePurchaseRequest;
 import com.tombtale.servicecommerce.entity.Purchase;
-import com.tombtale.servicecommerce.entity.PurchaseStatus;
 import com.tombtale.servicecommerce.exception.InvalidStatusTransitionException;
 import com.tombtale.servicecommerce.exception.PurchaseNotFoundException;
 import com.tombtale.servicecommerce.mapper.PurchaseMapper;

@@ -145,11 +145,12 @@ if [ -d "$COMMERCE_DIR" ] && in_scope service-commerce; then
     echo "📦 service-commerce"
     echo "------------------------------------------"
 
-    echo "  1. 🧹 Checkstyle & PMD..."
-    (cd "$COMMERCE_DIR" && ./mvnw checkstyle:check pmd:check -DskipTests)
-
-    echo "  2. 🧪 Unit Tests & Coverage..."
-    (cd "$COMMERCE_DIR" && ./mvnw clean test jacoco:report)
+    # One command, byte for byte what test-and-coverage.yml runs. Checkstyle
+    # and PMD are bound to the verify phase in the pom, so this covers style,
+    # static analysis, tests and coverage in a single gate. For fast feedback
+    # while working, run `./mvnw checkstyle:check pmd:check -DskipTests`.
+    echo "  1. 🧪 Tests, coverage, Checkstyle & PMD..."
+    (cd "$COMMERCE_DIR" && ./mvnw clean verify)
 
     echo "  ✅ service-commerce passed"
 fi
@@ -165,11 +166,12 @@ if [ -d "$PLAYER_DIR" ] && in_scope service-player; then
     echo "📦 service-player"
     echo "------------------------------------------"
 
-    echo "  1. 🧹 Checkstyle & PMD..."
-    (cd "$PLAYER_DIR" && ./mvnw checkstyle:check pmd:check -DskipTests)
-
-    echo "  2. 🧪 Unit Tests & Coverage..."
-    (cd "$PLAYER_DIR" && ./mvnw clean test jacoco:report)
+    # One command, byte for byte what test-and-coverage.yml runs. Checkstyle
+    # and PMD are bound to the verify phase in the pom, so this covers style,
+    # static analysis, tests and coverage in a single gate. For fast feedback
+    # while working, run `./mvnw checkstyle:check pmd:check -DskipTests`.
+    echo "  1. 🧪 Tests, coverage, Checkstyle & PMD..."
+    (cd "$PLAYER_DIR" && ./mvnw clean verify)
 
     echo "  ✅ service-player passed"
 fi

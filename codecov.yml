@@ -9,9 +9,22 @@ coverage:
       default:
         target: 80%
 
-# Ignore the same files we ignore in Jacoco
+# Mirrors the Jacoco <excludes> in service-player/pom.xml and
+# service-commerce/pom.xml. Both lists must be changed together, or the
+# Codecov percentage stops matching the one the build reports.
 ignore:
+  # Spring wiring: a bean either builds the context or the context fails.
   - "service-player/src/main/java/com/tombtale/serviceplayer/config/**"
-  - "service-player/src/main/java/com/tombtale/serviceplayer/model/**"
-  - "service-player/src/main/java/com/tombtale/serviceplayer/exception/**"
-  - "service-player/src/main/java/com/tombtale/serviceplayer/*Application.java"
+  - "service-commerce/src/main/java/com/tombtale/servicecommerce/config/**"
+  # Records with validation annotations and no method bodies.
+  - "service-player/src/main/java/com/tombtale/serviceplayer/dto/**"
+  - "service-commerce/src/main/java/com/tombtale/servicecommerce/dto/**"
+  # QueryDSL metamodel, regenerated on every build.
+  - "service-player/src/main/java/com/tombtale/serviceplayer/entity/Q*"
+  - "service-commerce/src/main/java/com/tombtale/servicecommerce/entity/Q*"
+  # MapStruct writes the *MapperImpl; covering it measures MapStruct.
+  - "service-player/src/main/java/com/tombtale/serviceplayer/mapper/**"
+  - "service-commerce/src/main/java/com/tombtale/servicecommerce/mapper/**"
+  # One main() that the smoke tests already run.
+  - "service-player/src/main/java/com/tombtale/serviceplayer/ServicePlayerApplication.java"
+  - "service-commerce/src/main/java/com/tombtale/servicecommerce/ServiceCommerceApplication.java"

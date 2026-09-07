@@ -10,11 +10,14 @@
 # Flavor & Scope
 # ---------------------
 # Only enable linters relevant to our tech stack
+#
+# Java is deliberately absent. Checkstyle and PMD run from the Maven build
+# instead (bound to the verify phase in each service's pom.xml), so one engine
+# at one pinned version governs both local runs and CI. MegaLinter ships its
+# own PMD build, and when it drifted to 7.26.0 against the pom's 7.27.0 the two
+# disagreed about the same ruleset — CI failed on suppressions the Maven run
+# considered valid. One runner, no drift.
 ENABLE_LINTERS:
-  # --- Java ---
-  - JAVA_CHECKSTYLE
-  - JAVA_PMD
-
   # --- TypeScript / JavaScript ---
   - TYPESCRIPT_ES
   - JAVASCRIPT_ES
@@ -91,12 +94,6 @@ YAML_YAMLLINT_CONFIG_DATA: |
 # runs. Every markdown rule belongs in .markdownlint.json, which the local
 # pre-PR script uses too, so CI and local runs cannot drift apart.
 MARKDOWN_MARKDOWNLINT_CONFIG_FILE: .markdownlint.json
-
-# Checkstyle: use project-specific rules instead of sun_checks.xml
-JAVA_CHECKSTYLE_CONFIG_FILE: config/checkstyle/checkstyle.xml
-
-# PMD: use project-specific rules instead of defaults
-JAVA_PMD_CONFIG_FILE: config/pmd/pmd-ruleset.xml
 
 # ESLint: let the project's own .eslintrc handle config
 TYPESCRIPT_ES_FILE_EXTENSIONS:
