@@ -243,11 +243,38 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
 				<version>3.6.0</version>
+				<executions>
+					<!--
+						Bound to verify so `./mvnw clean verify` — the command CI runs —
+						enforces style. Without a binding the goal only ran when named
+						explicitly, which meant CI never ran it at all.
+					-->
+					<execution>
+						<id>checkstyle-check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
 				<configuration>
 					<configLocation>${project.basedir}/../config/checkstyle/checkstyle.xml</configLocation>
 					<consoleOutput>true</consoleOutput>
 					<failsOnError>true</failsOnError>
 					<includeTestSourceDirectory>true</includeTestSourceDirectory>
+					<!--
+						Pinned to hand-written source. The default is compileSourceRoots,
+						which at the verify phase also holds target/generated-sources —
+						the QueryDSL Q-classes and the MapStruct *MapperImpl. Generated
+						code does not follow our style rules and is not ours to fix, the
+						same reason Jacoco excludes it.
+					-->
+					<sourceDirectories>
+						<sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+					</sourceDirectories>
+					<testSourceDirectories>
+						<testSourceDirectory>${project.basedir}/src/test/java</testSourceDirectory>
+					</testSourceDirectories>
 				</configuration>
 			</plugin>
 			<!-- === PMD (static analysis) === -->
@@ -255,6 +282,20 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-pmd-plugin</artifactId>
 				<version>3.28.0</version>
+				<executions>
+					<!--
+						Same reasoning as checkstyle above. This is also the only PMD run
+						in the project now, at the version pinned in ${pmd.version}, so
+						local and CI cannot analyse with different engines.
+					-->
+					<execution>
+						<id>pmd-check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
 				<configuration>
 					<rulesets>
 						<ruleset>${project.basedir}/../config/pmd/pmd-ruleset.xml</ruleset>
@@ -262,6 +303,15 @@
 					<failOnViolation>true</failOnViolation>
 					<printFailingErrors>true</printFailingErrors>
 					<includeTests>true</includeTests>
+					<!--
+						Same reason as the checkstyle sourceDirectories above: at the
+						verify phase these roots hold the QueryDSL Q-classes and the
+						MapStruct *MapperImpl, which are generated and not ours to fix.
+					-->
+					<excludeRoots>
+						<excludeRoot>${project.build.directory}/generated-sources/annotations</excludeRoot>
+						<excludeRoot>${project.build.directory}/generated-test-sources/test-annotations</excludeRoot>
+					</excludeRoots>
 				</configuration>
 				<dependencies>
 					<dependency>

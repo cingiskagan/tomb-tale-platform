@@ -40,10 +40,12 @@ Maven, from within each service directory:
 ./mvnw test -Dtest=CharacterServiceTest                 # single test class
 ./mvnw test -Dtest=CharacterServiceTest#methodName      # single test method
 ./mvnw checkstyle:check pmd:check -DskipTests           # style/static analysis only
-./mvnw clean verify                                     # tests + Jacoco report (what CI runs)
+./mvnw clean verify                                     # tests + Jacoco + checkstyle + PMD (what CI runs)
 ```
 
 Checkstyle/PMD rulesets live in `config/checkstyle/checkstyle.xml` and `config/pmd/pmd-ruleset.xml`, referenced relatively from each `pom.xml` — one copy governs both services.
+
+Both `check` goals are bound to the `verify` phase, so `./mvnw clean verify` is the single gate: the same engine at the same pinned version runs locally and in CI. MegaLinter does not lint Java — it ships its own PMD build, and when that drifted from `${pmd.version}` the two disagreed about the same ruleset. Style failures surface after the tests as a result; `./mvnw checkstyle:check pmd:check -DskipTests` is still the fast path while you are working.
 
 ### Frontend (frontend-portal)
 
@@ -64,7 +66,7 @@ npm run lint                 # angular-eslint
 ./scripts/pre-pr-tests.sh --clean                      # also runs npm ci
 ```
 
-Run this before opening a PR — CI (`test-and-coverage.yml`, `mega-linter.yml`) enforces the same checks, plus Codecov coverage upload.
+Run this before opening a PR — CI (`test-and-coverage.yml`, `mega-linter.yml`) enforces the same checks, plus Codecov coverage upload. Java style and static analysis belong to the Maven build; MegaLinter covers shell, YAML, Markdown, Dockerfiles, JSON, TypeScript, secrets, and IaC.
 
 ## Architecture
 
