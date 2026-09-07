@@ -1,4 +1,4 @@
-package com.tombtale.servicecommerce.config;
+package com.tombtale.servicecommerce.security;
 
 import java.util.Collection;
 import java.util.List;

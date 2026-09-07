@@ -76,11 +76,13 @@ Both services follow an identical layering — copy the sibling service's patter
 controller/  → REST endpoints under /api/v1/..., @PreAuthorize role checks
 service/     → business logic, transactional boundaries
 repository/  → Spring Data JPA; dynamic filtering via QueryDSL (…QueryRepository + …QueryRepositoryImpl)
-entity/      → JPA entities (service-player uses entity/, coverage config also references model/)
+entity/      → JPA entities; the QueryDSL Q-classes are generated into this package too
+domain/      → plain domain logic with no JPA (service-commerce: PurchaseStatus + its transition table)
 dto/         → request/response DTOs with jakarta validation
 mapper/      → MapStruct compile-time mappers between entities and DTOs
 exception/   → domain exceptions; service-commerce has a GlobalExceptionHandler
-config/      → SecurityConfig, QueryDslConfig, RabbitMQConfig, ZitadelRoleConverter
+security/    → ZitadelRoleConverter — claim parsing, kept out of config/ on purpose
+config/      → SecurityConfig, QueryDslConfig, RabbitMQConfig — wiring only, no logic
 ```
 
 Entities expose a public-facing `publicId` (UUID) distinct from the internal DB primary key — controllers and DTOs deal only in `publicId`.
@@ -89,7 +91,9 @@ Entities expose a public-facing `publicId` (UUID) distinct from the internal DB 
 
 Both services share one Postgres instance, and each has its own DB user and its own schema (`svc_player`/`player`, `svc_commerce`/`commerce`), provisioned by `infrastructure/init-db.sh`. Each user owns its schema and has no rights in the other's. Flyway owns the schema and Hibernate only validates it (`ddl-auto: validate`, hardcoded); the schema each service targets is set by `spring.jpa.properties.hibernate.default_schema` and `spring.flyway.schemas`. service-commerce seeds `data.sql` when `SQL_INIT_MODE=always`.
 
-Jacoco excludes `config/`, `entity|model/`, `dto/`, `exception/`, `mapper/`, and `*Application` from coverage (configured per-service in `pom.xml`) — coverage targets land on controllers, services, and repository impls.
+Jacoco excludes `config/`, `dto/`, `mapper/`, `entity/Q*` (the generated QueryDSL metamodel), and `*Application`. Everything else we write is measured, including entities, exception handlers, and `security/`. The list is configured per-service in `pom.xml` and mirrored in `codecov.yml` — change both together, or the Codecov percentage stops matching the one the build reports.
+
+The package a class lives in decides whether it is measured, so logic does not go in a wiring package. That is why `ZitadelRoleConverter` sits in `security/` and not `config/`, and `PurchaseStatus` in `domain/` and not `entity/`. Both have unit tests that would otherwise score zero.
 
 ### Frontend
 

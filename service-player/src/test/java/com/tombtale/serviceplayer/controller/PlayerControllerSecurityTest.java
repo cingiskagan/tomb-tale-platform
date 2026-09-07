@@ -13,11 +13,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.tombtale.serviceplayer.config.SecurityConfig;
-import com.tombtale.serviceplayer.config.ZitadelRoleConverter;
 import com.tombtale.serviceplayer.dto.CharacterResponse;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.entity.Player;
 import com.tombtale.serviceplayer.mapper.PlayerMapper;
+import com.tombtale.serviceplayer.security.ZitadelRoleConverter;
 import com.tombtale.serviceplayer.service.PlayerService;
 
 import static org.mockito.ArgumentMatchers.any;

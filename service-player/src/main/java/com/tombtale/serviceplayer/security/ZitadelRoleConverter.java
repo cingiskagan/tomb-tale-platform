@@ -1,4 +1,4 @@
-package com.tombtale.serviceplayer.config;
+package com.tombtale.serviceplayer.security;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.core.GrantedAuthority;

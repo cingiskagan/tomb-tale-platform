@@ -15,11 +15,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.tombtale.servicecommerce.config.SecurityConfig;
-import com.tombtale.servicecommerce.config.ZitadelRoleConverter;
+import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import com.tombtale.servicecommerce.dto.CreatePurchaseRequest;
 import com.tombtale.servicecommerce.dto.PurchaseResponse;
-import com.tombtale.servicecommerce.entity.PurchaseStatus;
 import com.tombtale.servicecommerce.exception.InvalidStatusTransitionException;
+import com.tombtale.servicecommerce.security.ZitadelRoleConverter;
 import com.tombtale.servicecommerce.service.PurchaseService;
 
 import static org.assertj.core.api.Assertions.assertThat;

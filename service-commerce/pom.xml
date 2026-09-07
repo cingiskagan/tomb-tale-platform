@@ -306,12 +306,21 @@
 					</execution>
 				</executions>
 				<configuration>
+					<!--
+						Every exclusion here is deliberate. Anything not listed is code we
+						wrote, so it stays in the number. Keep this list and codecov.yml
+						(repo root) identical.
+					-->
 					<excludes>
+						<!-- Spring wiring: a bean either builds the context or the context fails. -->
 						<exclude>**/config/**</exclude>
-						<exclude>**/entity/**</exclude>
+						<!-- Records with validation annotations and no method bodies. -->
 						<exclude>**/dto/**</exclude>
-						<exclude>**/exception/**</exclude>
+						<!-- QueryDSL metamodel, regenerated on every build. -->
+						<exclude>**/entity/Q*.*</exclude>
+						<!-- MapStruct writes the *MapperImpl; covering it measures MapStruct. -->
 						<exclude>**/mapper/**</exclude>
+						<!-- One main() that the smoke tests already run. -->
 						<exclude>**/*Application.*</exclude>
 					</excludes>
 				</configuration>

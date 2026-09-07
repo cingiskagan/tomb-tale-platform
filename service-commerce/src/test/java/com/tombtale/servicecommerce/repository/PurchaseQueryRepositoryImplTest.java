@@ -1,9 +1,9 @@
 package com.tombtale.servicecommerce.repository;
 
 import com.tombtale.servicecommerce.config.QueryDslConfig;
+import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import com.tombtale.servicecommerce.dto.PurchaseFilterRequest;
 import com.tombtale.servicecommerce.entity.Purchase;
-import com.tombtale.servicecommerce.entity.PurchaseStatus;
 import com.tombtale.servicecommerce.support.PostgresTestBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

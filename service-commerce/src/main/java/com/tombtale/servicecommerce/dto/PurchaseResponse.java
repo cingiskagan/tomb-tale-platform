@@ -1,6 +1,6 @@
 package com.tombtale.servicecommerce.dto;
 
-import com.tombtale.servicecommerce.entity.PurchaseStatus;
+import com.tombtale.servicecommerce.domain.PurchaseStatus;
 
 import java.math.BigDecimal;
 import java.time.Instant;

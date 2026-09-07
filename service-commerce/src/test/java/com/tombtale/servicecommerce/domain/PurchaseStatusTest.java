@@ -1,4 +1,4 @@
-package com.tombtale.servicecommerce.entity;
+package com.tombtale.servicecommerce.domain;
 
 import java.util.stream.Stream;
 

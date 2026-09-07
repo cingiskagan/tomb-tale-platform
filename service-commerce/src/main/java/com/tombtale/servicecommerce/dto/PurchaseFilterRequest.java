@@ -1,6 +1,6 @@
 package com.tombtale.servicecommerce.dto;
 
-import com.tombtale.servicecommerce.entity.PurchaseStatus;
+import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import org.springframework.format.annotation.DateTimeFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 

@@ -1,4 +1,4 @@
-package com.tombtale.servicecommerce.entity;
+package com.tombtale.servicecommerce.domain;
 
 /**
  * Represents the lifecycle states of an in-game purchase.

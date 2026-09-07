@@ -1,4 +1,4 @@
-package com.tombtale.servicecommerce.config;
+package com.tombtale.servicecommerce.security;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.core.GrantedAuthority;
