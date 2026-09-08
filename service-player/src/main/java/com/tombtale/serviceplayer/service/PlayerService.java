@@ -68,14 +68,14 @@ public class PlayerService {
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Player getOrCreatePlayer(String zitadelUserId) {
-        return playerRepository.findByZitadelUserId(zitadelUserId)
+        return playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
                 .map(this::backfillCharacterIfMissing)
                 .orElseGet(() -> {
                     try {
                         return createNewPlayerWithCharacter(zitadelUserId);
                     } catch (DataIntegrityViolationException e) {
                         log.warn("Concurrent creation detected for zitadel user: {}. Fetching existing record.", zitadelUserId);
-                        return playerRepository.findByZitadelUserId(zitadelUserId)
+                        return playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
                                 .map(this::backfillCharacterIfMissing)
                                 .orElseThrow(() -> new IllegalStateException("Failed to find player after creation collision"));
                     }
@@ -141,7 +141,7 @@ public class PlayerService {
      */
     @Transactional
     public PlayerResponse updateMyProfile(String zitadelUserId, UpdateMyProfileRequest request) {
-        Player player = playerRepository.findByZitadelUserId(zitadelUserId)
+        Player player = playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found"));
 
         if (!player.getDisplayName().equalsIgnoreCase(request.getDisplayName()) &&

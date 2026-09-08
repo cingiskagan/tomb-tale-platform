@@ -67,10 +67,18 @@ public class Player {
     @Builder.Default
     private String profileIcon = "pi-user";
 
-    /** Characters owned by this player. */
+    /**
+     * Characters owned by this player.
+     *
+     * <p>Fetched lazily. Every read path that needs the characters says so:
+     * {@code PlayerRepository.findByZitadelUserIdWithCharacters} for the single
+     * player, and the second query in {@code PlayerQueryRepositoryImpl} for a
+     * page of them. An EAGER mapping here fetched them for every query whether
+     * they were wanted or not, one extra select per player.
+     */
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<GameCharacter> characters = new ArrayList<>();
 
