@@ -54,6 +54,14 @@ npm start
 
 The frontend application will start up and be accessible locally at `http://localhost:4200`.
 
+## Documentation
+
+- [`docs/adr/`](docs/adr/README.md) — Architecture Decision Records: why the
+  platform is built the way it is, one decision per file, in the order they were
+  made.
+- [`docs/design/`](docs/design/) — game and technical design documents, and the
+  development pathway.
+
 ## Contributor Guidelines
 
 - Run linting and automated tests locally before opening a Pull Request.
