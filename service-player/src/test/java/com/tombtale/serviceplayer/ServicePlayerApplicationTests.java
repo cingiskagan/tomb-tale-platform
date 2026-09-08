@@ -81,7 +81,7 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
      */
     @AfterEach
     void removeCommittedPlayer() {
-        playerRepository.findByZitadelUserId(subject).ifPresent(playerRepository::delete);
+        playerRepository.findByZitadelUserIdWithCharacters(subject).ifPresent(playerRepository::delete);
     }
 
     @Test

@@ -6,6 +6,7 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
+import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.entity.Player;
 import com.tombtale.serviceplayer.entity.QPlayer;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +57,8 @@ public class PlayerQueryRepositoryImpl implements PlayerQueryRepository {
                 .limit(pageable.getPageSize())
                 .fetch();
 
+        fetchCharacters(results, player);
+
         Long total = jpaQueryFactory
                 .select(player.count())
                 .from(player)
@@ -64,6 +67,32 @@ public class PlayerQueryRepositoryImpl implements PlayerQueryRepository {
         long totalCount = total != null ? total : 0L;
 
         return new PageImpl<>(results, pageable, totalCount);
+    }
+
+    /**
+     * Initialises the {@code characters} collection of an already-loaded page
+     * of players with a single extra query.
+     *
+     * <p>The mapping is LAZY, and {@link PlayerResponse} carries characters, so
+     * something has to load them. Left to itself Hibernate would load them one
+     * player at a time — the N+1. This asks for all of them at once instead:
+     * the fetch join runs in the same persistence context, so the collections
+     * of the entities already in it come back initialised. Two queries for the
+     * rows, whatever the page size.
+     *
+     * @param players the page of players already loaded, possibly empty
+     * @param player  the Q-type path expression
+     */
+    private void fetchCharacters(List<Player> players, QPlayer player) {
+        if (players.isEmpty()) {
+            return;
+        }
+
+        jpaQueryFactory
+                .selectFrom(player)
+                .leftJoin(player.characters).fetchJoin()
+                .where(player.in(players))
+                .fetch();
     }
 
     /**

@@ -80,7 +80,7 @@ class PlayerServiceTest {
         existing.setPublicId(UUID.randomUUID());
         existing.setDisplayName("OldName");
 
-        when(playerRepository.findByZitadelUserId("z1")).thenReturn(Optional.of(existing));
+        when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.of(existing));
         when(playerRepository.save(existing)).thenReturn(existing);
 
         Player result = playerService.getOrCreatePlayer("z1");
@@ -96,7 +96,7 @@ class PlayerServiceTest {
         GameCharacter character = new GameCharacter();
         existing.addCharacter(character);
 
-        when(playerRepository.findByZitadelUserId("z1")).thenReturn(Optional.of(existing));
+        when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.of(existing));
 
         Player result = playerService.getOrCreatePlayer("z1");
 
@@ -106,7 +106,7 @@ class PlayerServiceTest {
 
     @Test
     void shouldCreateNewPlayerIfNotFound() {
-        when(playerRepository.findByZitadelUserId("new-z1")).thenReturn(Optional.empty());
+        when(playerRepository.findByZitadelUserIdWithCharacters("new-z1")).thenReturn(Optional.empty());
         
         Player newPlayer = new Player();
         newPlayer.setDisplayName("Player_random1");
@@ -125,7 +125,7 @@ class PlayerServiceTest {
 
     @Test
     void shouldRecoverFromConcurrentCreationConflict() {
-        when(playerRepository.findByZitadelUserId("z1"))
+        when(playerRepository.findByZitadelUserIdWithCharacters("z1"))
                 .thenReturn(Optional.empty()) // First check: not found
                 .thenReturn(Optional.of(new Player())); // Second check after exception: found
 
@@ -137,13 +137,13 @@ class PlayerServiceTest {
 
         assertThat(result).isNotNull();
         // It should call find twice
-        verify(playerRepository, org.mockito.Mockito.times(2)).findByZitadelUserId("z1");
+        verify(playerRepository, org.mockito.Mockito.times(2)).findByZitadelUserIdWithCharacters("z1");
         verify(playerRepository, org.mockito.Mockito.times(2)).save(any(Player.class));
     }
 
     @Test
     void shouldThrowIfRecoverFromConcurrentCreationFails() {
-        when(playerRepository.findByZitadelUserId("z1"))
+        when(playerRepository.findByZitadelUserIdWithCharacters("z1"))
                 .thenReturn(Optional.empty()) // First check: not found
                 .thenReturn(Optional.empty()); // Second check after exception: still not found!
 
@@ -166,7 +166,7 @@ class PlayerServiceTest {
         PlayerResponse response = new PlayerResponse(
                 UUID.randomUUID(), "NewName", "pi-user", new ArrayList<>(), Instant.now());
 
-        when(playerRepository.findByZitadelUserId("z1")).thenReturn(Optional.of(existing));
+        when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.of(existing));
         when(playerRepository.existsByDisplayNameIgnoreCase("NewName")).thenReturn(false);
         when(playerRepository.save(existing)).thenReturn(existing);
         when(playerMapper.toResponse(existing)).thenReturn(response);
@@ -180,7 +180,7 @@ class PlayerServiceTest {
     @Test
     void shouldThrowNotFoundWhenUpdatingProfile() {
         UpdateMyProfileRequest request = new UpdateMyProfileRequest();
-        when(playerRepository.findByZitadelUserId("z1")).thenReturn(Optional.empty());
+        when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> playerService.updateMyProfile("z1", request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -195,7 +195,7 @@ class PlayerServiceTest {
         UpdateMyProfileRequest request = new UpdateMyProfileRequest();
         request.setDisplayName("TakenName");
 
-        when(playerRepository.findByZitadelUserId("z1")).thenReturn(Optional.of(existing));
+        when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.of(existing));
         when(playerRepository.existsByDisplayNameIgnoreCase("TakenName")).thenReturn(true);
 
         assertThatThrownBy(() -> playerService.updateMyProfile("z1", request))
