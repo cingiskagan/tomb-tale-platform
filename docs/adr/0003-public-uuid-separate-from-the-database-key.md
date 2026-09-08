@@ -34,7 +34,19 @@ Controllers, DTOs and URLs deal only in `publicId`.
 - There are now two ways to say "which player", and they have different types.
   Repository and service signatures have to be explicit about which one they
   take, because `Long id` and `UUID publicId` are easy to swap by accident.
-- The value is assigned in two places on purpose: `@ColumnDefault(
-  "gen_random_uuid()")` covers rows inserted by SQL, and `@PrePersist` covers
-  rows inserted through Hibernate. Seed data in `data.sql` never goes through the
-  entity, so neither mechanism alone is enough.
+- Assigning the value needs two mechanisms, because a row can arrive two ways.
+  `@PrePersist` fills `publicId` for everything Hibernate inserts, which is
+  everything the application itself creates. A row inserted by raw SQL — seed
+  data, or a data migration — never touches the entity, so it needs a column
+  default in the migration instead.
+- Only one table has both today. `players.public_id` is declared
+  `DEFAULT gen_random_uuid()` in `V1__baseline.sql`; `characters.public_id` is
+  not, and would fail its `NOT NULL` constraint if anything ever SQL-inserted a
+  character. Nothing does, so this is latent rather than broken.
+- `Player` also carries `@ColumnDefault("gen_random_uuid()")`, which does nothing
+  at runtime. It is a schema-generation annotation, and Flyway owns the schema
+  while Hibernate only validates it — see
+  [0005](0005-flyway-owns-the-schema.md). It is a leftover from the
+  `ddl-auto: update` era the baseline was dumped from, and it is why the
+  `players` default exists while the `characters` one does not: `GameCharacter`
+  never had the annotation.

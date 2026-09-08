@@ -45,7 +45,9 @@ setting.
   now spent.
 - `default_schema` applies to tests as well, so the test profile has to create its
   schema from the H2 JDBC URL, and commerce additionally sets the connection
-  schema so the unqualified inserts in `data.sql` resolve.
+  schema so the unqualified inserts in `data.sql` resolve. This one did not last:
+  [0007](0007-testcontainers-instead-of-mocked-repositories.md) removed H2 from
+  both poms two days later. Read this bullet as history, not as current setup.
 
 ---
 

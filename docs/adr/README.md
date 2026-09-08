@@ -12,7 +12,7 @@ it got to where it is.
 
 ## The format
 
-Every record has the same four parts. Start from `0000-template.md`.
+Every record has the same five parts. Start from `0000-template.md`.
 
 - **Title** — a short phrase naming the decision, written as a statement.
 - **Status** — `proposed`, `accepted`, `superseded by NNNN`, or `deprecated`.
