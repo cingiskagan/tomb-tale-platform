@@ -33,6 +33,7 @@ class PlayerListQueryCountTest extends PostgresTestBase {
     private static final long THREE_QUERIES = 3L;
     private static final int ONE_PLAYER = 1;
     private static final int FIVE_PLAYERS = 5;
+    private static final int ONE_CHARACTER = 1;
 
     @Autowired
     private PlayerRepository playerRepository;
@@ -101,7 +102,8 @@ class PlayerListQueryCountTest extends PostgresTestBase {
                 new PlayerFilterRequest(null), PageRequest.of(0, PAGE_SIZE));
 
         assertThat(page.getContent()).hasSize(FIVE_PLAYERS);
-        assertThat(page.getContent().get(0).getCharacters()).hasSize(1);
+        assertThat(page.getContent()).allSatisfy(
+                p -> assertThat(p.getCharacters()).hasSize(ONE_CHARACTER));
         assertThat(stats.getPrepareStatementCount()).isEqualTo(THREE_QUERIES);
     }
 
@@ -115,7 +117,8 @@ class PlayerListQueryCountTest extends PostgresTestBase {
                 new PlayerFilterRequest(null), PageRequest.of(0, PAGE_SIZE));
 
         assertThat(page.getContent()).hasSize(ONE_PLAYER);
-        assertThat(page.getContent().get(0).getCharacters()).hasSize(1);
+        assertThat(page.getContent()).allSatisfy(
+                p -> assertThat(p.getCharacters()).hasSize(ONE_CHARACTER));
         assertThat(stats.getPrepareStatementCount()).isEqualTo(THREE_QUERIES);
     }
 }
