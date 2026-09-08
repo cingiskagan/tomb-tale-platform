@@ -40,7 +40,7 @@
 #
 # The last two are the Angular upgrade arriving one package at a time. The
 # `ignore` rule below does not catch them: Dependabot reads 21.0.1 -> 21.4.0
-# and 0.15 -> 0.16 as minors, so they reopen every Monday regardless.
+# and 0.15 -> 0.16 as minors, so they reopened every Monday regardless.
 #
 # This stops PRs only. Alert detection reads the dependency graph and the
 # advisory database, not this file, so nothing here hides a vulnerability.
@@ -75,7 +75,10 @@ updates:
       # that rewrite application source, and Dependabot only rewrites
       # package.json, so its version of that upgrade is always half a migration.
       #
-      # Minors and patches still arrive weekly. Majors become a deliberate
+      # This rule is dormant while the pause is on: `open-pull-requests-limit`
+      # is 0 above, which stops every version-update PR, minors and patches
+      # included. It describes the re-enabled state. Once that limit goes back
+      # above 0, minors and patches resume weekly and majors stay a deliberate
       # piece of work rather than a PR that reopens every Monday.
       #
       # This suppresses pull requests only. Alert detection reads the
