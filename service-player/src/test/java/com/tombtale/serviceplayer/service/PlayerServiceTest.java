@@ -75,23 +75,7 @@ class PlayerServiceTest {
     }
 
     @Test
-    void shouldReturnExistingPlayerAndBackfillCharacter() {
-        Player existing = new Player();
-        existing.setPublicId(UUID.randomUUID());
-        existing.setDisplayName("OldName");
-
-        when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.of(existing));
-        when(playerRepository.save(existing)).thenReturn(existing);
-
-        Player result = playerService.getOrCreatePlayer("z1");
-
-        assertThat(result.getCharacters()).hasSize(1);
-        assertThat(result.getCharacters().get(0).getName()).isEqualTo("OldName");
-        verify(playerRepository).save(existing);
-    }
-
-    @Test
-    void shouldReturnExistingPlayerWithoutBackfill() {
+    void shouldReturnExistingPlayerWithoutWriting() {
         Player existing = new Player();
         GameCharacter character = new GameCharacter();
         existing.addCharacter(character);
@@ -130,15 +114,15 @@ class PlayerServiceTest {
                 .thenReturn(Optional.of(new Player())); // Second check after exception: found
 
         when(playerRepository.save(any(Player.class)))
-                .thenThrow(new DataIntegrityViolationException("Unique constraint violation"))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
 
         Player result = playerService.getOrCreatePlayer("z1");
 
         assertThat(result).isNotNull();
         // It should call find twice
         verify(playerRepository, org.mockito.Mockito.times(2)).findByZitadelUserIdWithCharacters("z1");
-        verify(playerRepository, org.mockito.Mockito.times(2)).save(any(Player.class));
+        // The losing thread writes once and never again: the winner's row is returned as it stands.
+        verify(playerRepository, org.mockito.Mockito.times(1)).save(any(Player.class));
     }
 
     @Test

@@ -70,3 +70,4 @@ in sequence here — a record written later can describe an earlier choice.
 | [0007](0007-testcontainers-instead-of-mocked-repositories.md) | Testcontainers instead of mocked repositories | 2026-08-31 | accepted |
 | [0008](0008-the-maven-build-is-the-only-java-linter.md) | The Maven build is the only Java linter | 2026-09-07 | accepted |
 | [0009](0009-jacoco-measures-everything-we-write.md) | Jacoco measures everything we write | 2026-09-07 | accepted |
+| [0012](0012-a-player-is-created-with-a-character-in-one-transaction.md) | A player is created with a character, in one transaction | 2026-09-09 | accepted |

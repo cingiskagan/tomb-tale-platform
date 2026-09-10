@@ -63,48 +63,25 @@ public class PlayerService {
      * Retrieves a player profile by their Zitadel user ID, or creates a new one
      * if it does not exist yet (JIT Provisioning).
      *
+     * <p>Reading never writes. A player is always created together with a
+     * default character, in one transaction, so an existing player is returned
+     * exactly as it was stored.
+     *
      * @param zitadelUserId the subject claim from the JWT
      * @return the existing or newly created player
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Player getOrCreatePlayer(String zitadelUserId) {
         return playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
-                .map(this::backfillCharacterIfMissing)
                 .orElseGet(() -> {
                     try {
                         return createNewPlayerWithCharacter(zitadelUserId);
                     } catch (DataIntegrityViolationException e) {
                         log.warn("Concurrent creation detected for zitadel user: {}. Fetching existing record.", zitadelUserId);
                         return playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
-                                .map(this::backfillCharacterIfMissing)
                                 .orElseThrow(() -> new IllegalStateException("Failed to find player after creation collision"));
                     }
                 });
-    }
-
-    /**
-     * Creates a default character for players that existed before the
-     * character system was introduced. This is a self-healing migration:
-     * each player gets backfilled on their next login.
-     *
-     * @param player the existing player to check
-     * @return the player, with a character guaranteed
-     */
-    private Player backfillCharacterIfMissing(Player player) {
-        if (!player.getCharacters().isEmpty()) {
-            return player;
-        }
-
-        log.info("Backfilling default character for existing player: {}",
-                player.getPublicId());
-
-        GameCharacter backfilledCharacter = GameCharacter.builder()
-                .name(player.getDisplayName())
-                .player(player)
-                .build();
-
-        player.addCharacter(backfilledCharacter);
-        return playerRepository.save(player);
     }
 
     /**
