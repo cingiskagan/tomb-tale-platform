@@ -11,9 +11,13 @@
 #   ./scripts/pre-pr-tests.sh --scope service-player   # one module
 #   ./scripts/pre-pr-tests.sh --clean                  # also runs npm ci
 #
-# --scope takes exactly one of: all (default), general, service-commerce,
-# service-player, frontend-portal. An unrecognised value is an error rather
-# than a silent no-op, so a typo cannot look like a clean run.
+# --scope takes exactly one of: all (default), general, platform-commons,
+# service-commerce, service-player, frontend-portal. An unrecognised value is
+# an error rather than a silent no-op, so a typo cannot look like a clean run.
+#
+# The Java modules build from the repository root, not from their own
+# directory: service-player and service-commerce depend on platform-commons,
+# and Maven only resolves that from the reactor when it is given all of them.
 # ============================================================
 
 set -e
@@ -31,7 +35,7 @@ MARKDOWNLINT_VERSION="0.45.0"
 # not this pin, is what keeps local runs and CI agreeing.
 YAMLLINT_VERSION="1.35.1"
 
-VALID_SCOPES=("all" "general" "service-commerce" "service-player" "frontend-portal")
+VALID_SCOPES=("all" "general" "platform-commons" "service-commerce" "service-player" "frontend-portal")
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -135,46 +139,32 @@ if in_scope general; then
 fi
 
 # -------------------------------------------------------
-# service-commerce
+# Java modules
 # -------------------------------------------------------
-COMMERCE_DIR="$REPO_ROOT/service-commerce"
+# One command per module, byte for byte what test-and-coverage.yml runs.
+# Checkstyle and PMD are bound to the verify phase in each pom, so this covers
+# style, static analysis, tests and coverage in a single gate. For fast
+# feedback while working, run `./mvnw -pl <module> -am checkstyle:check
+# pmd:check -DskipTests` from the repository root.
+run_maven_module() {
+    module="$1"
+    module_dir="$REPO_ROOT/$module"
 
-if [ -d "$COMMERCE_DIR" ] && in_scope service-commerce; then
+    [ -d "$module_dir" ] || return 0
+    in_scope "$module" || return 0
+
     echo ""
     echo "------------------------------------------"
-    echo "📦 service-commerce"
+    echo "📦 $module"
     echo "------------------------------------------"
-
-    # One command, byte for byte what test-and-coverage.yml runs. Checkstyle
-    # and PMD are bound to the verify phase in the pom, so this covers style,
-    # static analysis, tests and coverage in a single gate. For fast feedback
-    # while working, run `./mvnw checkstyle:check pmd:check -DskipTests`.
     echo "  1. 🧪 Tests, coverage, Checkstyle & PMD..."
-    (cd "$COMMERCE_DIR" && ./mvnw clean verify)
+    (cd "$REPO_ROOT" && ./mvnw -pl "$module" -am clean verify)
+    echo "  ✅ $module passed"
+}
 
-    echo "  ✅ service-commerce passed"
-fi
-
-# -------------------------------------------------------
-# service-player
-# -------------------------------------------------------
-PLAYER_DIR="$REPO_ROOT/service-player"
-
-if [ -d "$PLAYER_DIR" ] && in_scope service-player; then
-    echo ""
-    echo "------------------------------------------"
-    echo "📦 service-player"
-    echo "------------------------------------------"
-
-    # One command, byte for byte what test-and-coverage.yml runs. Checkstyle
-    # and PMD are bound to the verify phase in the pom, so this covers style,
-    # static analysis, tests and coverage in a single gate. For fast feedback
-    # while working, run `./mvnw checkstyle:check pmd:check -DskipTests`.
-    echo "  1. 🧪 Tests, coverage, Checkstyle & PMD..."
-    (cd "$PLAYER_DIR" && ./mvnw clean verify)
-
-    echo "  ✅ service-player passed"
-fi
+run_maven_module platform-commons
+run_maven_module service-commerce
+run_maven_module service-player
 
 # -------------------------------------------------------
 # frontend-portal

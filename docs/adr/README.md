@@ -71,3 +71,5 @@ in sequence here — a record written later can describe an earlier choice.
 | [0008](0008-the-maven-build-is-the-only-java-linter.md) | The Maven build is the only Java linter | 2026-09-07 | accepted |
 | [0009](0009-jacoco-measures-everything-we-write.md) | Jacoco measures everything we write | 2026-09-07 | accepted |
 | [0012](0012-a-player-is-created-with-a-character-in-one-transaction.md) | A player is created with a character, in one transaction | 2026-09-09 | accepted |
+| [0013](0013-every-entity-carries-the-same-six-fields.md) | Every entity carries the same six fields | 2026-09-11 | accepted |
+| [0014](0014-player-publicid-is-the-cross-service-identifier.md) | `Player.publicId` is the cross-service player identifier | 2026-09-11 | accepted |

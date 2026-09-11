@@ -15,7 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [service-player, service-commerce]
+        # platform-commons is built and measured like the services. It is a
+        # reactor module, so each job builds its target with `-am` and gets the
+        # dependency from the same build rather than from a previous one.
+        service: [platform-commons, service-player, service-commerce]
 
     steps:
       - name: Checkout repository
@@ -29,8 +32,7 @@ jobs:
           cache: maven
 
       - name: Run Maven Tests and Generate Jacoco Report
-        working-directory: ${{ matrix.service }}
-        run: ./mvnw clean verify
+        run: ./mvnw -pl ${{ matrix.service }} -am clean verify
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v7

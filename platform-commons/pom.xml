@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>4.1.1</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.tombtale</groupId>
+	<artifactId>platform-commons</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>platform-commons</name>
+	<description>Types both Tomb Tale services share</description>
+
+	<properties>
+		<java.version>21</java.version>
+		<!--
+			Same two-property dance as the services: spring-boot-dependencies
+			imports com.querydsl:querydsl-bom keyed on querydsl.version, so that
+			one has to keep naming a version that exists upstream. The maintained
+			fork gets its own property. See either service pom for the CVE.
+		-->
+		<querydsl.version>5.1.0</querydsl.version>
+		<querydsl-openfeign.version>5.6.1</querydsl-openfeign.version>
+		<!-- Must match the PMD shipped in the MegaLinter image pinned in .github/workflows/mega-linter.yml -->
+		<pmd.version>7.27.0</pmd.version>
+		<surefire.runOrder>alphabetical</surefire.runOrder>
+	</properties>
+
+	<dependencies>
+		<!--
+			BaseEntity is a @MappedSuperclass with Spring Data auditing on it, so
+			this module needs JPA and spring-data-commons at compile time. Both
+			services already carry the starter; nothing that depends on
+			platform-commons can avoid it.
+		-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<!--
+			QueryDSL generates a Q-class per entity, and a Q-class for an entity
+			with a mapped superclass extends the superclass's. The processor only
+			generates for the module it is compiling, so QBaseEntity has to be
+			built here — a service running APT over its own entities cannot
+			produce it from a jar.
+		-->
+		<dependency>
+			<groupId>io.github.openfeign.querydsl</groupId>
+			<artifactId>querydsl-jpa</artifactId>
+			<version>${querydsl-openfeign.version}</version>
+			<classifier>jakarta</classifier>
+		</dependency>
+		<dependency>
+			<groupId>io.github.openfeign.querydsl</groupId>
+			<artifactId>querydsl-apt</artifactId>
+			<version>${querydsl-openfeign.version}</version>
+			<classifier>jakarta</classifier>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</path>
+						<path>
+							<groupId>io.github.openfeign.querydsl</groupId>
+							<artifactId>querydsl-apt</artifactId>
+							<version>${querydsl-openfeign.version}</version>
+							<classifier>jakarta</classifier>
+						</path>
+						<path>
+							<groupId>jakarta.persistence</groupId>
+							<artifactId>jakarta.persistence-api</artifactId>
+							<version>3.2.0</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+			<!-- === Checkstyle (code style enforcement) === -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<version>3.6.0</version>
+				<executions>
+					<execution>
+						<id>checkstyle-check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<configLocation>${project.basedir}/../config/checkstyle/checkstyle.xml</configLocation>
+					<consoleOutput>true</consoleOutput>
+					<failsOnError>true</failsOnError>
+					<includeTestSourceDirectory>true</includeTestSourceDirectory>
+					<sourceDirectories>
+						<sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+					</sourceDirectories>
+					<testSourceDirectories>
+						<testSourceDirectory>${project.basedir}/src/test/java</testSourceDirectory>
+					</testSourceDirectories>
+				</configuration>
+			</plugin>
+			<!-- === PMD (static analysis) === -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-pmd-plugin</artifactId>
+				<version>3.28.0</version>
+				<executions>
+					<execution>
+						<id>pmd-check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<rulesets>
+						<ruleset>${project.basedir}/../config/pmd/pmd-ruleset.xml</ruleset>
+					</rulesets>
+					<failOnViolation>true</failOnViolation>
+					<printFailingErrors>true</printFailingErrors>
+					<includeTests>true</includeTests>
+					<!-- Same reason as the services: these roots hold the generated Q-classes. -->
+					<excludeRoots>
+						<excludeRoot>${project.build.directory}/generated-sources/annotations</excludeRoot>
+						<excludeRoot>${project.build.directory}/generated-test-sources/test-annotations</excludeRoot>
+					</excludeRoots>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>net.sourceforge.pmd</groupId>
+						<artifactId>pmd-core</artifactId>
+						<version>${pmd.version}</version>
+					</dependency>
+					<dependency>
+						<groupId>net.sourceforge.pmd</groupId>
+						<artifactId>pmd-java</artifactId>
+						<version>${pmd.version}</version>
+					</dependency>
+					<dependency>
+						<groupId>net.sourceforge.pmd</groupId>
+						<artifactId>pmd-javascript</artifactId>
+						<version>${pmd.version}</version>
+					</dependency>
+					<dependency>
+						<groupId>net.sourceforge.pmd</groupId>
+						<artifactId>pmd-jsp</artifactId>
+						<version>${pmd.version}</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.15</version>
+				<executions>
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<!--
+						The QueryDSL metamodel, regenerated on every build, is the only
+						thing here that is not ours. Keep this list and codecov.yml
+						(repo root) identical.
+					-->
+					<excludes>
+						<exclude>**/entity/Q*.*</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

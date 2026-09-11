@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.tombtale</groupId>
+	<artifactId>tomb-tale-platform</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>tomb-tale-platform</name>
+	<description>Aggregator for the Tomb Tale platform modules</description>
+
+	<!--
+		An aggregator, not a parent. Each module keeps spring-boot-starter-parent
+		as its own parent, so nothing about how a service builds changes. This
+		POM exists for one reason: platform-commons and the two services that
+		depend on it have to resolve each other from the reactor, which only
+		happens when Maven is given all three at once.
+
+		Build one service and its dependencies with:
+		    ./mvnw -pl service-player -am clean verify
+	-->
+	<modules>
+		<module>platform-commons</module>
+		<module>service-player</module>
+		<module>service-commerce</module>
+	</modules>
+
+</project>

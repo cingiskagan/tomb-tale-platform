@@ -9,9 +9,10 @@ coverage:
       default:
         target: 80%
 
-# Mirrors the Jacoco <excludes> in service-player/pom.xml and
-# service-commerce/pom.xml. Both lists must be changed together, or the
-# Codecov percentage stops matching the one the build reports.
+# Mirrors the Jacoco <excludes> in platform-commons/pom.xml,
+# service-player/pom.xml and service-commerce/pom.xml. Every list must be
+# changed together, or the Codecov percentage stops matching the one the
+# build reports.
 ignore:
   # Spring wiring: a bean either builds the context or the context fails.
   - "service-player/src/main/java/com/tombtale/serviceplayer/config/**"
@@ -20,6 +21,7 @@ ignore:
   - "service-player/src/main/java/com/tombtale/serviceplayer/dto/**"
   - "service-commerce/src/main/java/com/tombtale/servicecommerce/dto/**"
   # QueryDSL metamodel, regenerated on every build.
+  - "platform-commons/src/main/java/com/tombtale/commons/entity/Q*"
   - "service-player/src/main/java/com/tombtale/serviceplayer/entity/Q*"
   - "service-commerce/src/main/java/com/tombtale/servicecommerce/entity/Q*"
   # MapStruct writes the *MapperImpl; covering it measures MapStruct.
