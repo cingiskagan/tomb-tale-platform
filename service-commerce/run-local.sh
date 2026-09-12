@@ -31,6 +31,11 @@ SERVER_PORT="${SERVICE_COMMERCE_PORT}"
 
 # ── Full mode (real Postgres + RabbitMQ) ────────────────────────────────────
 echo "🚀  Starting service-commerce in FULL mode (Postgres, port ${SERVER_PORT})…"
+# platform-commons is a sibling module, not a published artifact, and
+# spring-boot:run resolves it from the local repository. Install it first:
+# a fresh clone has nothing there, and the service would fail to resolve it.
+"${SCRIPT_DIR}/../mvnw" -q -pl platform-commons install -DskipTests
+
 exec "${SCRIPT_DIR}/mvnw" spring-boot:run \
   -f "${SCRIPT_DIR}/pom.xml" \
   -Dspring-boot.run.arguments="--server.port=${SERVER_PORT}"
