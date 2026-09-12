@@ -57,14 +57,14 @@ class ServiceCommerceApplicationTests extends PostgresTestBase {
     private static final String ADMIN_SUBJECT = "smoke-admin";
 
     private static final String ITEM_CODE = "SWORD_IRON";
-    private static final String PLAYER_ID = "smoke-player-001";
+    private static final String PLAYER_ID = "aaaaaaaa-0000-4000-8000-00000000beef";
 
     /** quantity 2 × unitPrice 150.00, computed by the service and never sent by the client. */
     private static final String EXPECTED_TOTAL_PRICE = "300.00";
 
     private static final String NEW_PURCHASE_BODY = """
             {
-              "playerId": "smoke-player-001",
+              "playerId": "aaaaaaaa-0000-4000-8000-00000000beef",
               "itemCode": "SWORD_IRON",
               "quantity": 2,
               "unitPrice": 150.00
@@ -77,7 +77,7 @@ class ServiceCommerceApplicationTests extends PostgresTestBase {
     @Autowired
     private PurchaseRepository purchaseRepository;
 
-    private UUID createdPurchaseId;
+    private UUID createdPurchasePublicId;
 
     /**
      * Removes the row this class commits.
@@ -93,8 +93,8 @@ class ServiceCommerceApplicationTests extends PostgresTestBase {
         // No reset afterwards: JUnit builds a fresh instance per test method, so
         // the field starts null again on its own. The guard is for contextLoads,
         // which never creates anything.
-        if (createdPurchaseId != null) {
-            purchaseRepository.findById(createdPurchaseId).ifPresent(purchaseRepository::delete);
+        if (createdPurchasePublicId != null) {
+            purchaseRepository.findByPublicId(createdPurchasePublicId).ifPresent(purchaseRepository::delete);
         }
     }
 
@@ -126,11 +126,11 @@ class ServiceCommerceApplicationTests extends PostgresTestBase {
 
         // The row is committed the moment the POST returns 201, so capture its
         // id before asserting anything else. A failure in the assertions below
-        // would otherwise leave createdPurchaseId unset, skip the delete in
+        // would otherwise leave createdPurchasePublicId unset, skip the delete in
         // @AfterEach, and leak the row into the next test class — the exact
         // contamination this suite was fixed for two commits ago.
         String json = created.andReturn().getResponse().getContentAsString();
-        createdPurchaseId = UUID.fromString(JsonPath.read(json, "$.id"));
+        createdPurchasePublicId = UUID.fromString(JsonPath.read(json, "$.id"));
 
         created.andExpect(jsonPath("$.playerId").value(PLAYER_ID))
                 .andExpect(jsonPath("$.status").value(PurchaseStatus.PENDING.name()));
@@ -141,10 +141,10 @@ class ServiceCommerceApplicationTests extends PostgresTestBase {
         BigDecimal totalPrice = new BigDecimal(JsonPath.read(json, "$.totalPrice").toString());
         assertThat(totalPrice).isEqualByComparingTo(new BigDecimal(EXPECTED_TOTAL_PRICE));
 
-        mockMvc.perform(get(PURCHASES_URL + "/{id}", createdPurchaseId)
+        mockMvc.perform(get(PURCHASES_URL + "/{id}", createdPurchasePublicId)
                 .with(adminToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(createdPurchaseId.toString()))
+                .andExpect(jsonPath("$.id").value(createdPurchasePublicId.toString()))
                 .andExpect(jsonPath("$.itemCode").value(ITEM_CODE))
                 .andExpect(jsonPath("$.status").value(PurchaseStatus.PENDING.name()));
     }

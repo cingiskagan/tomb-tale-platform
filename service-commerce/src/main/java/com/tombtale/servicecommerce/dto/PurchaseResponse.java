@@ -12,8 +12,12 @@ import java.util.UUID;
  * <p>Intentionally omits the internal JPA {@code version} field
  * to keep the public contract clean.
  *
- * @param id          unique purchase identifier
- * @param playerId    Zitadel subject of the purchasing player
+ * <p>{@code id} is the purchase's {@code publicId}; the internal key never
+ * leaves the persistence layer. {@code purchasedAt} is the entity's
+ * {@code createdAt} under the name this API has always used for it.
+ *
+ * @param id          the purchase's public identifier
+ * @param playerId    publicId of the purchasing player
  * @param itemCode    catalogue item code
  * @param quantity    number of items purchased
  * @param unitPrice   price per single item
@@ -23,7 +27,7 @@ import java.util.UUID;
  */
 public record PurchaseResponse(
         UUID id,
-        String playerId,
+        UUID playerId,
         String itemCode,
         Integer quantity,
         BigDecimal unitPrice,

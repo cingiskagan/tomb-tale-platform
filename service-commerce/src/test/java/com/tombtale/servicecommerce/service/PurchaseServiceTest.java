@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 class PurchaseServiceTest {
 
     private static final UUID PURCHASE_ID = UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
-    private static final String PLAYER_ID = "player-001";
+    private static final UUID PLAYER_ID = UUID.fromString("aaaaaaaa-0000-4000-8000-000000000001");
     private static final String ITEM_CODE = "SWORD_IRON";
     private static final int QUANTITY = 3;
     private static final BigDecimal UNIT_PRICE = new BigDecimal("150.0000");
@@ -69,7 +69,6 @@ class PurchaseServiceTest {
                 .unitPrice(UNIT_PRICE)
                 .totalPrice(EXPECTED_TOTAL)
                 .status(PurchaseStatus.PENDING)
-                .purchasedAt(Instant.now())
                 .version(0)
                 .build();
     }
@@ -85,7 +84,7 @@ class PurchaseServiceTest {
         CreatePurchaseRequest request = new CreatePurchaseRequest(PLAYER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE);
         Purchase mappedEntity = buildPurchaseEntity();
         Purchase savedEntity = buildPurchaseEntity();
-        savedEntity.setId(PURCHASE_ID);
+        savedEntity.setPublicId(PURCHASE_ID);
         PurchaseResponse expectedResponse = buildPurchaseResponse();
 
         when(purchaseMapper.toEntity(request)).thenReturn(mappedEntity);
@@ -102,13 +101,13 @@ class PurchaseServiceTest {
     @Test
     void shouldFindPurchaseByIdSuccessfully() {
         Purchase entity = buildPurchaseEntity();
-        entity.setId(PURCHASE_ID);
+        entity.setPublicId(PURCHASE_ID);
         PurchaseResponse expectedResponse = buildPurchaseResponse();
 
-        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
+        when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));
         when(purchaseMapper.toResponse(entity)).thenReturn(expectedResponse);
 
-        PurchaseResponse result = purchaseService.findPurchaseById(PURCHASE_ID);
+        PurchaseResponse result = purchaseService.findPurchaseByPublicId(PURCHASE_ID);
 
         assertThat(result.id()).isEqualTo(PURCHASE_ID);
         assertThat(result.playerId()).isEqualTo(PLAYER_ID);
@@ -116,9 +115,9 @@ class PurchaseServiceTest {
 
     @Test
     void shouldThrowWhenPurchaseNotFound() {
-        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.empty());
+        when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> purchaseService.findPurchaseById(PURCHASE_ID))
+        assertThatThrownBy(() -> purchaseService.findPurchaseByPublicId(PURCHASE_ID))
                 .isInstanceOf(PurchaseNotFoundException.class)
                 .hasMessageContaining(PURCHASE_ID.toString());
     }
@@ -128,7 +127,7 @@ class PurchaseServiceTest {
         PurchaseFilterRequest filter = new PurchaseFilterRequest(PLAYER_ID, null, null, null, null);
         Pageable pageable = PageRequest.of(0, DEFAULT_PAGE_SIZE);
         Purchase entity = buildPurchaseEntity();
-        entity.setId(PURCHASE_ID);
+        entity.setPublicId(PURCHASE_ID);
         Page<Purchase> entityPage = new PageImpl<>(List.of(entity), pageable, 1);
         PurchaseResponse expectedResponse = buildPurchaseResponse();
 
@@ -144,14 +143,14 @@ class PurchaseServiceTest {
     @Test
     void shouldUpdatePurchaseStatus() {
         Purchase entity = buildPurchaseEntity();
-        entity.setId(PURCHASE_ID);
+        entity.setPublicId(PURCHASE_ID);
         entity.setStatus(PurchaseStatus.PENDING);
         UpdatePurchaseRequest request = new UpdatePurchaseRequest(PurchaseStatus.COMPLETED, null);
         PurchaseResponse expectedResponse = new PurchaseResponse(
                 PURCHASE_ID, PLAYER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE, EXPECTED_TOTAL,
                 PurchaseStatus.COMPLETED, Instant.now());
 
-        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
+        when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));
         when(purchaseRepository.save(entity)).thenReturn(entity);
         when(purchaseMapper.toResponse(entity)).thenReturn(expectedResponse);
 
@@ -165,14 +164,14 @@ class PurchaseServiceTest {
     void shouldUpdatePurchaseQuantityAndRecalculateTotal() {
         int newQuantity = NEW_UPDATE_QUANTITY;
         Purchase entity = buildPurchaseEntity();
-        entity.setId(PURCHASE_ID);
+        entity.setPublicId(PURCHASE_ID);
         UpdatePurchaseRequest request = new UpdatePurchaseRequest(null, newQuantity);
         BigDecimal expectedNewTotal = UNIT_PRICE.multiply(BigDecimal.valueOf(newQuantity));
         PurchaseResponse expectedResponse = new PurchaseResponse(
                 PURCHASE_ID, PLAYER_ID, ITEM_CODE, newQuantity, UNIT_PRICE, expectedNewTotal,
                 PurchaseStatus.PENDING, Instant.now());
 
-        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
+        when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));
         when(purchaseRepository.save(entity)).thenReturn(entity);
         when(purchaseMapper.toResponse(entity)).thenReturn(expectedResponse);
 
@@ -185,9 +184,9 @@ class PurchaseServiceTest {
     @Test
     void shouldSoftDeletePurchaseBySettingStatusToCancelled() {
         Purchase entity = buildPurchaseEntity();
-        entity.setId(PURCHASE_ID);
+        entity.setPublicId(PURCHASE_ID);
 
-        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
+        when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));
         when(purchaseRepository.save(entity)).thenReturn(entity);
 
         purchaseService.deletePurchase(PURCHASE_ID);
@@ -198,7 +197,7 @@ class PurchaseServiceTest {
 
     @Test
     void shouldThrowWhenDeletingNonExistentPurchase() {
-        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.empty());
+        when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> purchaseService.deletePurchase(PURCHASE_ID))
                 .isInstanceOf(PurchaseNotFoundException.class);
@@ -211,7 +210,7 @@ class PurchaseServiceTest {
 
         UpdatePurchaseRequest request = new UpdatePurchaseRequest(PurchaseStatus.PENDING, null);
 
-        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
+        when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));
 
         assertThatThrownBy(() -> purchaseService.updatePurchase(PURCHASE_ID, request))
                 .isInstanceOf(InvalidStatusTransitionException.class)
@@ -229,7 +228,7 @@ class PurchaseServiceTest {
 
         UpdatePurchaseRequest request = new UpdatePurchaseRequest(PurchaseStatus.REFUNDED, null);
 
-        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
+        when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));
 
         assertThatThrownBy(() -> purchaseService.updatePurchase(PURCHASE_ID, request))
                 .isInstanceOf(InvalidStatusTransitionException.class)
@@ -247,7 +246,7 @@ class PurchaseServiceTest {
 
         UpdatePurchaseRequest request = new UpdatePurchaseRequest(PurchaseStatus.CANCELLED, null);
 
-        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
+        when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));
 
         assertThatThrownBy(() -> purchaseService.updatePurchase(PURCHASE_ID, request))
                 .isInstanceOf(InvalidStatusTransitionException.class)
@@ -270,7 +269,7 @@ class PurchaseServiceTest {
                 PURCHASE_ID, PLAYER_ID, ITEM_CODE, newQuantity, UNIT_PRICE, expectedNewTotal,
                 PurchaseStatus.COMPLETED, Instant.now());
 
-        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
+        when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));
         when(purchaseRepository.save(entity)).thenReturn(entity);
         when(purchaseMapper.toResponse(entity)).thenReturn(expectedResponse);
 
@@ -287,7 +286,7 @@ class PurchaseServiceTest {
         Purchase entity = buildPurchaseEntity();
         entity.setStatus(PurchaseStatus.REFUNDED);
 
-        when(purchaseRepository.findById(PURCHASE_ID)).thenReturn(Optional.of(entity));
+        when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));
         when(purchaseRepository.save(entity)).thenReturn(entity);
 
         purchaseService.deletePurchase(PURCHASE_ID);

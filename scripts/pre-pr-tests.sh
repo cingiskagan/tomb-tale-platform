@@ -144,8 +144,9 @@ fi
 # One command per module, byte for byte what test-and-coverage.yml runs.
 # Checkstyle and PMD are bound to the verify phase in each pom, so this covers
 # style, static analysis, tests and coverage in a single gate. For fast
-# feedback while working, run `./mvnw -pl <module> -am checkstyle:check
-# pmd:check -DskipTests` from the repository root.
+# feedback while working, run `./mvnw -pl <module> -am verify -DskipTests`
+# from the repository root — naming the two goals directly skips the lifecycle
+# that builds platform-commons, and dependency resolution fails first.
 run_maven_module() {
     module="$1"
     module_dir="$REPO_ROOT/$module"

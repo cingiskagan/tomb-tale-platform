@@ -42,7 +42,7 @@ Maven, from the repository root. `-pl` picks the module and `-am` builds what it
 ./mvnw -pl service-player -am clean test                                  # unit tests
 ./mvnw -pl service-player -am test -Dtest=CharacterServiceTest            # single test class
 ./mvnw -pl service-player -am test -Dtest=CharacterServiceTest#method     # single test method
-./mvnw -pl service-player -am checkstyle:check pmd:check -DskipTests      # style/static analysis only
+./mvnw -pl service-player -am verify -DskipTests                          # style/static analysis only
 ./mvnw -pl service-player -am clean verify                                # tests + Jacoco + checkstyle + PMD (what CI runs)
 ./mvnw clean verify                                                       # every module at once
 ```
@@ -51,7 +51,7 @@ Maven, from the repository root. `-pl` picks the module and `-am` builds what it
 
 Checkstyle/PMD rulesets live in `config/checkstyle/checkstyle.xml` and `config/pmd/pmd-ruleset.xml`, referenced relatively from each `pom.xml` — one copy governs all three modules.
 
-Both `check` goals are bound to the `verify` phase, so `./mvnw clean verify` is the single gate: the same engine at the same pinned version runs locally and in CI. MegaLinter does not lint Java — it ships its own PMD build, and when that drifted from `${pmd.version}` the two disagreed about the same ruleset. Style failures surface after the tests as a result; `./mvnw checkstyle:check pmd:check -DskipTests` is still the fast path while you are working.
+Both `check` goals are bound to the `verify` phase, so `./mvnw clean verify` is the single gate: the same engine at the same pinned version runs locally and in CI. MegaLinter does not lint Java — it ships its own PMD build, and when that drifted from `${pmd.version}` the two disagreed about the same ruleset. Style failures surface after the tests as a result; `./mvnw -pl <module> -am verify -DskipTests` is still the fast path while you are working. Naming the two goals directly — `checkstyle:check pmd:check` — no longer works from a clean tree: a goal invoked without a lifecycle phase never builds `platform-commons`, so resolving the module's dependencies fails before either check runs. `verify -DskipTests` reaches the same two goals, since both are bound to that phase.
 
 ### Frontend (frontend-portal)
 

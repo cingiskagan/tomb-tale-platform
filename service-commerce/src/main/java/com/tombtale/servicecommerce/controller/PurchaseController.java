@@ -56,7 +56,8 @@ public class PurchaseController {
      * <p>
      * Requires {@code platform_admin}. The buyer comes from
      * {@code request.playerId()}, not from the token subject — an admin
-     * creates purchases on behalf of a player.
+     * creates purchases on behalf of a player. That field is the player's
+     * {@code publicId} (ADR 0014).
      *
      * @param request the validated creation payload
      * @return the created purchase with generated ID and computed totalPrice
@@ -75,15 +76,15 @@ public class PurchaseController {
      * <p>
      * Requires {@code platform_admin} or {@code game_master}.
      *
-     * @param id the purchase identifier
+     * @param publicId the purchase's public identifier
      * @return the matching purchase
      */
     @GetMapping("/{id}")
     @Operation(summary = "Get purchase by ID")
     @PreAuthorize("hasAuthority('platform_admin') or hasAuthority('game_master')")
-    public PurchaseResponse findPurchaseById(
-            @Parameter(description = "Purchase UUID") @PathVariable UUID id) {
-        return purchaseService.findPurchaseById(id);
+    public PurchaseResponse findPurchaseByPublicId(
+            @Parameter(description = "Purchase UUID") @PathVariable("id") UUID publicId) {
+        return purchaseService.findPurchaseByPublicId(publicId);
     }
 
     /**
@@ -116,17 +117,17 @@ public class PurchaseController {
      * <p>
      * Requires {@code platform_admin}.
      *
-     * @param id      the purchase identifier
-     * @param request the partial-update payload
+     * @param publicId the purchase's public identifier
+     * @param request  the partial-update payload
      * @return the updated purchase
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('platform_admin')")
     @Operation(summary = "Update a purchase", description = "Partial update — only non-null fields are applied.")
     public PurchaseResponse updatePurchase(
-            @Parameter(description = "Purchase UUID") @PathVariable UUID id,
+            @Parameter(description = "Purchase UUID") @PathVariable("id") UUID publicId,
             @Valid @RequestBody UpdatePurchaseRequest request) {
-        return purchaseService.updatePurchase(id, request);
+        return purchaseService.updatePurchase(publicId, request);
     }
 
     /**
@@ -135,14 +136,14 @@ public class PurchaseController {
      * <p>
      * Requires {@code platform_admin}.
      *
-     * @param id the purchase identifier
+     * @param publicId the purchase's public identifier
      */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasAuthority('platform_admin')")
     @Operation(summary = "Soft-delete a purchase", description = "Sets status to CANCELLED — row is preserved for audit.")
     public void deletePurchase(
-            @Parameter(description = "Purchase UUID") @PathVariable UUID id) {
-        purchaseService.deletePurchase(id);
+            @Parameter(description = "Purchase UUID") @PathVariable("id") UUID publicId) {
+        purchaseService.deletePurchase(publicId);
     }
 }

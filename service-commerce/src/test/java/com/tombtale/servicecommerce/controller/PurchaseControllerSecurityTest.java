@@ -70,12 +70,12 @@ class PurchaseControllerSecurityTest {
         private static final String ROLE_GAME_MASTER = "game_master";
         private static final String ROLE_PLATFORM_ADMIN = "platform_admin";
         private static final String SUBJECT = "zitadel-sub-314159";
-        private static final String PLAYER_ID = "player-001";
+        private static final UUID PLAYER_ID = UUID.fromString("aaaaaaaa-0000-4000-8000-000000000001");
         private static final UUID PURCHASE_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
         private static final String VALID_CREATE_BODY = """
                         {
-                        "playerId": "player-001",
+                        "playerId": "aaaaaaaa-0000-4000-8000-000000000001",
                         "itemCode": "SWORD_IRON",
                         "quantity": 2,
                         "unitPrice": 150.00
@@ -176,7 +176,7 @@ class PurchaseControllerSecurityTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(VALID_CREATE_BODY))
                                 .andExpect(status().isCreated())
-                                .andExpect(jsonPath("$.playerId").value(PLAYER_ID));
+                                .andExpect(jsonPath("$.playerId").value(PLAYER_ID.toString()));
 
                 ArgumentCaptor<CreatePurchaseRequest> captor = ArgumentCaptor.forClass(CreatePurchaseRequest.class);
                 verify(purchaseService).createPurchase(captor.capture());
@@ -228,7 +228,7 @@ class PurchaseControllerSecurityTest {
 
         @Test
         void getByIdAsGameMasterReturns200() throws Exception {
-                when(purchaseService.findPurchaseById(any())).thenReturn(aPurchaseResponse());
+                when(purchaseService.findPurchaseByPublicId(any())).thenReturn(aPurchaseResponse());
 
                 mockMvc.perform(get(PURCHASES_URL + "/" + PURCHASE_ID)
                                 .with(tokenWithRoles(ROLE_GAME_MASTER)))
