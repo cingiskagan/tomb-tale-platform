@@ -61,16 +61,22 @@ class PurchaseServiceTest {
     @InjectMocks
     private PurchaseService purchaseService;
 
+    /** An entity as it looks before it is saved: no publicId chosen by the test. */
     private static Purchase buildPurchaseEntity() {
-        return Purchase.builder()
+        return buildPurchaseEntity(null);
+    }
+
+    private static Purchase buildPurchaseEntity(UUID publicId) {
+        Purchase.PurchaseBuilder<?, ?> builder = Purchase.builder()
                 .playerId(PLAYER_ID)
                 .itemCode(ITEM_CODE)
                 .quantity(QUANTITY)
                 .unitPrice(UNIT_PRICE)
                 .totalPrice(EXPECTED_TOTAL)
                 .status(PurchaseStatus.PENDING)
-                .version(0)
-                .build();
+                .version(0);
+
+        return publicId == null ? builder.build() : builder.publicId(publicId).build();
     }
 
     private static PurchaseResponse buildPurchaseResponse() {
@@ -83,8 +89,7 @@ class PurchaseServiceTest {
     void shouldCreatePurchaseWithCalculatedTotalPrice() {
         CreatePurchaseRequest request = new CreatePurchaseRequest(PLAYER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE);
         Purchase mappedEntity = buildPurchaseEntity();
-        Purchase savedEntity = buildPurchaseEntity();
-        savedEntity.setPublicId(PURCHASE_ID);
+        Purchase savedEntity = buildPurchaseEntity(PURCHASE_ID);
         PurchaseResponse expectedResponse = buildPurchaseResponse();
 
         when(purchaseMapper.toEntity(request)).thenReturn(mappedEntity);
@@ -100,8 +105,7 @@ class PurchaseServiceTest {
 
     @Test
     void shouldFindPurchaseByIdSuccessfully() {
-        Purchase entity = buildPurchaseEntity();
-        entity.setPublicId(PURCHASE_ID);
+        Purchase entity = buildPurchaseEntity(PURCHASE_ID);
         PurchaseResponse expectedResponse = buildPurchaseResponse();
 
         when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));
@@ -126,8 +130,7 @@ class PurchaseServiceTest {
     void shouldListPurchasesWithFilter() {
         PurchaseFilterRequest filter = new PurchaseFilterRequest(PLAYER_ID, null, null, null, null);
         Pageable pageable = PageRequest.of(0, DEFAULT_PAGE_SIZE);
-        Purchase entity = buildPurchaseEntity();
-        entity.setPublicId(PURCHASE_ID);
+        Purchase entity = buildPurchaseEntity(PURCHASE_ID);
         Page<Purchase> entityPage = new PageImpl<>(List.of(entity), pageable, 1);
         PurchaseResponse expectedResponse = buildPurchaseResponse();
 
@@ -142,8 +145,7 @@ class PurchaseServiceTest {
 
     @Test
     void shouldUpdatePurchaseStatus() {
-        Purchase entity = buildPurchaseEntity();
-        entity.setPublicId(PURCHASE_ID);
+        Purchase entity = buildPurchaseEntity(PURCHASE_ID);
         entity.setStatus(PurchaseStatus.PENDING);
         UpdatePurchaseRequest request = new UpdatePurchaseRequest(PurchaseStatus.COMPLETED, null);
         PurchaseResponse expectedResponse = new PurchaseResponse(
@@ -163,8 +165,7 @@ class PurchaseServiceTest {
     @Test
     void shouldUpdatePurchaseQuantityAndRecalculateTotal() {
         int newQuantity = NEW_UPDATE_QUANTITY;
-        Purchase entity = buildPurchaseEntity();
-        entity.setPublicId(PURCHASE_ID);
+        Purchase entity = buildPurchaseEntity(PURCHASE_ID);
         UpdatePurchaseRequest request = new UpdatePurchaseRequest(null, newQuantity);
         BigDecimal expectedNewTotal = UNIT_PRICE.multiply(BigDecimal.valueOf(newQuantity));
         PurchaseResponse expectedResponse = new PurchaseResponse(
@@ -183,8 +184,7 @@ class PurchaseServiceTest {
 
     @Test
     void shouldSoftDeletePurchaseBySettingStatusToCancelled() {
-        Purchase entity = buildPurchaseEntity();
-        entity.setPublicId(PURCHASE_ID);
+        Purchase entity = buildPurchaseEntity(PURCHASE_ID);
 
         when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));
         when(purchaseRepository.save(entity)).thenReturn(entity);

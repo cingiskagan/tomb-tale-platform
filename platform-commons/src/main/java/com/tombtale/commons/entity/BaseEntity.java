@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -50,8 +51,17 @@ public abstract class BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Public-facing ID, used in APIs to prevent sequential ID enumeration. */
+    /**
+     * Public-facing ID, used in APIs to prevent sequential ID enumeration.
+     *
+     * <p>No public setter. The column is {@code updatable = false}, so a write
+     * here would never reach the row, and {@code equals}/{@code hashCode} read
+     * it — changing it on a persisted entity silently desynchronises the object
+     * from its row and loses it from any hash-based collection holding it. Set
+     * it through the builder, at construction, or not at all.
+     */
     @Column(nullable = false, unique = true, updatable = false)
+    @Setter(AccessLevel.PACKAGE)
     @Builder.Default
     private UUID publicId = UUID.randomUUID();
 
