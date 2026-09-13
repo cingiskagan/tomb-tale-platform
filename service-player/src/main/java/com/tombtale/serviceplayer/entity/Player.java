@@ -1,61 +1,42 @@
 package com.tombtale.serviceplayer.entity;
 
+import com.tombtale.commons.entity.BaseEntity;
 import jakarta.persistence.Column;
-import org.hibernate.annotations.ColumnDefault;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.AccessLevel;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.ColumnDefault;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Core Player entity stored in PostgreSQL.
  * <p>
  * The {@code zitadelUserId} links this game profile to the authenticated
- * identity managed by Zitadel (the "sub" claim in the JWT).
+ * identity managed by Zitadel (the "sub" claim in the JWT). It is the only
+ * place on the platform that claim is stored: everything else, including
+ * service-commerce, refers to a player by the {@code publicId} this entity
+ * inherits from {@link BaseEntity}.
  */
-@Data
-@Builder
+@Getter
+@Setter
+@SuperBuilder
 @NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "players")
-@EntityListeners(AuditingEntityListener.class)
-@EqualsAndHashCode(exclude = "characters")
 @ToString(exclude = "characters")
-public class Player {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    /** Public-facing ID, used in APIs to prevent sequential ID enumeration. */
-    @Column(nullable = false, unique = true, updatable = false)
-    @ColumnDefault("gen_random_uuid()")
-    private UUID publicId;
+public class Player extends BaseEntity {
 
     /** Zitadel user ID — the "sub" claim from the JWT. Unique per player. */
     @Column(nullable = false, unique = true)
@@ -85,25 +66,6 @@ public class Player {
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<GameCharacter> characters = new ArrayList<>();
-
-    @CreatedDate
-    @Column(nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(nullable = false)
-    private Instant updatedAt;
-
-    /**
-     * Lifecycle callback invoked before the entity is persisted.
-     * Generates a random UUID for the public ID if it has not been set.
-     */
-    @PrePersist
-    public void prePersist() {
-        if (publicId == null) {
-            publicId = UUID.randomUUID();
-        }
-    }
 
     /**
      * Returns an unmodifiable view of the characters list.

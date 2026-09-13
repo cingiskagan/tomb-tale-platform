@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Monorepo for the "Tomb Tale Online RPG" platform: two Spring Boot microservices, an Angular web portal, and Docker Compose infrastructure to run everything locally.
 
 - `frontend-portal/` — Angular 20 portal (standalone components, PrimeNG, OIDC auth via Zitadel)
+- `platform-commons/` — the Java library both services depend on: `BaseEntity`, `SystemActor`
 - `service-player/` — Spring Boot service for player accounts and characters (port 8081)
 - `service-commerce/` — Spring Boot service for purchases/economy (port 8082)
 - `infrastructure/` — Docker Compose stack: Traefik, Zitadel (auth), Postgres, Redis, MongoDB, RabbitMQ
@@ -14,6 +15,8 @@ Monorepo for the "Tomb Tale Online RPG" platform: two Spring Boot microservices,
 - `scripts/pre-pr-tests.sh` — full local pre-PR check pipeline across all three modules
 
 Both services use Java 21 and Spring Boot 4. The frontend requires the Node version pinned in `frontend-portal/.nvmrc`.
+
+The root `pom.xml` is an aggregator over `platform-commons` and the two services. It is not their parent — each keeps `spring-boot-starter-parent` — and exists only so Maven resolves `platform-commons` from the reactor. Build Java from the repository root.
 
 ## Common Commands
 
@@ -33,19 +36,22 @@ cd service-player            # or service-commerce
 ./run-local.sh               # full mode: real Postgres + RabbitMQ from Docker
 ```
 
-Maven, from within each service directory:
+Maven, from the repository root. `-pl` picks the module and `-am` builds what it depends on, which is how `platform-commons` gets onto the classpath:
 
 ```bash
-./mvnw clean test                                       # unit tests
-./mvnw test -Dtest=CharacterServiceTest                 # single test class
-./mvnw test -Dtest=CharacterServiceTest#methodName      # single test method
-./mvnw checkstyle:check pmd:check -DskipTests           # style/static analysis only
-./mvnw clean verify                                     # tests + Jacoco + checkstyle + PMD (what CI runs)
+./mvnw -pl service-player -am clean test                                  # unit tests
+./mvnw -pl service-player -am test -Dtest=CharacterServiceTest            # single test class
+./mvnw -pl service-player -am test -Dtest=CharacterServiceTest#method     # single test method
+./mvnw -pl service-player -am verify -DskipTests                          # style/static analysis only
+./mvnw -pl service-player -am clean verify                                # tests + Jacoco + checkstyle + PMD (what CI runs)
+./mvnw clean verify                                                       # every module at once
 ```
 
-Checkstyle/PMD rulesets live in `config/checkstyle/checkstyle.xml` and `config/pmd/pmd-ruleset.xml`, referenced relatively from each `pom.xml` — one copy governs both services.
+`cd service-player && ./mvnw clean verify` still works, but only once `platform-commons` is in the local repository — run `./mvnw install -DskipTests` from the root after a fresh clone, or whenever `platform-commons` changes. Dropping `-am` on a clean machine fails with `Could not find artifact com.tombtale:platform-commons`.
 
-Both `check` goals are bound to the `verify` phase, so `./mvnw clean verify` is the single gate: the same engine at the same pinned version runs locally and in CI. MegaLinter does not lint Java — it ships its own PMD build, and when that drifted from `${pmd.version}` the two disagreed about the same ruleset. Style failures surface after the tests as a result; `./mvnw checkstyle:check pmd:check -DskipTests` is still the fast path while you are working.
+Checkstyle/PMD rulesets live in `config/checkstyle/checkstyle.xml` and `config/pmd/pmd-ruleset.xml`, referenced relatively from each `pom.xml` — one copy governs all three modules.
+
+Both `check` goals are bound to the `verify` phase, so `./mvnw clean verify` is the single gate: the same engine at the same pinned version runs locally and in CI. MegaLinter does not lint Java — it ships its own PMD build, and when that drifted from `${pmd.version}` the two disagreed about the same ruleset. Style failures surface after the tests as a result; `./mvnw -pl <module> -am verify -DskipTests` is still the fast path while you are working. Naming the two goals directly — `checkstyle:check pmd:check` — no longer works from a clean tree: a goal invoked without a lifecycle phase never builds `platform-commons`, so resolving the module's dependencies fails before either check runs. `verify -DskipTests` reaches the same two goals, since both are bound to that phase.
 
 ### Frontend (frontend-portal)
 
@@ -87,13 +93,17 @@ security/    → ZitadelRoleConverter — claim parsing, kept out of config/ on 
 config/      → SecurityConfig, QueryDslConfig, RabbitMQConfig — wiring only, no logic
 ```
 
-Entities expose a public-facing `publicId` (UUID) distinct from the internal DB primary key — controllers and DTOs deal only in `publicId`.
+Every entity extends `BaseEntity` from `platform-commons`, which carries the same six fields everywhere: `Long id` (internal, never leaves the persistence layer), `UUID publicId` (the only identifier in an API), `createdAt`/`updatedAt`, and `createdBy`/`updatedBy`. Controllers and DTOs deal only in `publicId`. See ADR 0013.
+
+`publicId` is assigned where the field is declared, not in a `@PrePersist`, so it exists before the first save and equality can depend on it — `BaseEntity` defines `equals`/`hashCode` on it, and entities must not generate their own. Lombok follows from that: `@SuperBuilder` instead of `@Builder`, explicit `@Getter`/`@Setter` instead of `@Data`.
+
+The actor columns come from Spring Data auditing. Each service supplies an `AuditorAware<UUID>` in its `security/` package and wires it in `config/JpaConfig`. service-player resolves the JWT subject to a `publicId` against its own table; service-commerce cannot yet and leaves both columns null.
 
 **Auth model**: both services are stateless OAuth2 resource servers validating Zitadel JWTs (`SecurityConfig`). Zitadel places project roles in the claim `urn:zitadel:iam:org:project:roles`; `ZitadelRoleConverter` turns those into Spring authorities, so endpoints guard with `@PreAuthorize("hasAuthority('platform_admin') or hasAuthority('game_master')")`. The three roles are `player`, `game_master`, `platform_admin` — kept in sync with the frontend's `PlatformRole` enum.
 
 Both services share one Postgres instance, and each has its own DB user and its own schema (`svc_player`/`player`, `svc_commerce`/`commerce`), provisioned by `infrastructure/init-db.sh`. Each user owns its schema and has no rights in the other's. Flyway owns the schema and Hibernate only validates it (`ddl-auto: validate`, hardcoded); the schema each service targets is set by `spring.jpa.properties.hibernate.default_schema` and `spring.flyway.schemas`. service-commerce seeds `data.sql` when `SQL_INIT_MODE=always`.
 
-Jacoco excludes `config/`, `dto/`, `mapper/`, `entity/Q*` (the generated QueryDSL metamodel), and `*Application`. Everything else we write is measured, including entities, exception handlers, and `security/`. The list is configured per-service in `pom.xml` and mirrored in `codecov.yml` — change both together, or the Codecov percentage stops matching the one the build reports.
+Jacoco excludes `config/`, `dto/`, `mapper/`, `entity/Q*` (the generated QueryDSL metamodel), and `*Application`. Everything else we write is measured, including entities, exception handlers, and `security/`. The list is configured per-module in `pom.xml` and mirrored in `codecov.yml` — change both together, or the Codecov percentage stops matching the one the build reports. `platform-commons` excludes only `entity/Q*`; it holds no wiring, DTOs or mappers.
 
 The package a class lives in decides whether it is measured, so logic does not go in a wiring package. That is why `ZitadelRoleConverter` sits in `security/` and not `config/`, and `PurchaseStatus` in `domain/` and not `entity/`. Both have unit tests that would otherwise score zero.
 

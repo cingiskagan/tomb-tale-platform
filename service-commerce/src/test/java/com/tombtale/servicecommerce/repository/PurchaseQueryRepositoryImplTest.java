@@ -1,27 +1,34 @@
 package com.tombtale.servicecommerce.repository;
 
+import com.tombtale.servicecommerce.config.JpaConfig;
 import com.tombtale.servicecommerce.config.QueryDslConfig;
 import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import com.tombtale.servicecommerce.dto.PurchaseFilterRequest;
 import com.tombtale.servicecommerce.entity.Purchase;
 import com.tombtale.servicecommerce.support.PostgresTestBase;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.auditing.DateTimeProvider;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
 
 /**
  * Integration tests for {@link PurchaseQueryRepositoryImpl} against a real
@@ -33,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 @DataJpaTest(showSql = false)
 @ActiveProfiles("test")
-@Import(QueryDslConfig.class)
+@Import({ QueryDslConfig.class, JpaConfig.class })
 // Test-data builders push the method count past PMD's default of 10; splitting a
 // cohesive test class to satisfy a counter would not improve it.
 @SuppressWarnings("PMD.TooManyMethods")
@@ -42,8 +49,8 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
     private static final int PAGE_SIZE = 10;
     private static final int DAYS_AGO = 10;
 
-    private static final String PLAYER_ONE = "Player_0";
-    private static final String PLAYER_TWO = "Player_1";
+    private static final UUID PLAYER_ONE = UUID.fromString("aaaaaaaa-0000-4000-8000-000000000001");
+    private static final UUID PLAYER_TWO = UUID.fromString("aaaaaaaa-0000-4000-8000-000000000002");
 
     private static final String ARKENSTONE = "arkenstone";
     private static final String NENYA = "nenya";
@@ -59,6 +66,24 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
     @Autowired
     private TestEntityManager entityManager;
 
+    /**
+     * The clock auditing stamps rows with, replaced so this class decides what
+     * {@code createdAt} a row gets. Every test needs it stubbed — an empty
+     * {@code Optional} leaves the column null and the insert fails.
+     */
+    @MockitoBean
+    private DateTimeProvider auditingDateTimeProvider;
+
+    @BeforeEach
+    void stampRowsWithTheRealClock() {
+        stampRowsAt(Instant.now());
+    }
+
+    /** Points the auditing clock at a fixed instant for every row written next. */
+    private void stampRowsAt(Instant instant) {
+        when(auditingDateTimeProvider.getNow()).thenReturn(Optional.of(instant));
+    }
+
     @Test
     void shouldSeeNoSeedData() {
         Page<Purchase> page = purchaseRepository.findByFilter(noFilter(), PageRequest.of(0, PAGE_SIZE));
@@ -68,10 +93,9 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
 
     @Test
     void shouldExcludeCancelledByDefault() {
-        Instant now = nowInDatabasePrecision();
         persist(
-                aPurchase(PLAYER_ONE, ARKENSTONE, 1, PRICE_HIGH, PurchaseStatus.CANCELLED, now),
-                aPurchase(PLAYER_ONE, NENYA, 1, PRICE_LOW, PurchaseStatus.COMPLETED, now));
+                aPurchase(PLAYER_ONE, ARKENSTONE, 1, PRICE_HIGH, PurchaseStatus.CANCELLED),
+                aPurchase(PLAYER_ONE, NENYA, 1, PRICE_LOW, PurchaseStatus.COMPLETED));
 
         Page<Purchase> page = purchaseRepository.findByFilter(noFilter(), PageRequest.of(0, PAGE_SIZE));
 
@@ -81,10 +105,9 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
 
     @Test
     void shouldIncludeCancelledWhenAsked() {
-        Instant now = nowInDatabasePrecision();
         persist(
-                aPurchase(PLAYER_ONE, ARKENSTONE, 1, PRICE_HIGH, PurchaseStatus.CANCELLED, now),
-                aPurchase(PLAYER_ONE, NENYA, 1, PRICE_LOW, PurchaseStatus.COMPLETED, now));
+                aPurchase(PLAYER_ONE, ARKENSTONE, 1, PRICE_HIGH, PurchaseStatus.CANCELLED),
+                aPurchase(PLAYER_ONE, NENYA, 1, PRICE_LOW, PurchaseStatus.COMPLETED));
 
         Page<Purchase> page = purchaseRepository.findByFilter(
                 byStatus(PurchaseStatus.CANCELLED), PageRequest.of(0, PAGE_SIZE));
@@ -93,30 +116,35 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
         assertThat(page.getContent()).extracting(Purchase::getStatus).containsExactly(PurchaseStatus.CANCELLED);
     }
 
+    /**
+     * The date filter reads {@code createdAt}, which auditing stamps on persist.
+     * Moving the clock between the two writes is what puts them on opposite sides
+     * of the range — the timestamps are chosen, not raced for.
+     */
     @Test
     void shouldFilterByDateRange() {
         Instant now = nowInDatabasePrecision();
         Instant yesterday = now.minus(1, ChronoUnit.DAYS);
         Instant tenDaysAgo = now.minus(DAYS_AGO, ChronoUnit.DAYS);
 
-        persist(
-                aPurchase(PLAYER_ONE, SILMARIL, 2, PRICE_HIGH, PurchaseStatus.PENDING, tenDaysAgo),
-                aPurchase(PLAYER_ONE, ONERING, 2, PRICE_LOW, PurchaseStatus.REFUNDED, now));
+        stampRowsAt(tenDaysAgo);
+        persist(aPurchase(PLAYER_ONE, SILMARIL, 2, PRICE_HIGH, PurchaseStatus.PENDING));
+        stampRowsAt(now);
+        persist(aPurchase(PLAYER_ONE, ONERING, 2, PRICE_LOW, PurchaseStatus.REFUNDED));
 
         Page<Purchase> page = purchaseRepository.findByFilter(
                 purchasedBetween(yesterday, now), PageRequest.of(0, PAGE_SIZE));
 
         assertThat(page.getTotalElements()).isEqualTo(1L);
-        assertThat(page.getContent()).extracting(Purchase::getPurchasedAt).containsExactly(now);
+        assertThat(page.getContent()).extracting(Purchase::getCreatedAt).containsExactly(now);
     }
 
     @Test
     void shouldFilterByPlayerIdAndItemCode() {
-        Instant now = nowInDatabasePrecision();
         persist(
-                aPurchase(PLAYER_ONE, ARKENSTONE, 1, PRICE_HIGH, PurchaseStatus.COMPLETED, now),
-                aPurchase(PLAYER_ONE, NENYA, 1, PRICE_LOW, PurchaseStatus.COMPLETED, now),
-                aPurchase(PLAYER_TWO, SILMARIL, 2, PRICE_HIGH, PurchaseStatus.PENDING, now));
+                aPurchase(PLAYER_ONE, ARKENSTONE, 1, PRICE_HIGH, PurchaseStatus.COMPLETED),
+                aPurchase(PLAYER_ONE, NENYA, 1, PRICE_LOW, PurchaseStatus.COMPLETED),
+                aPurchase(PLAYER_TWO, SILMARIL, 2, PRICE_HIGH, PurchaseStatus.PENDING));
 
         Page<Purchase> page = purchaseRepository.findByFilter(
                 byPlayerAndItem(PLAYER_ONE, NENYA), PageRequest.of(0, PAGE_SIZE));
@@ -161,8 +189,7 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
      */
     @Test
     void shouldAcceptEveryAllowedSortField() {
-        persist(aPurchase(PLAYER_ONE, ARKENSTONE, 1, PRICE_HIGH,
-                PurchaseStatus.COMPLETED, nowInDatabasePrecision()));
+        persist(aPurchase(PLAYER_ONE, ARKENSTONE, 1, PRICE_HIGH, PurchaseStatus.COMPLETED));
 
         for (String field : new String[] {
             "id", "playerId", "itemCode", "quantity",
@@ -192,15 +219,15 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
     }
 
     /**
-     * {@code purchased_at} is {@code timestamp(6)}, so Postgres keeps microseconds.
+     * {@code created_at} is {@code timestamp(6)}, so Postgres keeps microseconds.
      * Truncating here makes what we assert equal to what comes back.
      */
     private static Instant nowInDatabasePrecision() {
         return Instant.now().truncatedTo(ChronoUnit.MICROS);
     }
 
-    private static Purchase aPurchase(String playerId, String itemCode, int quantity,
-            String unitPrice, PurchaseStatus status, Instant purchasedAt) {
+    private static Purchase aPurchase(UUID playerId, String itemCode, int quantity,
+            String unitPrice, PurchaseStatus status) {
         BigDecimal price = new BigDecimal(unitPrice);
         return Purchase.builder()
                 .playerId(playerId)
@@ -209,7 +236,6 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
                 .unitPrice(price)
                 .totalPrice(price.multiply(BigDecimal.valueOf(quantity)))
                 .status(status)
-                .purchasedAt(purchasedAt)
                 .build();
     }
 
@@ -225,7 +251,7 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
         return new PurchaseFilterRequest(null, null, null, after, before);
     }
 
-    private static PurchaseFilterRequest byPlayerAndItem(String playerId, String itemCode) {
+    private static PurchaseFilterRequest byPlayerAndItem(UUID playerId, String itemCode) {
         return new PurchaseFilterRequest(playerId, itemCode, null, null, null);
     }
 }

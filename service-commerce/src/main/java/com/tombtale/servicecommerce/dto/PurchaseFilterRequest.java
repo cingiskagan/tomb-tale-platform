@@ -5,6 +5,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Query-parameter DTO used to filter the purchase list endpoint.
@@ -13,15 +14,19 @@ import java.time.Instant;
  * QueryDSL predicates. Date-time values must be provided in
  * ISO-8601 format (e.g. {@code 2026-01-15T10:30:00Z}).
  *
- * @param playerId       filter by player identifier (exact match)
+ * <p>{@code purchasedAfter} and {@code purchasedBefore} bound the entity's
+ * {@code createdAt}. The API keeps the purchase-flavoured names; the column
+ * behind them is the platform-wide creation timestamp.
+ *
+ * @param playerId       filter by the buyer's publicId (exact match)
  * @param itemCode       filter by catalogue item code (exact match)
  * @param status         filter by lifecycle state
  * @param purchasedAfter include purchases on or after this instant
  * @param purchasedBefore include purchases on or before this instant
  */
 public record PurchaseFilterRequest(
-        @Schema(example = "player-001", description = "Target player identifier")
-        String playerId,
+        @Schema(example = "aaaaaaaa-0000-4000-8000-000000000001", description = "publicId of the target player")
+        UUID playerId,
         
         @Schema(example = "SWORD_IRON", description = "Specific catalogue item code")
         String itemCode,

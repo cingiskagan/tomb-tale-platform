@@ -31,6 +31,16 @@ SERVER_PORT="${SERVICE_PLAYER_PORT}"
 
 # ── Full mode (real Postgres + RabbitMQ) ────────────────────────────────────
 echo "🚀  Starting service-player in FULL mode (Postgres, port ${SERVER_PORT})…"
+# platform-commons is a sibling module, not a published artifact, and
+# spring-boot:run resolves it from the local repository. Install it first:
+# a fresh clone has nothing there, and the service would fail to resolve it.
+#
+# -f names the root POM explicitly. Maven reads the POM in the working
+# directory, not the one beside the wrapper, and this script runs from the
+# service directory — without it, -pl looks for the module in this service's
+# own POM and fails.
+"${SCRIPT_DIR}/../mvnw" -q -f "${SCRIPT_DIR}/../pom.xml" -pl platform-commons install -DskipTests
+
 exec "${SCRIPT_DIR}/mvnw" spring-boot:run \
   -f "${SCRIPT_DIR}/pom.xml" \
   -Dspring-boot.run.arguments="--server.port=${SERVER_PORT}"

@@ -55,19 +55,19 @@ public class PurchaseService {
         purchase.setStatus(PurchaseStatus.PENDING);
 
         Purchase saved = purchaseRepository.save(purchase);
-        LOG.info("Created purchase id={} for player={}", saved.getId(), saved.getPlayerId());
+        LOG.info("Created purchase id={} for player={}", saved.getPublicId(), saved.getPlayerId());
         return purchaseMapper.toResponse(saved);
     }
 
     /**
-     * Retrieves a single purchase by its unique identifier.
+     * Retrieves a single purchase by the identifier its API exposes.
      *
-     * @param purchaseId the purchase UUID
+     * @param publicId the purchase's public UUID
      * @return the matching purchase DTO
-     * @throws PurchaseNotFoundException if no purchase exists with the given ID
+     * @throws PurchaseNotFoundException if no purchase carries that ID
      */
-    public PurchaseResponse findPurchaseById(UUID purchaseId) {
-        Purchase purchase = findEntityById(purchaseId);
+    public PurchaseResponse findPurchaseByPublicId(UUID publicId) {
+        Purchase purchase = findEntityByPublicId(publicId);
         return purchaseMapper.toResponse(purchase);
     }
 
@@ -95,14 +95,14 @@ public class PurchaseService {
      * {@code quantity} changes, {@code totalPrice} is recalculated
      * from the existing {@code unitPrice}.
      *
-     * @param purchaseId the purchase UUID to update
-     * @param request    the partial-update payload
+     * @param publicId the purchase's public UUID
+     * @param request  the partial-update payload
      * @return the updated purchase DTO
      * @throws PurchaseNotFoundException if the purchase does not exist
      */
     @Transactional
-    public PurchaseResponse updatePurchase(UUID purchaseId, UpdatePurchaseRequest request) {
-        Purchase purchase = findEntityById(purchaseId);
+    public PurchaseResponse updatePurchase(UUID publicId, UpdatePurchaseRequest request) {
+        Purchase purchase = findEntityByPublicId(publicId);
 
         if (request.status() != null
                 && purchase.getStatus() != request.status()) {
@@ -119,7 +119,7 @@ public class PurchaseService {
         }
 
         Purchase saved = purchaseRepository.save(purchase);
-        LOG.info("Updated purchase id={}", saved.getId());
+        LOG.info("Updated purchase id={}", saved.getPublicId());
         return purchaseMapper.toResponse(saved);
     }
 
@@ -141,26 +141,26 @@ public class PurchaseService {
      * The row is not physically removed — it is simply excluded from
      * default list queries by the QueryDSL filter.
      *
-     * @param purchaseId the purchase UUID to cancel
+     * @param publicId the purchase's public UUID
      * @throws PurchaseNotFoundException if the purchase does not exist
      */
     @Transactional
-    public void deletePurchase(UUID purchaseId) {
-        Purchase purchase = findEntityById(purchaseId);
+    public void deletePurchase(UUID publicId) {
+        Purchase purchase = findEntityByPublicId(publicId);
         changeStatus(purchase, PurchaseStatus.CANCELLED);
         purchaseRepository.save(purchase);
-        LOG.info("Soft-deleted (cancelled) purchase id={}", purchaseId);
+        LOG.info("Soft-deleted (cancelled) purchase id={}", publicId);
     }
 
     /**
      * Internal helper that loads a {@link Purchase} or throws.
      *
-     * @param purchaseId the purchase UUID
+     * @param publicId the purchase's public UUID
      * @return the managed entity
      */
-    private Purchase findEntityById(UUID purchaseId) {
-        return purchaseRepository.findById(purchaseId)
-                .orElseThrow(() -> new PurchaseNotFoundException(purchaseId));
+    private Purchase findEntityByPublicId(UUID publicId) {
+        return purchaseRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new PurchaseNotFoundException(publicId));
     }
 
     /**

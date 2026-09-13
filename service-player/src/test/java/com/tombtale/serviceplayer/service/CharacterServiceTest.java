@@ -40,10 +40,11 @@ class CharacterServiceTest {
     void shouldUpdateCharacterStatsSuccessfully() {
         UUID playerPublicId = UUID.randomUUID();
         UUID publicId = UUID.randomUUID();
-        GameCharacter existing = new GameCharacter();
-        existing.setPublicId(publicId);
-        existing.setLevel(1);
-        existing.setExperiencePoints(0L);
+        GameCharacter existing = GameCharacter.builder()
+                .publicId(publicId)
+                .level(1)
+                .experiencePoints(0L)
+                .build();
 
         UpdateCharacterStatsRequest request = new UpdateCharacterStatsRequest(TEST_LEVEL, TEST_XP);
         CharacterResponse response = new CharacterResponse(

@@ -56,6 +56,12 @@
 		<surefire.runOrder>alphabetical</surefire.runOrder>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>com.tombtale</groupId>
+			<artifactId>platform-commons</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
 		<!-- === Spring Boot Starters === -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
