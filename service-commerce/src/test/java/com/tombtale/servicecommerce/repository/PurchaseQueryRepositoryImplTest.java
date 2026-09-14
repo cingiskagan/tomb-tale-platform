@@ -5,6 +5,7 @@ import com.tombtale.servicecommerce.config.QueryDslConfig;
 import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import com.tombtale.servicecommerce.dto.PurchaseFilterRequest;
 import com.tombtale.servicecommerce.entity.Purchase;
+import com.tombtale.commons.web.InvalidSortFieldException;
 import com.tombtale.servicecommerce.support.PostgresTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,6 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.auditing.DateTimeProvider;
-import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -163,8 +163,7 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
         PageRequest pageable = PageRequest.of(0, PAGE_SIZE, Sort.by("nonsense"));
 
         assertThatThrownBy(() -> purchaseRepository.findByFilter(noFilter(), pageable))
-                .isInstanceOf(InvalidDataAccessApiUsageException.class)
-                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidSortFieldException.class)
                 .hasMessageContaining("Invalid sort field: nonsense");
     }
 
@@ -178,8 +177,7 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
                 0, PAGE_SIZE, Sort.by("id, (select p.playerId from Purchase p)"));
 
         assertThatThrownBy(() -> purchaseRepository.findByFilter(noFilter(), pageable))
-                .isInstanceOf(InvalidDataAccessApiUsageException.class)
-                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidSortFieldException.class)
                 .hasMessageContaining("Invalid sort field:");
     }
 

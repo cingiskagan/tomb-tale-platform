@@ -3,7 +3,7 @@ package com.tombtale.servicecommerce;
 import com.jayway.jsonpath.JsonPath;
 import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import com.tombtale.servicecommerce.repository.PurchaseRepository;
-import com.tombtale.servicecommerce.security.ZitadelRoleConverter;
+import com.tombtale.commons.security.ZitadelRoleConverter;
 import com.tombtale.servicecommerce.support.PostgresTestBase;
 
 import org.junit.jupiter.api.AfterEach;

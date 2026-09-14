@@ -1,4 +1,4 @@
-package com.tombtale.serviceplayer.security;
+package com.tombtale.commons.security;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.core.GrantedAuthority;
@@ -13,6 +13,12 @@ import java.util.Map;
 /**
  * Extracts custom project roles from Zitadel's JWT claim and converts them
  * into Spring Security GrantedAuthorities.
+ *
+ * <p>
+ * One copy for the whole platform. Both services wire it into their
+ * {@code JwtAuthenticationConverter}, so a change in how Zitadel serialises
+ * the claim cannot be fixed in one service and forgotten in the other.
+ * The role names it produces are listed in {@link RoleConstants}.
  */
 public class ZitadelRoleConverter implements Converter<Jwt, Collection<GrantedAuthority>> {
 
@@ -22,18 +28,18 @@ public class ZitadelRoleConverter implements Converter<Jwt, Collection<GrantedAu
     @Override
     public Collection<GrantedAuthority> convert(Jwt jwt) {
         Collection<GrantedAuthority> defaultAuthorities = defaultGrantedAuthoritiesConverter.convert(jwt);
-        final Collection<GrantedAuthority> authorities = defaultAuthorities == null 
-                ? new ArrayList<>() 
+        final Collection<GrantedAuthority> authorities = defaultAuthorities == null
+                ? new ArrayList<>()
                 : new ArrayList<>(defaultAuthorities);
 
         Object rolesObj = jwt.getClaims().get(ZITADEL_ROLES_CLAIM);
-        
+
         if (rolesObj instanceof Map<?, ?> rolesMap) {
-            rolesMap.keySet().forEach(key -> 
+            rolesMap.keySet().forEach(key ->
                 authorities.add(new SimpleGrantedAuthority(key.toString()))
             );
         } else if (rolesObj instanceof Collection<?> rolesList) {
-             rolesList.forEach(role -> 
+             rolesList.forEach(role ->
                 authorities.add(new SimpleGrantedAuthority(role.toString()))
             );
         }

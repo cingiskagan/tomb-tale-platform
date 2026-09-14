@@ -60,6 +60,29 @@
 			<classifier>jakarta</classifier>
 			<scope>provided</scope>
 		</dependency>
+		<!--
+			The security and web types here (ZitadelRoleConverter,
+			PlatformCorsPolicy, PlatformExceptionHandler) need Spring Security
+			and Spring MVC to compile. They are optional because a future
+			consumer that only wants BaseEntity — a batch job, a consumer
+			process — should not inherit Tomcat and a filter chain with it.
+			Both services already declare all three themselves.
+		-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+			<optional>true</optional>
+		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
@@ -68,6 +91,16 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!--
+			PlatformExceptionHandler is a @ControllerAdvice base class; its
+			tests drive it through a standalone MockMvc rather than asserting
+			on a ResponseEntity by hand.
+		-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
