@@ -1,21 +1,13 @@
 package com.tombtale.commons.security;
 
 /**
- * The platform's three Zitadel project roles, and the authorization
- * expressions built from them.
+ * The platform's three Zitadel project roles, and the {@code @PreAuthorize}
+ * rules built from them. Lowercase, as Zitadel issues them; kept in sync with
+ * the frontend's {@code PlatformRole}.
  *
- * <p>
- * The names are lowercase because that is how Zitadel issues them in the
- * {@code urn:zitadel:iam:org:project:roles} claim, and
- * {@link ZitadelRoleConverter} passes them through unchanged. They match the
- * {@code PlatformRole} enum in the frontend.
- *
- * <p>
- * The {@code IS_*} constants exist so a controller can write
- * {@code @PreAuthorize(RoleConstants.IS_ADMIN)} instead of repeating a SpEL
- * string. Annotation values must be compile-time constants, which rules out
- * an enum here: concatenating {@code static final String} literals is the
- * only form the compiler will fold.
+ * <p>Strings rather than an enum because an annotation value must be a
+ * compile-time constant, and concatenated literals are the only form the
+ * compiler folds.
  */
 // PMD reads a class of public constants with no behaviour as a Data Class.
 // That is exactly what this is, and what it has to be to work in an annotation.

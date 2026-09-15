@@ -103,6 +103,18 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!--
+			Test scope only. The handler needs nothing but
+			MethodArgumentNotValidException, which spring-web declares; a
+			validation provider is what the TEST needs in order to make the
+			framework throw one from a real @Valid request. Both services
+			carry the starter at compile scope for their own DTOs.
+		-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>

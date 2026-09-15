@@ -20,36 +20,15 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * The error contract both services answer with: RFC 9457 {@code ProblemDetail},
- * served as {@code application/problem+json}.
+ * The error contract both services answer with: RFC 9457 problem details.
+ * See ADR 0015.
  *
- * <p>
- * Before this class, a client needed two error parsers for one platform.
- * Commerce returned a hand-rolled {@code ErrorResponse} record; player threw
- * {@code ResponseStatusException} and let Spring's default error page answer,
- * which drops the message. Extending
- * {@link ResponseEntityExceptionHandler} fixes the second case for free: it
- * already handles every framework exception, and
- * {@code ResponseStatusException} is an {@code ErrorResponseException}, so its
- * reason reaches the client as {@code detail}.
+ * <p>Each service subclasses this with a {@code @RestControllerAdvice} and adds
+ * only the exceptions it alone can throw. Cross-cutting ones live here.
  *
- * <p>
- * Registering any {@code ResponseEntityExceptionHandler} bean also makes Boot
- * back off its own {@code ProblemDetailsExceptionHandler}, so
- * {@code spring.mvc.problemdetails.enabled} is not needed and is deliberately
- * not set.
- *
- * <p>
- * <b>Subclassing:</b> each service declares a {@code @RestControllerAdvice}
- * extending this class and adds {@code @ExceptionHandler} methods for its own
- * domain exceptions. Only cross-cutting failures belong here — anything a
- * single service can throw stays in that service.
- *
- * <p>
- * Access denial is not handled here on purpose. {@code AccessDeniedException}
- * is translated by Spring Security's filter chain, which is what tells a
- * missing token (401) from an insufficient role (403); catching it in an
- * advice would flatten both to 403.
+ * <p>Access denial is deliberately absent. Spring Security's filter chain
+ * translates it, and that is what tells a missing token (401) from an
+ * insufficient role (403).
  */
 public abstract class PlatformExceptionHandler extends ResponseEntityExceptionHandler {
 
@@ -64,11 +43,6 @@ public abstract class PlatformExceptionHandler extends ResponseEntityExceptionHa
     /**
      * Maps a rejected {@code ?sort=} field to 400.
      *
-     * <p>
-     * The message names the field the caller sent, never the entity field
-     * behind it — the allow-list is the contract, and echoing the internal
-     * name would leak the mapping.
-     *
      * @param ex the rejected sort field
      * @return a 400 problem detail
      */
@@ -81,9 +55,8 @@ public abstract class PlatformExceptionHandler extends ResponseEntityExceptionHa
     /**
      * Maps a lost optimistic-locking race to 409.
      *
-     * <p>
-     * The client's own detail is fixed text: the exception message names the
-     * entity class and its primary key, neither of which belongs in a response.
+     * <p>The detail is fixed text: the exception message names the entity and
+     * its primary key, which do not belong in a response.
      *
      * @param ex the locking failure
      * @return a 409 problem detail
@@ -97,12 +70,8 @@ public abstract class PlatformExceptionHandler extends ResponseEntityExceptionHa
     /**
      * Adds per-field messages to the framework's validation problem.
      *
-     * <p>
-     * The inherited handler produces a correct 400 whose {@code detail} is the
-     * constant "Invalid request content." — true but useless to a form. The
-     * field errors go in an {@code errors} extension member instead of being
-     * joined into one prose string, so a client can point at the field that
-     * failed rather than parse a sentence.
+     * <p>The inherited {@code detail} is the constant "Invalid request
+     * content.", so the field errors go in an {@code errors} member instead.
      */
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
@@ -126,11 +95,11 @@ public abstract class PlatformExceptionHandler extends ResponseEntityExceptionHa
     }
 
     /**
-     * Builds a problem detail with a title, for subclasses to reuse.
+     * Builds a titled problem detail, for subclasses to reuse.
      *
      * @param status the HTTP status
      * @param title  a short, stable label for this class of error
-     * @param detail a human-readable explanation, safe to show a client
+     * @param detail an explanation safe to show a client
      * @return the populated problem detail
      */
     protected static ProblemDetail problem(HttpStatus status, String title, String detail) {

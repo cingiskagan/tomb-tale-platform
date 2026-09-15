@@ -10,22 +10,13 @@ import java.util.List;
 /**
  * The CORS rules every Tomb Tale service serves the portal with.
  *
- * <p>
- * This used to be a copy of the same twenty lines in each service's
- * {@code SecurityConfig}, and the copies had already drifted — player allowed
- * {@code PATCH}, commerce did not, so the same request succeeded against one
- * service and failed against the other. One policy object removes the drift
- * by removing the second copy.
- *
- * <p>
- * It is a value object rather than a {@code @Configuration} on purpose: the
- * wildcard-origin check below is logic, and logic in a wiring package is
- * excluded from coverage. Each service still owns the
- * {@code CorsConfigurationSource} bean; it just builds it from here.
+ * <p>A value object rather than a {@code @Configuration}, because the wildcard
+ * check is logic and a wiring package is excluded from coverage. Each service
+ * still owns its {@code CorsConfigurationSource} bean and builds it from here.
  */
 public record PlatformCorsPolicy(List<String> allowedOrigins) {
 
-    /** Methods the portal may call. {@code PATCH} is here because C3 moves updates to it. */
+    /** Methods the portal may call. */
     private static final List<String> ALLOWED_METHODS =
             List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
 
@@ -37,9 +28,9 @@ public record PlatformCorsPolicy(List<String> allowedOrigins) {
     private static final String ALL_PATHS = "/**";
 
     /**
-     * Validates the origins and keeps an immutable copy of them.
+     * Validates the origins and keeps an immutable copy.
      *
-     * @throws IllegalArgumentException if {@code *} appears among the origins
+     * @throws IllegalArgumentException if the list is empty or contains {@code *}
      */
     public PlatformCorsPolicy {
         if (allowedOrigins == null || allowedOrigins.isEmpty()) {
@@ -53,8 +44,7 @@ public record PlatformCorsPolicy(List<String> allowedOrigins) {
     }
 
     /**
-     * Convenience factory for the {@code String[]} shape Spring's
-     * {@code @Value} binding produces.
+     * Factory for the {@code String[]} shape {@code @Value} binding produces.
      *
      * @param allowedOrigins exact origins, no wildcards
      * @return the policy
@@ -64,10 +54,9 @@ public record PlatformCorsPolicy(List<String> allowedOrigins) {
     }
 
     /**
-     * Builds the source Spring Security's CORS filter consults, applying this
-     * policy to every path.
+     * Applies this policy to every path.
      *
-     * @return a configured {@link CorsConfigurationSource}
+     * @return the source Spring Security's CORS filter consults
      */
     public CorsConfigurationSource toCorsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

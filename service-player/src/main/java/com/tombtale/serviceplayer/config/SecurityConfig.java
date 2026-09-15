@@ -70,9 +70,8 @@ public class SecurityConfig {
     /**
      * Configures the CORS configuration source.
      *
-     * <p>
-     * The rules themselves live in {@link PlatformCorsPolicy} so both services
-     * serve the same ones. This bean only supplies the origins.
+     * <p>The rules live in {@link PlatformCorsPolicy} so both services serve
+     * the same ones. This bean only supplies the origins.
      *
      * @return The configured CorsConfigurationSource.
      */

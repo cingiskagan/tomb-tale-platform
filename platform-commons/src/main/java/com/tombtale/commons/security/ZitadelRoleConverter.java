@@ -27,21 +27,15 @@ public class ZitadelRoleConverter implements Converter<Jwt, Collection<GrantedAu
 
     @Override
     public Collection<GrantedAuthority> convert(Jwt jwt) {
-        Collection<GrantedAuthority> defaultAuthorities = defaultGrantedAuthoritiesConverter.convert(jwt);
-        final Collection<GrantedAuthority> authorities = defaultAuthorities == null
-                ? new ArrayList<>()
-                : new ArrayList<>(defaultAuthorities);
+        final Collection<GrantedAuthority> authorities = new ArrayList<>(
+                defaultGrantedAuthoritiesConverter.convert(jwt));
 
         Object rolesObj = jwt.getClaims().get(ZITADEL_ROLES_CLAIM);
 
         if (rolesObj instanceof Map<?, ?> rolesMap) {
-            rolesMap.keySet().forEach(key ->
-                authorities.add(new SimpleGrantedAuthority(key.toString()))
-            );
+            rolesMap.keySet().forEach(key -> authorities.add(new SimpleGrantedAuthority(key.toString())));
         } else if (rolesObj instanceof Collection<?> rolesList) {
-             rolesList.forEach(role ->
-                authorities.add(new SimpleGrantedAuthority(role.toString()))
-            );
+            rolesList.forEach(role -> authorities.add(new SimpleGrantedAuthority(role.toString())));
         }
 
         return authorities;

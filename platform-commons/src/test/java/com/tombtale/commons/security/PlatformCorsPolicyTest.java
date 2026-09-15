@@ -70,4 +70,15 @@ class PlatformCorsPolicyTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("At least one allowed origin");
     }
+
+    /**
+     * A record's canonical constructor is public, so null is reachable. It has
+     * to fail with the same message rather than an NPE from further down.
+     */
+    @Test
+    void rejectsNullOrigins() {
+        assertThatThrownBy(() -> new PlatformCorsPolicy(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("At least one allowed origin");
+    }
 }
