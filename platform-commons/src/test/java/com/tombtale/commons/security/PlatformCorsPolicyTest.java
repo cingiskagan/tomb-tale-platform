@@ -72,6 +72,18 @@ class PlatformCorsPolicyTest {
     }
 
     /**
+     * A wildcard subdomain is rejected too, not just a bare {@code *}. Spring
+     * matches this list literally, so such an entry would silently match no
+     * origin at all.
+     */
+    @Test
+    void rejectsAWildcardInsideAnOrigin() {
+        assertThatThrownBy(() -> PlatformCorsPolicy.forOrigins(PORTAL_ORIGIN, "https://*.example.com"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Wildcard origins");
+    }
+
+    /**
      * A record's canonical constructor is public, so null is reachable. It has
      * to fail with the same message rather than an NPE from further down.
      */

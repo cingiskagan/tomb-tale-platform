@@ -27,18 +27,21 @@ public record PlatformCorsPolicy(List<String> allowedOrigins) {
 
     private static final String ALL_PATHS = "/**";
 
+    private static final String WILDCARD = "*";
+
     /**
      * Validates the origins and keeps an immutable copy.
      *
-     * @throws IllegalArgumentException if the list is empty or contains {@code *}
+     * @throws IllegalArgumentException if the list is empty or any origin contains {@code *}
      */
     public PlatformCorsPolicy {
         if (allowedOrigins == null || allowedOrigins.isEmpty()) {
             throw new IllegalArgumentException("At least one allowed origin is required.");
         }
-        if (allowedOrigins.contains("*")) {
-            throw new IllegalArgumentException("Wildcard origins ('*') cannot be used when "
-                    + "credentials are enabled. Please specify exact origins in application.yml.");
+        if (allowedOrigins.stream().anyMatch(origin -> origin.contains(WILDCARD))) {
+            throw new IllegalArgumentException("Wildcard origins cannot be used when credentials "
+                    + "are enabled, and Spring matches this list literally, so a pattern would "
+                    + "never match. Please specify exact origins in application.yml.");
         }
         allowedOrigins = List.copyOf(allowedOrigins);
     }
