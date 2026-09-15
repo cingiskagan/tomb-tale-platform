@@ -1,5 +1,6 @@
 package com.tombtale.servicecommerce.controller;
 
+import com.tombtale.commons.security.RoleConstants;
 import com.tombtale.servicecommerce.dto.CreatePurchaseRequest;
 import com.tombtale.servicecommerce.dto.PurchaseFilterRequest;
 import com.tombtale.servicecommerce.dto.PurchaseResponse;
@@ -64,7 +65,7 @@ public class PurchaseController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAuthority('platform_admin')")
+    @PreAuthorize(RoleConstants.IS_ADMIN)
     @Operation(summary = "Create a new purchase", description = "Creates a PENDING purchase and calculates totalPrice server-side.")
     public PurchaseResponse createPurchase(@Valid @RequestBody CreatePurchaseRequest request) {
         return purchaseService.createPurchase(request);
@@ -81,7 +82,7 @@ public class PurchaseController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "Get purchase by ID")
-    @PreAuthorize("hasAuthority('platform_admin') or hasAuthority('game_master')")
+    @PreAuthorize(RoleConstants.IS_ADMIN_OR_GAME_MASTER)
     public PurchaseResponse findPurchaseByPublicId(
             @Parameter(description = "Purchase UUID") @PathVariable("id") UUID publicId) {
         return purchaseService.findPurchaseByPublicId(publicId);
@@ -103,7 +104,7 @@ public class PurchaseController {
      * @return a page of matching purchases
      */
     @GetMapping
-    @PreAuthorize("hasAuthority('platform_admin') or hasAuthority('game_master')")
+    @PreAuthorize(RoleConstants.IS_ADMIN_OR_GAME_MASTER)
     @Operation(summary = "List purchases", description = "Paginated list with optional filters. CANCELLED purchases hidden by default.")
     public Page<PurchaseResponse> listPurchases(
             @ModelAttribute PurchaseFilterRequest filter,
@@ -122,7 +123,7 @@ public class PurchaseController {
      * @return the updated purchase
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('platform_admin')")
+    @PreAuthorize(RoleConstants.IS_ADMIN)
     @Operation(summary = "Update a purchase", description = "Partial update — only non-null fields are applied.")
     public PurchaseResponse updatePurchase(
             @Parameter(description = "Purchase UUID") @PathVariable("id") UUID publicId,
@@ -140,7 +141,7 @@ public class PurchaseController {
      */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAuthority('platform_admin')")
+    @PreAuthorize(RoleConstants.IS_ADMIN)
     @Operation(summary = "Soft-delete a purchase", description = "Sets status to CANCELLED — row is preserved for audit.")
     public void deletePurchase(
             @Parameter(description = "Purchase UUID") @PathVariable("id") UUID publicId) {

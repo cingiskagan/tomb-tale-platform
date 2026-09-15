@@ -5,6 +5,7 @@ import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.tombtale.commons.web.InvalidSortFieldException;
 import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import com.tombtale.servicecommerce.dto.PurchaseFilterRequest;
 import com.tombtale.servicecommerce.entity.Purchase;
@@ -114,7 +115,7 @@ public class PurchaseQueryRepositoryImpl implements PurchaseQueryRepository {
      * @param sort     the sort directives from the pageable
      * @param purchase the Q-type path expression
      * @return an array of order specifiers (empty if unsorted)
-     * @throws IllegalArgumentException if a sort property is not an allowed field
+     * @throws InvalidSortFieldException if a sort property is not an allowed field
      */
     private static OrderSpecifier<?>[] buildOrderSpecifiers(Sort sort, QPurchase purchase) {
 
@@ -134,7 +135,7 @@ public class PurchaseQueryRepositoryImpl implements PurchaseQueryRepository {
         for (Sort.Order order : sort) {
             String property = allowedFields.get(order.getProperty());
             if (property == null) {
-                throw new IllegalArgumentException("Invalid sort field: " + order.getProperty());
+                throw new InvalidSortFieldException(order.getProperty());
             }
 
             Order direction = order.isAscending() ? Order.ASC : Order.DESC;

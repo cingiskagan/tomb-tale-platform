@@ -5,6 +5,7 @@ import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.tombtale.commons.web.InvalidSortFieldException;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.entity.Player;
@@ -122,6 +123,7 @@ public class PlayerQueryRepositoryImpl implements PlayerQueryRepository {
      * @param sort   the sort directives from the pageable
      * @param player the Q-type path expression
      * @return an array of order specifiers (empty if unsorted)
+     * @throws InvalidSortFieldException if a sort property is not on the allow-list
      */
     private static OrderSpecifier<?>[] buildOrderSpecifiers(
             Sort sort,
@@ -140,7 +142,7 @@ public class PlayerQueryRepositoryImpl implements PlayerQueryRepository {
         for (Sort.Order order : sort) {
             String property = order.getProperty();
             if (!allowedFields.contains(property)) {
-                throw new IllegalArgumentException("Invalid sort field: " + property);
+                throw new InvalidSortFieldException(property);
             }
 
             Order direction = order.isAscending() ? Order.ASC : Order.DESC;

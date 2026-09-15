@@ -15,7 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.tombtale.serviceplayer.config.SecurityConfig;
 import com.tombtale.serviceplayer.dto.CharacterResponse;
 import com.tombtale.serviceplayer.dto.UpdateCharacterStatsRequest;
-import com.tombtale.serviceplayer.security.ZitadelRoleConverter;
+import com.tombtale.commons.security.ZitadelRoleConverter;
 import com.tombtale.serviceplayer.service.CharacterService;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -19,7 +19,7 @@ import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import com.tombtale.servicecommerce.dto.CreatePurchaseRequest;
 import com.tombtale.servicecommerce.dto.PurchaseResponse;
 import com.tombtale.servicecommerce.exception.InvalidStatusTransitionException;
-import com.tombtale.servicecommerce.security.ZitadelRoleConverter;
+import com.tombtale.commons.security.ZitadelRoleConverter;
 import com.tombtale.servicecommerce.service.PurchaseService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -290,7 +290,7 @@ class PurchaseControllerSecurityTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(VALID_UPDATE_BODY))
                                 .andExpect(status().isBadRequest())
-                                .andExpect(jsonPath("$.error").value("Invalid Status Transition"))
+                                .andExpect(jsonPath("$.title").value("Invalid Status Transition"))
                                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()));
         }
 
