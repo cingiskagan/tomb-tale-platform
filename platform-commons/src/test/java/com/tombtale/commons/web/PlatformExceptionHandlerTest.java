@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.not;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.equalTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -94,7 +93,7 @@ class PlatformExceptionHandlerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.detail").value(containsString("modified by another transaction")))
                 .andExpect(content().string(not(containsString(LOCKED_ENTITY))))
-                .andExpect(content().string(not(equalTo(LOCKED_ID))));
+                .andExpect(content().string(not(containsString(String.valueOf(LOCKED_ID)))));
     }
 
     /**
