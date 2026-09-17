@@ -2,6 +2,7 @@ package com.tombtale.serviceplayer.repository;
 
 import com.tombtale.serviceplayer.config.JpaConfig;
 import com.tombtale.serviceplayer.config.QueryDslConfig;
+import com.tombtale.commons.web.InvalidSortFieldException;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.entity.Player;
 import com.tombtale.serviceplayer.support.PostgresTestBase;
@@ -10,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
-import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -86,8 +86,7 @@ class PlayerQueryRepositoryImplTest extends PostgresTestBase {
         assertThatThrownBy(() -> playerRepository.findByFilter(
                 new PlayerFilterRequest(null),
                 PageRequest.of(0, PAGE_SIZE, Sort.by("invalidField"))))
-                .isInstanceOf(InvalidDataAccessApiUsageException.class)
-                .hasRootCauseInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidSortFieldException.class)
                 .hasMessageContaining("Invalid sort field: invalidField");
     }
 

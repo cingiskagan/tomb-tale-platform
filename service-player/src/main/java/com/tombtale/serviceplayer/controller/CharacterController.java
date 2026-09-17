@@ -1,5 +1,6 @@
 package com.tombtale.serviceplayer.controller;
 
+import com.tombtale.commons.security.RoleConstants;
 import com.tombtale.serviceplayer.dto.CharacterResponse;
 import com.tombtale.serviceplayer.dto.UpdateCharacterStatsRequest;
 import com.tombtale.serviceplayer.service.CharacterService;
@@ -38,7 +39,7 @@ public class CharacterController {
      * @param request            the new stats
      * @return the updated character
      */
-    @PreAuthorize("hasAuthority('platform_admin') or hasAuthority('game_master')")
+    @PreAuthorize(RoleConstants.IS_ADMIN_OR_GAME_MASTER)
     @PatchMapping("/{characterPublicId}/stats")
     public ResponseEntity<CharacterResponse> updateCharacterStats(
             @PathVariable UUID publicId,

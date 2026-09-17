@@ -1,5 +1,6 @@
 package com.tombtale.serviceplayer.controller;
 
+import com.tombtale.commons.security.RoleConstants;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.entity.Player;
@@ -47,7 +48,7 @@ public class PlayerController {
      * @return the player profile DTO
      */
     @GetMapping("/me")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize(RoleConstants.IS_AUTHENTICATED)
     public ResponseEntity<PlayerResponse> getMyProfile(@AuthenticationPrincipal Jwt jwt) {
         String zitadelUserId = jwt.getSubject();
         log.debug("Fetching profile for Zitadel user: {}", LogUtils.maskId(zitadelUserId));
@@ -68,7 +69,7 @@ public class PlayerController {
      * @return the updated player profile DTO
      */
     @PatchMapping("/me")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize(RoleConstants.IS_AUTHENTICATED)
     public ResponseEntity<PlayerResponse> updateMyProfile(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody com.tombtale.serviceplayer.dto.UpdateMyProfileRequest request) {
@@ -90,7 +91,7 @@ public class PlayerController {
      * @return a page of player response DTOs
      */
     @GetMapping
-    @PreAuthorize("hasAuthority('platform_admin') or hasAuthority('game_master')")
+    @PreAuthorize(RoleConstants.IS_ADMIN_OR_GAME_MASTER)
     public ResponseEntity<Page<PlayerResponse>> listPlayers(
             @ModelAttribute PlayerFilterRequest filter,
             Pageable pageable) {

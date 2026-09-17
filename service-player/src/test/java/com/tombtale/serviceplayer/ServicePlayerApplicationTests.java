@@ -2,7 +2,7 @@ package com.tombtale.serviceplayer;
 
 import com.jayway.jsonpath.JsonPath;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
-import com.tombtale.serviceplayer.security.ZitadelRoleConverter;
+import com.tombtale.commons.security.ZitadelRoleConverter;
 import com.tombtale.serviceplayer.support.PostgresTestBase;
 
 import org.junit.jupiter.api.AfterEach;
