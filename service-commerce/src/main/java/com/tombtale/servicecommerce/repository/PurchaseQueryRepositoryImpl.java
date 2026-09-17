@@ -18,7 +18,7 @@ import org.springframework.data.domain.Sort;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 /**
  * QueryDSL implementation of {@link PurchaseQueryRepository}.
@@ -88,11 +88,11 @@ public class PurchaseQueryRepositoryImpl implements PurchaseQueryRepository {
         } else {
             builder.and(purchase.status.ne(PurchaseStatus.CANCELLED));
         }
-        if (filter.purchasedAfter() != null) {
-            builder.and(purchase.createdAt.goe(filter.purchasedAfter()));
+        if (filter.createdAfter() != null) {
+            builder.and(purchase.createdAt.goe(filter.createdAfter()));
         }
-        if (filter.purchasedBefore() != null) {
-            builder.and(purchase.createdAt.loe(filter.purchasedBefore()));
+        if (filter.createdBefore() != null) {
+            builder.and(purchase.createdAt.loe(filter.createdBefore()));
         }
 
         return builder;
@@ -106,11 +106,10 @@ public class PurchaseQueryRepositoryImpl implements PurchaseQueryRepository {
      * allow-list is rejected before it can reach the query, so a caller cannot steer the
      * generated HQL through the order-by clause.
      *
-     * <p>The allow-list is a map, not a set, because two API names no longer
-     * match the field behind them: {@code id} means the entity's
-     * {@code publicId}, and {@code purchasedAt} means its {@code createdAt}.
-     * Keys are what a caller may send; values come from the Q-type, so a
-     * renamed entity field breaks the build rather than the endpoint.
+     * <p>Every sortable API name is the entity field name (ADR 0017), so the
+     * allow-list is a set of Q-type names rather than a map from one spelling
+     * to another. Taking the names from the Q-type means a renamed entity
+     * field breaks the build rather than the endpoint.
      *
      * @param sort     the sort directives from the pageable
      * @param purchase the Q-type path expression
@@ -119,23 +118,23 @@ public class PurchaseQueryRepositoryImpl implements PurchaseQueryRepository {
      */
     private static OrderSpecifier<?>[] buildOrderSpecifiers(Sort sort, QPurchase purchase) {
 
-        Map<String, String> allowedFields = Map.of(
-                "id", purchase.publicId.getMetadata().getName(),
-                "playerId", purchase.playerId.getMetadata().getName(),
-                "itemCode", purchase.itemCode.getMetadata().getName(),
-                "quantity", purchase.quantity.getMetadata().getName(),
-                "unitPrice", purchase.unitPrice.getMetadata().getName(),
-                "totalPrice", purchase.totalPrice.getMetadata().getName(),
-                "status", purchase.status.getMetadata().getName(),
-                "purchasedAt", purchase.createdAt.getMetadata().getName());
+        Set<String> allowedFields = Set.of(
+                purchase.publicId.getMetadata().getName(),
+                purchase.playerId.getMetadata().getName(),
+                purchase.itemCode.getMetadata().getName(),
+                purchase.quantity.getMetadata().getName(),
+                purchase.unitPrice.getMetadata().getName(),
+                purchase.totalPrice.getMetadata().getName(),
+                purchase.status.getMetadata().getName(),
+                purchase.createdAt.getMetadata().getName());
 
         List<OrderSpecifier<?>> orders = new ArrayList<>();
         PathBuilder<Purchase> entityPath = new PathBuilder<>(Purchase.class, purchase.getMetadata());
 
         for (Sort.Order order : sort) {
-            String property = allowedFields.get(order.getProperty());
-            if (property == null) {
-                throw new InvalidSortFieldException(order.getProperty());
+            String property = order.getProperty();
+            if (!allowedFields.contains(property)) {
+                throw new InvalidSortFieldException(property);
             }
 
             Order direction = order.isAscending() ? Order.ASC : Order.DESC;

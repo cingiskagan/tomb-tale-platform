@@ -98,7 +98,7 @@ class PurchaseServiceTest {
 
         PurchaseResponse result = purchaseService.createPurchase(request);
 
-        assertThat(result.id()).isEqualTo(PURCHASE_ID);
+        assertThat(result.publicId()).isEqualTo(PURCHASE_ID);
         assertThat(result.totalPrice()).isEqualByComparingTo(EXPECTED_TOTAL);
         verify(purchaseRepository).save(any(Purchase.class));
     }
@@ -113,7 +113,7 @@ class PurchaseServiceTest {
 
         PurchaseResponse result = purchaseService.findPurchaseByPublicId(PURCHASE_ID);
 
-        assertThat(result.id()).isEqualTo(PURCHASE_ID);
+        assertThat(result.publicId()).isEqualTo(PURCHASE_ID);
         assertThat(result.playerId()).isEqualTo(PLAYER_ID);
     }
 

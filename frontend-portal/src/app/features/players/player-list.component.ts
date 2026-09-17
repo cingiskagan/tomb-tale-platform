@@ -43,7 +43,7 @@ export class PlayerListComponent {
 
             const res = await firstValueFrom(this.playerService.listPlayers(filters, page, event.rows || 20, sort));
             this.players = res.content;
-            this.totalRecords = res.totalElements;
+            this.totalRecords = res.page.totalElements;
         } catch (err) {
             console.error('Failed to load players:', err);
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load' });

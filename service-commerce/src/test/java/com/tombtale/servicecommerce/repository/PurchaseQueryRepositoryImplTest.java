@@ -133,7 +133,7 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
         persist(aPurchase(PLAYER_ONE, ONERING, 2, PRICE_LOW, PurchaseStatus.REFUNDED));
 
         Page<Purchase> page = purchaseRepository.findByFilter(
-                purchasedBetween(yesterday, now), PageRequest.of(0, PAGE_SIZE));
+                createdBetween(yesterday, now), PageRequest.of(0, PAGE_SIZE));
 
         assertThat(page.getTotalElements()).isEqualTo(1L);
         assertThat(page.getContent()).extracting(Purchase::getCreatedAt).containsExactly(now);
@@ -190,8 +190,8 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
         persist(aPurchase(PLAYER_ONE, ARKENSTONE, 1, PRICE_HIGH, PurchaseStatus.COMPLETED));
 
         for (String field : new String[] {
-            "id", "playerId", "itemCode", "quantity",
-            "unitPrice", "totalPrice", "status", "purchasedAt", }) {
+            "publicId", "playerId", "itemCode", "quantity",
+            "unitPrice", "totalPrice", "status", "createdAt", }) {
             PageRequest pageable = PageRequest.of(0, PAGE_SIZE, Sort.by(field));
 
             assertThat(purchaseRepository.findByFilter(noFilter(), pageable).getContent())
@@ -245,7 +245,7 @@ class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
         return new PurchaseFilterRequest(null, null, status, null, null);
     }
 
-    private static PurchaseFilterRequest purchasedBetween(Instant after, Instant before) {
+    private static PurchaseFilterRequest createdBetween(Instant after, Instant before) {
         return new PurchaseFilterRequest(null, null, null, after, before);
     }
 

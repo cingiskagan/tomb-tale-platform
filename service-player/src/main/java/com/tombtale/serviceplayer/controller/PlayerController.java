@@ -1,6 +1,7 @@
 package com.tombtale.serviceplayer.controller;
 
 import com.tombtale.commons.security.RoleConstants;
+import com.tombtale.commons.web.PagedResponse;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.entity.Player;
@@ -10,7 +11,6 @@ import com.tombtale.serviceplayer.util.LogUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -84,18 +84,17 @@ public class PlayerController {
      * GET /api/v1/players
      * <p>
      * Returns a paginated, filtered list of all players.
-     * Supports dynamic filtering by display name and level range.
+     * Supports dynamic filtering by display name.
      *
      * @param filter   optional query parameters for filtering
-     * @param pageable pagination and sorting (e.g. ?page=0&size=20&sort=level,desc)
-     * @return a page of player response DTOs
+     * @param pageable pagination and sorting (e.g. ?page=0&size=20&sort=displayName,desc)
+     * @return one page of players in the platform's envelope
      */
     @GetMapping
     @PreAuthorize(RoleConstants.IS_ADMIN_OR_GAME_MASTER)
-    public ResponseEntity<Page<PlayerResponse>> listPlayers(
+    public ResponseEntity<PagedResponse<PlayerResponse>> listPlayers(
             @ModelAttribute PlayerFilterRequest filter,
             Pageable pageable) {
-        Page<PlayerResponse> page = playerService.listPlayers(filter, pageable);
-        return ResponseEntity.ok(page);
+        return ResponseEntity.ok(PagedResponse.from(playerService.listPlayers(filter, pageable)));
     }
 }

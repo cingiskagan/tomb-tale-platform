@@ -12,27 +12,27 @@ import java.util.UUID;
  * <p>Intentionally omits the internal JPA {@code version} field
  * to keep the public contract clean.
  *
- * <p>{@code id} is the purchase's {@code publicId}; the internal key never
- * leaves the persistence layer. {@code purchasedAt} is the entity's
- * {@code createdAt} under the name this API has always used for it.
+ * <p>Every field is named after the entity field behind it (ADR 0017). The
+ * internal key never leaves the persistence layer, so {@code publicId} is the
+ * only identifier here.
  *
- * @param id          the purchase's public identifier
- * @param playerId    publicId of the purchasing player
- * @param itemCode    catalogue item code
- * @param quantity    number of items purchased
- * @param unitPrice   price per single item
- * @param totalPrice  {@code quantity × unitPrice}
- * @param status      current lifecycle state
- * @param purchasedAt UTC timestamp of the original purchase
+ * @param publicId   the purchase's public identifier
+ * @param playerId   publicId of the purchasing player
+ * @param itemCode   catalogue item code
+ * @param quantity   number of items purchased
+ * @param unitPrice  price per single item
+ * @param totalPrice {@code quantity × unitPrice}
+ * @param status     current lifecycle state
+ * @param createdAt  UTC timestamp of the purchase
  */
 public record PurchaseResponse(
-        UUID id,
+        UUID publicId,
         UUID playerId,
         String itemCode,
         Integer quantity,
         BigDecimal unitPrice,
         BigDecimal totalPrice,
         PurchaseStatus status,
-        Instant purchasedAt
+        Instant createdAt
 ) {
 }

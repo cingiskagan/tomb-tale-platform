@@ -4,7 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
@@ -69,6 +70,7 @@ class PlayerControllerSecurityTest {
     private static final UUID PLAYER_PUBLIC_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID CHARACTER_PUBLIC_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
     private static final String DISPLAY_NAME = "TombRaider";
+    private static final int PAGE_SIZE = 20;
     private static final int CHARACTER_LEVEL = 1;
     private static final long CHARACTER_XP = 0L;
 
@@ -140,7 +142,8 @@ class PlayerControllerSecurityTest {
 
     @Test
     void listAsGameMasterReturns200() throws Exception {
-        when(playerService.listPlayers(any(), any())).thenReturn(Page.empty());
+        when(playerService.listPlayers(any(), any())).thenReturn(
+                new PageImpl<>(List.of(), PageRequest.of(0, PAGE_SIZE), 0L));
 
         mockMvc.perform(get(PLAYERS_URL)
                 .with(tokenWithRoles(ROLE_GAME_MASTER)))
@@ -148,12 +151,18 @@ class PlayerControllerSecurityTest {
     }
 
     @Test
-    void listAsAdminReturns200() throws Exception {
-        when(playerService.listPlayers(any(), any())).thenReturn(Page.empty());
+    void listAsAdminReturns200InThePagedEnvelope() throws Exception {
+        when(playerService.listPlayers(any(), any())).thenReturn(
+                new PageImpl<>(List.of(aPlayerResponse()), PageRequest.of(0, PAGE_SIZE), 1L));
 
         mockMvc.perform(get(PLAYERS_URL)
                 .with(tokenWithRoles(ROLE_PLATFORM_ADMIN)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].publicId").value(PLAYER_PUBLIC_ID.toString()))
+                .andExpect(jsonPath("$.page.number").value(0))
+                .andExpect(jsonPath("$.page.size").value(PAGE_SIZE))
+                .andExpect(jsonPath("$.page.totalElements").value(1))
+                .andExpect(jsonPath("$.page.totalPages").value(1));
     }
 
     @Test

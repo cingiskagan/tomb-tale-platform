@@ -1,28 +1,22 @@
-export interface PageSort {
-    sorted: boolean;
-    unsorted: boolean;
-    empty: boolean;
-}
-
-export interface Pageable {
-    pageNumber: number;
-    pageSize: number;
-    sort: PageSort;
-    offset: number;
-    paged: boolean;
-    unpaged: boolean;
-}
-
-export interface Page<T> {
-    content: T[];
-    pageable: Pageable;
-    last: boolean;
-    totalPages: number;
-    totalElements: number;
-    size: number;
+/**
+ * Where one page sits in the whole result.
+ *
+ * Mirrors `PagedResponse.PageInfo` in platform-commons.
+ */
+export interface PageInfo {
     number: number;
-    sort: PageSort;
-    first: boolean;
-    numberOfElements: number;
-    empty: boolean;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+}
+
+/**
+ * The envelope every paginated list endpoint answers with.
+ *
+ * Mirrors `PagedResponse<T>` in platform-commons. It is a published contract,
+ * not Spring's serialised `Page`, so these four counts are all that arrives.
+ */
+export interface PagedResponse<T> {
+    content: T[];
+    page: PageInfo;
 }

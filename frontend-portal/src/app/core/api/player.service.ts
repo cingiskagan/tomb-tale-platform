@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Player, PlayerFilterRequest, UpdateCharacterStatsRequest, UpdateMyProfileRequest, GameCharacter } from './player.models';
-import { Page } from './common.model';
+import { PagedResponse } from './common.model';
 
 @Injectable({ providedIn: 'root' })
 export class PlayerService {
@@ -15,12 +15,12 @@ export class PlayerService {
         page = 0,
         size = 20,
         sort?: string
-    ): Observable<Page<Player>> {
+    ): Observable<PagedResponse<Player>> {
         let params = new HttpParams().set('page', page).set('size', size);
         if (sort) params = params.set('sort', sort);
         if (filter.displayName) params = params.set('displayName', filter.displayName);
 
-        return this.http.get<Page<Player>>(this.baseUrl, { params });
+        return this.http.get<PagedResponse<Player>>(this.baseUrl, { params });
     }
 
     getMyProfile(): Observable<Player> {
