@@ -63,16 +63,25 @@ public class PlayerService {
      * Retrieves a player profile by their Zitadel user ID, or creates a new one
      * if it does not exist yet (JIT Provisioning).
      *
+     * <p>The entity never leaves this method. Mapping happens here so the
+     * controller deals only in DTOs.
+     *
+     * <p>{@code NOT_SUPPORTED} is not decoration. The class declares
+     * {@code readOnly = true}, which would make the creation below a write in a
+     * read-only transaction. Running outside one also lets {@code save} keep its
+     * own transaction, so a collision can be caught and retried instead of
+     * poisoning an outer one.
+     *
      * <p>Reading never writes. A player is always created together with a
      * default character, in one transaction, so an existing player is returned
      * exactly as it was stored.
      *
      * @param zitadelUserId the subject claim from the JWT
-     * @return the existing or newly created player
+     * @return the existing or newly created profile
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public Player getOrCreatePlayer(String zitadelUserId) {
-        return playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
+    public PlayerResponse getOrCreatePlayer(String zitadelUserId) {
+        Player player = playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
                 .orElseGet(() -> {
                     try {
                         return createNewPlayerWithCharacter(zitadelUserId);
@@ -82,6 +91,8 @@ public class PlayerService {
                                 .orElseThrow(() -> new IllegalStateException("Failed to find player after creation collision"));
                     }
                 });
+
+        return playerMapper.toResponse(player);
     }
 
     /**

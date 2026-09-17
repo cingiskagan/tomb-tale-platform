@@ -4,8 +4,6 @@ import com.tombtale.commons.security.RoleConstants;
 import com.tombtale.commons.web.PagedResponse;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
-import com.tombtale.serviceplayer.entity.Player;
-import com.tombtale.serviceplayer.mapper.PlayerMapper;
 import com.tombtale.serviceplayer.service.PlayerService;
 import com.tombtale.serviceplayer.util.LogUtils;
 import jakarta.validation.Valid;
@@ -36,7 +34,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlayerController {
 
     private final PlayerService playerService;
-    private final PlayerMapper playerMapper;
 
     /**
      * GET /api/v1/players/me
@@ -53,10 +50,7 @@ public class PlayerController {
         String zitadelUserId = jwt.getSubject();
         log.debug("Fetching profile for Zitadel user: {}", LogUtils.maskId(zitadelUserId));
 
-        Player player = playerService.getOrCreatePlayer(zitadelUserId);
-
-        //TODO: this mapper will be moved to service class in following commits
-        return ResponseEntity.ok(playerMapper.toResponse(player));
+        return ResponseEntity.ok(playerService.getOrCreatePlayer(zitadelUserId));
     }
 
     /**

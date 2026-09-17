@@ -12,7 +12,6 @@ import com.tombtale.commons.security.ZitadelRoleConverter;
 import com.tombtale.commons.web.InvalidSortFieldException;
 import com.tombtale.serviceplayer.config.SecurityConfig;
 import com.tombtale.serviceplayer.controller.PlayerController;
-import com.tombtale.serviceplayer.mapper.PlayerMapper;
 import com.tombtale.serviceplayer.service.PlayerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,9 +63,6 @@ class GlobalExceptionHandlerTest {
 
     @MockitoBean
     private PlayerService playerService;
-
-    @MockitoBean
-    private PlayerMapper playerMapper;
 
     @MockitoBean
     private JwtDecoder jwtDecoder;

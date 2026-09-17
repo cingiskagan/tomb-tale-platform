@@ -48,6 +48,12 @@ class PlayerServiceTest {
     @InjectMocks
     private PlayerService playerService;
 
+    /** Content irrelevant: these tests assert on the repository, not on the mapping. */
+    private static PlayerResponse aPlayerResponse() {
+        return new PlayerResponse(
+                UUID.randomUUID(), "test", "pi-user", new ArrayList<>(), Instant.now());
+    }
+
     @Test
     void shouldListPlayersSuccessfully() {
         PlayerFilterRequest filter = new PlayerFilterRequest("test");
@@ -79,12 +85,14 @@ class PlayerServiceTest {
         Player existing = new Player();
         GameCharacter character = new GameCharacter();
         existing.addCharacter(character);
+        PlayerResponse response = aPlayerResponse();
 
         when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.of(existing));
+        when(playerMapper.toResponse(existing)).thenReturn(response);
 
-        Player result = playerService.getOrCreatePlayer("z1");
+        PlayerResponse result = playerService.getOrCreatePlayer("z1");
 
-        assertThat(result).isEqualTo(existing);
+        assertThat(result).isEqualTo(response);
         verify(playerRepository, never()).save(any());
     }
 
@@ -96,10 +104,11 @@ class PlayerServiceTest {
         newPlayer.setDisplayName("Player_random1");
         
         when(playerRepository.save(any(Player.class))).thenReturn(newPlayer);
+        when(playerMapper.toResponse(newPlayer)).thenReturn(aPlayerResponse());
 
-        Player result = playerService.getOrCreatePlayer("new-z1");
+        PlayerResponse result = playerService.getOrCreatePlayer("new-z1");
 
-        assertThat(result).isEqualTo(newPlayer);
+        assertThat(result).isNotNull();
         verify(playerRepository).save(argThat(p -> 
                 p.getDisplayName() != null && p.getDisplayName().startsWith("Player_") && 
                 "new-z1".equals(p.getZitadelUserId()) &&
@@ -109,14 +118,17 @@ class PlayerServiceTest {
 
     @Test
     void shouldRecoverFromConcurrentCreationConflict() {
+        Player winner = new Player();
+
         when(playerRepository.findByZitadelUserIdWithCharacters("z1"))
                 .thenReturn(Optional.empty()) // First check: not found
-                .thenReturn(Optional.of(new Player())); // Second check after exception: found
+                .thenReturn(Optional.of(winner)); // Second check after exception: found
 
         when(playerRepository.save(any(Player.class)))
                 .thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
+        when(playerMapper.toResponse(winner)).thenReturn(aPlayerResponse());
 
-        Player result = playerService.getOrCreatePlayer("z1");
+        PlayerResponse result = playerService.getOrCreatePlayer("z1");
 
         assertThat(result).isNotNull();
         // It should call find twice
