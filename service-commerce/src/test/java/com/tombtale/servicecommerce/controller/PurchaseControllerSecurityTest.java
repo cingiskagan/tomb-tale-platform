@@ -5,7 +5,8 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -38,6 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -48,7 +51,7 @@ import java.util.UUID;
 @Import(SecurityConfig.class)
 @ActiveProfiles("test")
 // PMD suppressions — each a deliberate false-positive call:
-// - TooManyStaticImports / TooManyMethods: inherent to an 18-case MockMvc
+// - TooManyStaticImports / TooManyMethods: inherent to a 20-case MockMvc
 // matrix.
 // - UnitTestShouldIncludeAssert: PMD does not recognise MockMvc's
 // andExpect(...) as an assertion.
@@ -72,6 +75,7 @@ class PurchaseControllerSecurityTest {
         private static final String SUBJECT = "zitadel-sub-314159";
         private static final UUID PLAYER_ID = UUID.fromString("aaaaaaaa-0000-4000-8000-000000000001");
         private static final UUID PURCHASE_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        private static final int PAGE_SIZE = 20;
 
         private static final String VALID_CREATE_BODY = """
                         {
@@ -202,11 +206,17 @@ class PurchaseControllerSecurityTest {
 
         @Test
         void listAsGameMasterReturns200() throws Exception {
-                when(purchaseService.listPurchases(any(), any())).thenReturn(Page.empty());
+                when(purchaseService.listPurchases(any(), any()))
+                                .thenReturn(new PageImpl<>(List.of(aPurchaseResponse()), PageRequest.of(0, PAGE_SIZE), 1L));
 
                 mockMvc.perform(get(PURCHASES_URL)
                                 .with(tokenWithRoles(ROLE_GAME_MASTER)))
-                                .andExpect(status().isOk());
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.content[0].publicId").value(PURCHASE_ID.toString()))
+                                .andExpect(jsonPath("$.page.number").value(0))
+                                .andExpect(jsonPath("$.page.size").value(PAGE_SIZE))
+                                .andExpect(jsonPath("$.page.totalElements").value(1))
+                                .andExpect(jsonPath("$.page.totalPages").value(1));
         }
 
         @Test
@@ -233,12 +243,12 @@ class PurchaseControllerSecurityTest {
                 mockMvc.perform(get(PURCHASES_URL + "/" + PURCHASE_ID)
                                 .with(tokenWithRoles(ROLE_GAME_MASTER)))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.id").value(PURCHASE_ID.toString()));
+                                .andExpect(jsonPath("$.publicId").value(PURCHASE_ID.toString()));
         }
 
         @Test
         void updateAsAnonymousReturns401() throws Exception {
-                mockMvc.perform(put(PURCHASES_URL + "/" + PURCHASE_ID)
+                mockMvc.perform(patch(PURCHASES_URL + "/" + PURCHASE_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(VALID_UPDATE_BODY))
                                 .andExpect(status().isUnauthorized());
@@ -248,7 +258,7 @@ class PurchaseControllerSecurityTest {
 
         @Test
         void updateAsPlayerReturns403() throws Exception {
-                mockMvc.perform(put(PURCHASES_URL + "/" + PURCHASE_ID)
+                mockMvc.perform(patch(PURCHASES_URL + "/" + PURCHASE_ID)
                                 .with(tokenWithRoles(ROLE_PLAYER))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(VALID_UPDATE_BODY))
@@ -259,7 +269,7 @@ class PurchaseControllerSecurityTest {
 
         @Test
         void updateAsGameMasterReturns403() throws Exception {
-                mockMvc.perform(put(PURCHASES_URL + "/" + PURCHASE_ID)
+                mockMvc.perform(patch(PURCHASES_URL + "/" + PURCHASE_ID)
                                 .with(tokenWithRoles(ROLE_GAME_MASTER))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(VALID_UPDATE_BODY))
@@ -272,12 +282,12 @@ class PurchaseControllerSecurityTest {
         void updateAsAdminReturns200() throws Exception {
                 when(purchaseService.updatePurchase(any(), any())).thenReturn(aPurchaseResponse());
 
-                mockMvc.perform(put(PURCHASES_URL + "/" + PURCHASE_ID)
+                mockMvc.perform(patch(PURCHASES_URL + "/" + PURCHASE_ID)
                                 .with(tokenWithRoles(ROLE_PLATFORM_ADMIN))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(VALID_UPDATE_BODY))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.id").value(PURCHASE_ID.toString()));
+                                .andExpect(jsonPath("$.publicId").value(PURCHASE_ID.toString()));
         }
 
         @Test
@@ -285,13 +295,24 @@ class PurchaseControllerSecurityTest {
                 when(purchaseService.updatePurchase(any(), any()))
                                 .thenThrow(new InvalidStatusTransitionException("Cannot change purchase status from CANCELLED to PENDING"));
 
-                mockMvc.perform(put(PURCHASES_URL + "/" + PURCHASE_ID)
+                mockMvc.perform(patch(PURCHASES_URL + "/" + PURCHASE_ID)
                                 .with(tokenWithRoles(ROLE_PLATFORM_ADMIN))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(VALID_UPDATE_BODY))
                                 .andExpect(status().isBadRequest())
                                 .andExpect(jsonPath("$.title").value("Invalid Status Transition"))
                                 .andExpect(jsonPath("$.status").value(HttpStatus.BAD_REQUEST.value()));
+        }
+
+        @Test
+        void updateWithPutReturns405() throws Exception {
+                mockMvc.perform(put(PURCHASES_URL + "/" + PURCHASE_ID)
+                                .with(tokenWithRoles(ROLE_PLATFORM_ADMIN))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_UPDATE_BODY))
+                                .andExpect(status().isMethodNotAllowed());
+
+                verifyNoInteractions(purchaseService);
         }
 
         @Test

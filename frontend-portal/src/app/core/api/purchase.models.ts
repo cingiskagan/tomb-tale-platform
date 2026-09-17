@@ -6,22 +6,22 @@ export enum PurchaseStatus {
 }
 
 export interface PurchaseResponse {
-  id: string;
+  publicId: string;
   playerId: string;
   itemCode: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
   status: PurchaseStatus;
-  purchasedAt: string;
+  createdAt: string;
 }
 
 export interface PurchaseFilterRequest {
   playerId?: string | null;
   itemCode?: string | null;
   status?: PurchaseStatus | null;
-  purchasedAfter?: string | null;
-  purchasedBefore?: string | null;
+  createdAfter?: string | null;
+  createdBefore?: string | null;
 }
 
 export interface CreatePurchaseRequest {

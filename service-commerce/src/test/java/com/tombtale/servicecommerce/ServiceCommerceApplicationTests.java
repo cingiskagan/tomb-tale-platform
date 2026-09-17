@@ -130,7 +130,7 @@ class ServiceCommerceApplicationTests extends PostgresTestBase {
         // @AfterEach, and leak the row into the next test class — the exact
         // contamination this suite was fixed for two commits ago.
         String json = created.andReturn().getResponse().getContentAsString();
-        createdPurchasePublicId = UUID.fromString(JsonPath.read(json, "$.id"));
+        createdPurchasePublicId = UUID.fromString(JsonPath.read(json, "$.publicId"));
 
         created.andExpect(jsonPath("$.playerId").value(PLAYER_ID))
                 .andExpect(jsonPath("$.status").value(PurchaseStatus.PENDING.name()));
@@ -141,10 +141,10 @@ class ServiceCommerceApplicationTests extends PostgresTestBase {
         BigDecimal totalPrice = new BigDecimal(JsonPath.read(json, "$.totalPrice").toString());
         assertThat(totalPrice).isEqualByComparingTo(new BigDecimal(EXPECTED_TOTAL_PRICE));
 
-        mockMvc.perform(get(PURCHASES_URL + "/{id}", createdPurchasePublicId)
+        mockMvc.perform(get(PURCHASES_URL + "/{publicId}", createdPurchasePublicId)
                 .with(adminToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(createdPurchasePublicId.toString()))
+                .andExpect(jsonPath("$.publicId").value(createdPurchasePublicId.toString()))
                 .andExpect(jsonPath("$.itemCode").value(ITEM_CODE))
                 .andExpect(jsonPath("$.status").value(PurchaseStatus.PENDING.name()));
     }

@@ -120,6 +120,12 @@ public class PlayerQueryRepositoryImpl implements PlayerQueryRepository {
      * Converts Spring Data {@link Sort} orders into QueryDSL
      * {@link OrderSpecifier} array.
      *
+     * <p>
+     * The allow-list holds entity field names, which are also the API's field
+     * names (ADR 0017). {@code id} is not among them: the internal key is not
+     * in {@link PlayerResponse}, so ordering by it is not something a caller
+     * can ask for in terms it can see.
+     *
      * @param sort   the sort directives from the pageable
      * @param player the Q-type path expression
      * @return an array of order specifiers (empty if unsorted)
@@ -130,7 +136,6 @@ public class PlayerQueryRepositoryImpl implements PlayerQueryRepository {
             QPlayer player) {
 
         Set<String> allowedFields = Set.of(
-                player.id.getMetadata().getName(),
                 player.publicId.getMetadata().getName(),
                 player.displayName.getMetadata().getName(),
                 player.createdAt.getMetadata().getName());

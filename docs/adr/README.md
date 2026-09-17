@@ -74,3 +74,5 @@ in sequence here — a record written later can describe an earlier choice.
 | [0013](0013-every-entity-carries-the-same-six-fields.md) | Every entity carries the same six fields | 2026-09-11 | accepted |
 | [0014](0014-player-publicid-is-the-cross-service-identifier.md) | `Player.publicId` is the cross-service player identifier | 2026-09-11 | accepted |
 | [0015](0015-one-error-envelope-rfc-9457.md) | One error envelope, and it is RFC 9457 | 2026-09-14 | accepted |
+| [0016](0016-lists-answer-with-a-paged-envelope.md) | Lists answer with a paged envelope of our own | 2026-09-17 | accepted |
+| [0017](0017-an-api-field-is-named-after-the-field-behind-it.md) | An API field is named after the field behind it | 2026-09-17 | accepted |

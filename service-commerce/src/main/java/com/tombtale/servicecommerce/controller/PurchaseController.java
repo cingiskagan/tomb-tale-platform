@@ -1,6 +1,7 @@
 package com.tombtale.servicecommerce.controller;
 
 import com.tombtale.commons.security.RoleConstants;
+import com.tombtale.commons.web.PagedResponse;
 import com.tombtale.servicecommerce.dto.CreatePurchaseRequest;
 import com.tombtale.servicecommerce.dto.PurchaseFilterRequest;
 import com.tombtale.servicecommerce.dto.PurchaseResponse;
@@ -12,7 +13,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -20,9 +20,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -61,7 +61,7 @@ public class PurchaseController {
      * {@code publicId} (ADR 0014).
      *
      * @param request the validated creation payload
-     * @return the created purchase with generated ID and computed totalPrice
+     * @return the created purchase with generated publicId and computed totalPrice
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -80,11 +80,11 @@ public class PurchaseController {
      * @param publicId the purchase's public identifier
      * @return the matching purchase
      */
-    @GetMapping("/{id}")
-    @Operation(summary = "Get purchase by ID")
+    @GetMapping("/{publicId}")
+    @Operation(summary = "Get purchase by publicId")
     @PreAuthorize(RoleConstants.IS_ADMIN_OR_GAME_MASTER)
     public PurchaseResponse findPurchaseByPublicId(
-            @Parameter(description = "Purchase UUID") @PathVariable("id") UUID publicId) {
+            @Parameter(description = "Purchase UUID") @PathVariable UUID publicId) {
         return purchaseService.findPurchaseByPublicId(publicId);
     }
 
@@ -101,19 +101,23 @@ public class PurchaseController {
      *
      * @param filter   optional query-parameter filters
      * @param pageable pagination controls (default page size: 20)
-     * @return a page of matching purchases
+     * @return one page of matching purchases in the platform's envelope
      */
     @GetMapping
     @PreAuthorize(RoleConstants.IS_ADMIN_OR_GAME_MASTER)
     @Operation(summary = "List purchases", description = "Paginated list with optional filters. CANCELLED purchases hidden by default.")
-    public Page<PurchaseResponse> listPurchases(
+    public PagedResponse<PurchaseResponse> listPurchases(
             @ModelAttribute PurchaseFilterRequest filter,
             @PageableDefault(size = DEFAULT_PAGE_SIZE) Pageable pageable) {
-        return purchaseService.listPurchases(filter, pageable);
+        return PagedResponse.from(purchaseService.listPurchases(filter, pageable));
     }
 
     /**
      * Partially updates an existing purchase.
+     *
+     * <p>
+     * PATCH, not PUT: the request body carries only the fields to change and
+     * everything absent from it is left alone, which is what PATCH means.
      *
      * <p>
      * Requires {@code platform_admin}.
@@ -122,11 +126,11 @@ public class PurchaseController {
      * @param request  the partial-update payload
      * @return the updated purchase
      */
-    @PutMapping("/{id}")
+    @PatchMapping("/{publicId}")
     @PreAuthorize(RoleConstants.IS_ADMIN)
     @Operation(summary = "Update a purchase", description = "Partial update — only non-null fields are applied.")
     public PurchaseResponse updatePurchase(
-            @Parameter(description = "Purchase UUID") @PathVariable("id") UUID publicId,
+            @Parameter(description = "Purchase UUID") @PathVariable UUID publicId,
             @Valid @RequestBody UpdatePurchaseRequest request) {
         return purchaseService.updatePurchase(publicId, request);
     }
@@ -139,12 +143,12 @@ public class PurchaseController {
      *
      * @param publicId the purchase's public identifier
      */
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{publicId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize(RoleConstants.IS_ADMIN)
     @Operation(summary = "Soft-delete a purchase", description = "Sets status to CANCELLED — row is preserved for audit.")
     public void deletePurchase(
-            @Parameter(description = "Purchase UUID") @PathVariable("id") UUID publicId) {
+            @Parameter(description = "Purchase UUID") @PathVariable UUID publicId) {
         purchaseService.deletePurchase(publicId);
     }
 }

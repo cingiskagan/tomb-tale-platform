@@ -12,10 +12,9 @@ import java.util.List;
  * MapStruct mapper converting between {@link Purchase} entities and
  * their DTO representations.
  *
- * <p>Two names differ between the entity and the API, and this mapper is
- * where they meet. The response's {@code id} is the entity's
- * {@code publicId} — the internal key is never exposed — and its
- * {@code purchasedAt} is the entity's {@code createdAt}.
+ * <p>Every response field is named after the entity field behind it
+ * (ADR 0017), so the response mapping needs no {@code @Mapping} at all. The
+ * internal key is simply absent from {@link PurchaseResponse}.
  *
  * <p>Fields the service or the persistence layer owns ({@code totalPrice},
  * {@code status}, {@code version}, and everything inherited from
@@ -31,8 +30,6 @@ public interface PurchaseMapper {
      * @param purchase the JPA entity
      * @return the response DTO
      */
-    @Mapping(target = "id", source = "publicId")
-    @Mapping(target = "purchasedAt", source = "createdAt")
     PurchaseResponse toResponse(Purchase purchase);
 
     /**

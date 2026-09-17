@@ -38,7 +38,7 @@ export class PurchaseListComponent implements OnInit {
 
   // Dialog state
   isFormDialogVisible = false;
-  selectedPurchaseId: string | null = null;
+  selectedPurchasePublicId: string | null = null;
 
   private lastLazyEvent: TableLazyLoadEvent | null = null;
 
@@ -74,7 +74,7 @@ export class PurchaseListComponent implements OnInit {
       if (requestSeq !== this.loadRequestSeq) return;
 
       this.purchases = response.content;
-      this.totalRecords = response.totalElements;
+      this.totalRecords = response.page.totalElements;
     } catch (err) {
       if (requestSeq !== this.loadRequestSeq) return;
       console.error('Error loading purchases', err);
@@ -87,12 +87,12 @@ export class PurchaseListComponent implements OnInit {
   }
 
   openNewPurchase() {
-    this.selectedPurchaseId = null;
+    this.selectedPurchasePublicId = null;
     this.isFormDialogVisible = true;
   }
 
-  openEditPurchase(id: string) {
-    this.selectedPurchaseId = id;
+  openEditPurchase(publicId: string) {
+    this.selectedPurchasePublicId = publicId;
     this.isFormDialogVisible = true;
   }
 
@@ -103,14 +103,14 @@ export class PurchaseListComponent implements OnInit {
     }
   }
 
-  confirmDelete(id: string) {
+  confirmDelete(publicId: string) {
     this.confirmationService.confirm({
       message: 'Are you sure you want to cancel this purchase?',
       header: 'Confirm Deletion',
       icon: 'pi pi-exclamation-triangle',
       accept: async () => {
         try {
-          await firstValueFrom(this.purchaseService.deletePurchase(id));
+          await firstValueFrom(this.purchaseService.deletePurchase(publicId));
           this.messageService.add({ severity: 'success', summary: 'Successful', detail: 'Purchase Deleted', life: 3000 });
           if (this.lastLazyEvent) {
             void this.loadPurchases(this.lastLazyEvent);

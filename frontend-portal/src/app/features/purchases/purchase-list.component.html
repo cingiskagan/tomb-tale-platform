@@ -32,7 +32,7 @@
         <th scope="col">Unit Price</th>
         <th scope="col">Total Price</th>
         <th scope="col" pSortableColumn="status">Status <p-sortIcon field="status" /></th>
-        <th scope="col" pSortableColumn="purchasedAt">Date <p-sortIcon field="purchasedAt" /></th>
+        <th scope="col" pSortableColumn="createdAt">Date <p-sortIcon field="createdAt" /></th>
         <th scope="col">Actions</th>
       </tr>
       <tr>
@@ -54,7 +54,7 @@
 
     <ng-template pTemplate="body" let-purchase>
       <tr>
-        <td [title]="purchase.id">{{ purchase.id | slice:0:8 }}...</td>
+        <td [title]="purchase.publicId">{{ purchase.publicId | slice:0:8 }}...</td>
         <td>{{ purchase.playerId }}</td>
         <td>{{ purchase.itemCode }}</td>
         <td>{{ purchase.quantity }}</td>
@@ -66,7 +66,7 @@
             [severity]="getStatusSeverity(purchase.status)"
           />
         </td>
-        <td>{{ purchase.purchasedAt | date:'short' }}</td>
+        <td>{{ purchase.createdAt | date:'short' }}</td>
         <td>
           <p-button
             aria-label="Edit"
@@ -74,7 +74,7 @@
             [rounded]="true"
             [text]="true"
             severity="success"
-            (onClick)="openEditPurchase(purchase.id)"
+            (onClick)="openEditPurchase(purchase.publicId)"
           />
           <p-button
             aria-label="Delete"
@@ -82,7 +82,7 @@
             [rounded]="true"
             [text]="true"
             severity="danger"
-            (onClick)="confirmDelete(purchase.id)"
+            (onClick)="confirmDelete(purchase.publicId)"
           />
         </td>
       </tr>
@@ -101,7 +101,7 @@
 <!-- Create / Edit Dialog Component -->
 <app-purchase-form
   [(visible)]="isFormDialogVisible"
-  [purchaseId]="selectedPurchaseId"
+  [purchasePublicId]="selectedPurchasePublicId"
   (saved)="onFormSaved()"
 />
 

@@ -43,17 +43,17 @@ export class PurchaseFormComponent implements OnInit {
   @Output() visibleChange = new EventEmitter<boolean>();
   @Output() saved = new EventEmitter<void>();
 
-  private _purchaseId: string | null = null;
+  private _purchasePublicId: string | null = null;
   @Input()
-  set purchaseId(val: string | null) {
-    this._purchaseId = val;
+  set purchasePublicId(val: string | null) {
+    this._purchasePublicId = val;
     this.isEditMode = !!val;
     if (this._visible && this.form) {
       void this.loadPurchaseData();
     }
   }
-  get purchaseId(): string | null {
-    return this._purchaseId;
+  get purchasePublicId(): string | null {
+    return this._purchasePublicId;
   }
 
   isEditMode = false;
@@ -87,17 +87,17 @@ export class PurchaseFormComponent implements OnInit {
   async loadPurchaseData() {
     const requestSeq = ++this.loadRequestSeq;
 
-    if (!this.purchaseId) {
+    if (!this.purchasePublicId) {
       this.form.reset({ quantity: 1, unitPrice: 0, status: PurchaseStatus.PENDING });
       this.form.get('playerId')?.enable();
       this.form.get('itemCode')?.enable();
       return;
     }
 
-    const purchaseId = this.purchaseId;
+    const publicId = this.purchasePublicId;
     try {
-      const data = await firstValueFrom(this.purchaseService.getPurchaseById(purchaseId));
-      if (requestSeq !== this.loadRequestSeq || this.purchaseId !== purchaseId || !this.visible) return;
+      const data = await firstValueFrom(this.purchaseService.getPurchaseByPublicId(publicId));
+      if (requestSeq !== this.loadRequestSeq || this.purchasePublicId !== publicId || !this.visible) return;
       this.form.patchValue({
         playerId: data.playerId,
         itemCode: data.itemCode,
@@ -128,8 +128,8 @@ export class PurchaseFormComponent implements OnInit {
     try {
       const val = this.form.getRawValue();
 
-      if (this.isEditMode && this.purchaseId) {
-        await firstValueFrom(this.purchaseService.updatePurchase(this.purchaseId, {
+      if (this.isEditMode && this.purchasePublicId) {
+        await firstValueFrom(this.purchaseService.updatePurchase(this.purchasePublicId, {
           quantity: val.quantity,
           status: val.status,
         }));
