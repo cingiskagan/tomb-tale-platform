@@ -2,6 +2,7 @@ package com.tombtale.serviceplayer.config;
 
 import com.tombtale.commons.security.PlatformCorsPolicy;
 import com.tombtale.commons.security.ZitadelRoleConverter;
+import com.tombtale.serviceplayer.security.ZitadelSignatureVerifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -13,6 +14,8 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.beans.factory.annotation.Value;
+
+import java.time.Duration;
 
 /**
  * Security configuration for the Player Service.
@@ -29,6 +32,12 @@ public class SecurityConfig {
 
     @Value("${app.cors.allowed-origins:http://localhost:4200}")
     private String[] allowedOrigins;
+
+    @Value("${app.zitadel.webhook.signing-key:}")
+    private String webhookSigningKey;
+
+    @Value("${app.zitadel.webhook.tolerance:5m}")
+    private Duration webhookTolerance;
 
     @Bean
     @SuppressWarnings({ "java:S112", "java:S1130" }) // Exception type imposed by Spring
@@ -48,6 +57,12 @@ public class SecurityConfig {
                         // Allow actuator health checks without authentication
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
 
+                        // Zitadel's provisioning call carries no user token. Its
+                        // signature is what authorises it, checked in the
+                        // controller by ZitadelSignatureVerifier. Traefik keeps
+                        // this prefix off the internet (ADR 0018).
+                        .requestMatchers("/internal/zitadel/**").permitAll()
+
                         // All other requests require authentication
                         .anyRequest().authenticated())
 
@@ -65,6 +80,19 @@ public class SecurityConfig {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(new ZitadelRoleConverter());
         return converter;
+    }
+
+    /**
+     * The signature check standing in front of the provisioning endpoint.
+     *
+     * <p>Wiring only: the rule lives in {@link ZitadelSignatureVerifier}, in
+     * {@code security/}, where Jacoco measures it.
+     *
+     * @return the verifier for this service's configured key
+     */
+    @Bean
+    public ZitadelSignatureVerifier zitadelSignatureVerifier() {
+        return new ZitadelSignatureVerifier(webhookSigningKey, webhookTolerance);
     }
 
     /**

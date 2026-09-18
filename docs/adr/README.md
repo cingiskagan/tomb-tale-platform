@@ -76,3 +76,4 @@ in sequence here — a record written later can describe an earlier choice.
 | [0015](0015-one-error-envelope-rfc-9457.md) | One error envelope, and it is RFC 9457 | 2026-09-14 | accepted |
 | [0016](0016-lists-answer-with-a-paged-envelope.md) | Lists answer with a paged envelope of our own | 2026-09-17 | accepted |
 | [0017](0017-an-api-field-is-named-after-the-field-behind-it.md) | An API field is named after the field behind it | 2026-09-17 | accepted |
+| [0018](0018-zitadel-provisions-players-and-me-is-the-fallback.md) | Zitadel provisions players, and `/me` is the fallback that complains | 2026-09-17 | accepted |

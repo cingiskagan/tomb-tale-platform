@@ -56,6 +56,16 @@ management:
     health:
       show-details: when-authorized
 
+# --- Zitadel provisioning webhook (ADR 0018) ---
+# The signing key Zitadel shows when the target is created. Blank refuses every
+# call to /internal/zitadel/**, which is the safe default for an unconfigured
+# environment.
+app:
+  zitadel:
+    webhook:
+      signing-key: ${ZITADEL_WEBHOOK_SIGNING_KEY:}
+      tolerance: 5m
+
 logging:
   level:
     com.tombtale: INFO

@@ -39,7 +39,11 @@ public class PlayerController {
      * GET /api/v1/players/me
      * <p>
      * Returns the current authenticated player's profile.
-     * If the player doesn't exist yet, creates a new profile automatically.
+     * <p>
+     * It still creates the row when it finds none, but that is now the fallback
+     * rather than the design. Zitadel provisions players on user creation
+     * (ADR 0018); reaching the creation path here means that event never
+     * arrived, so it logs an error while still answering the request.
      *
      * @param jwt the injected JWT token from the authenticated request
      * @return the player profile DTO

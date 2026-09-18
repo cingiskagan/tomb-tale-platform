@@ -5,6 +5,12 @@ import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.dto.UpdateMyProfileRequest;
 import com.tombtale.serviceplayer.entity.GameCharacter;
 import com.tombtale.serviceplayer.entity.Player;
+import ch.qos.logback.classic.Level;
+import org.junit.jupiter.api.AfterEach;
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.tombtale.serviceplayer.mapper.PlayerMapper;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
 import org.junit.jupiter.api.Test;
@@ -34,7 +40,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings({"PMD.TooManyStaticImports", "PMD.AvoidDuplicateLiterals"})
+// TooManyMethods: one test class per service is the convention here, and this
+// service has four public methods with several cases each. Splitting by method
+// would scatter the shared mocks rather than simplify anything.
+@SuppressWarnings({"PMD.TooManyStaticImports", "PMD.AvoidDuplicateLiterals", "PMD.TooManyMethods"})
 class PlayerServiceTest {
 
     private static final int PAGE_SIZE = 10;
@@ -47,6 +56,10 @@ class PlayerServiceTest {
 
     @InjectMocks
     private PlayerService playerService;
+
+    private ch.qos.logback.classic.Logger fallbackLogger;
+    private ListAppender<ILoggingEvent> attachedAppender;
+    private Level originalLevel;
 
     /** Content irrelevant: these tests assert on the repository, not on the mapping. */
     private static PlayerResponse aPlayerResponse() {
@@ -114,6 +127,86 @@ class PlayerServiceTest {
                 "new-z1".equals(p.getZitadelUserId()) &&
                 p.getCharacters().size() == 1
         ));
+    }
+
+    /**
+     * The alarm is the only thing that says the Zitadel event is not working,
+     * so it gets a test. Creating a row here means provisioning never ran.
+     */
+    @Test
+    void shouldRaiseTheAlarmWhenItHasToCreateTheRow() {
+        ListAppender<ILoggingEvent> captured = captureFallbackLog();
+
+        when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.empty());
+        when(playerRepository.save(any(Player.class))).thenReturn(new Player());
+        when(playerMapper.toResponse(any(Player.class))).thenReturn(aPlayerResponse());
+
+        playerService.getOrCreatePlayer("z1");
+
+        assertThat(captured.list)
+                .singleElement()
+                .satisfies(event -> {
+                    assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+                    assertThat(event.getFormattedMessage()).contains("provisioning event never arrived");
+                    // The subject is masked, never logged whole.
+                    assertThat(event.getFormattedMessage()).doesNotContain("z1");
+                });
+    }
+
+    /**
+     * The same write through the event path says nothing: there it is the design
+     * working, not a misconfiguration.
+     */
+    @Test
+    void shouldProvisionSilentlyForTheEventPath() {
+        ListAppender<ILoggingEvent> captured = captureFallbackLog();
+
+        when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.empty());
+        when(playerRepository.save(any(Player.class))).thenReturn(new Player());
+
+        playerService.provisionPlayer("z1");
+
+        assertThat(captured.list).isEmpty();
+        verify(playerRepository).save(any(Player.class));
+    }
+
+    @Test
+    void shouldNotWriteWhenTheEventArrivesTwice() {
+        when(playerRepository.findByZitadelUserIdWithCharacters("z1"))
+                .thenReturn(Optional.of(new Player()));
+
+        playerService.provisionPlayer("z1");
+
+        verify(playerRepository, never()).save(any());
+    }
+
+    /**
+     * Attaches a captor to the alarm category, raising its level for the length
+     * of one test. {@code logback-test.xml} keeps it OFF everywhere else.
+     *
+     * <p>Restored in {@link #restoreFallbackLogger()}: Surefire runs every class
+     * in one JVM, so a logger left switched on here would follow the suite into
+     * the next class. JUnit builds a fresh instance per test, so the field starts
+     * null again on its own.
+     */
+    private ListAppender<ILoggingEvent> captureFallbackLog() {
+        fallbackLogger = ((LoggerContext) LoggerFactory.getILoggerFactory())
+                .getLogger("com.tombtale.provisioning.fallback");
+        originalLevel = fallbackLogger.getLevel();
+        fallbackLogger.setLevel(Level.ERROR);
+
+        attachedAppender = new ListAppender<>();
+        attachedAppender.start();
+        fallbackLogger.addAppender(attachedAppender);
+        return attachedAppender;
+    }
+
+    @AfterEach
+    void restoreFallbackLogger() {
+        if (fallbackLogger != null) {
+            fallbackLogger.detachAppender(attachedAppender);
+            fallbackLogger.setLevel(originalLevel);
+        }
     }
 
     @Test
