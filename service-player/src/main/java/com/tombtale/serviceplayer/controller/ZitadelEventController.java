@@ -18,7 +18,6 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Receives the Zitadel event that a user has been created, and provisions the
@@ -40,13 +39,22 @@ import java.util.List;
 public class ZitadelEventController {
 
     /**
-     * Field names the user id might arrive under, in the order we try them.
+     * The id of the user the event is about.
      *
-     * <p>Provisional. Zitadel sends the event as it stores it, and the exact
-     * shape is worth pinning to a captured payload once the target has fired
-     * for real; until then a rejected call names the fields it did receive.
+     * <p>Not {@code userID}, which the same payload also carries. That one is
+     * whoever <em>caused</em> the event — the admin who created the account —
+     * and provisioning against it would give the admin a second player and the
+     * new user none. The aggregate is the thing the event happened to, so for
+     * {@code user.human.added} it is the account that was just created, and it
+     * is what arrives as the JWT subject later.
      */
-    private static final List<String> USER_ID_FIELDS = List.of("userID", "userId", "aggregateID");
+    private static final String AGGREGATE_ID_FIELD = "aggregateID";
+
+    /** Guards against provisioning from an event about something other than a user. */
+    private static final String AGGREGATE_TYPE_FIELD = "aggregateType";
+
+    /** The only aggregate type this endpoint acts on. */
+    private static final String USER_AGGREGATE_TYPE = "user";
 
     private final PlayerService playerService;
     private final ZitadelSignatureVerifier signatureVerifier;
@@ -80,31 +88,57 @@ public class ZitadelEventController {
     }
 
     /**
-     * Pulls the Zitadel user id out of the event payload.
+     * Pulls the created user's id out of the event payload.
      *
      * @param body the raw payload
-     * @return the user id
-     * @throws ResponseStatusException 400 if the body is not JSON, or carries no
-     *                                 recognisable user id
+     * @return the aggregate id, which is the new user's id
+     * @throws ResponseStatusException 400 if the body is not JSON, is not about a
+     *                                 user, or carries no aggregate id
      */
     private String readUserId(String body) {
-        JsonNode root;
+        JsonNode root = parse(body);
+        requireUserAggregate(root);
+        return requireAggregateId(root);
+    }
+
+    /**
+     * @param body the raw payload
+     * @return it as a tree
+     * @throws ResponseStatusException 400 if it is not JSON
+     */
+    private JsonNode parse(String body) {
         try {
-            root = objectMapper.readTree(body);
+            return objectMapper.readTree(body);
         } catch (JacksonException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payload is not JSON", e);
         }
+    }
 
-        for (String field : USER_ID_FIELDS) {
-            JsonNode candidate = root.get(field);
-            if (candidate != null && candidate.isString() && !candidate.asString().isBlank()) {
-                return candidate.asString();
-            }
+    /**
+     * @param root the parsed payload
+     * @throws ResponseStatusException 400 if the event is about anything but a user
+     */
+    private static void requireUserAggregate(JsonNode root) {
+        JsonNode aggregateType = root.get(AGGREGATE_TYPE_FIELD);
+        if (aggregateType == null || !USER_AGGREGATE_TYPE.equals(aggregateType.asString())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Not a user event: " + AGGREGATE_TYPE_FIELD + " was " + aggregateType);
         }
+    }
 
-        // Names only, never values: this body describes a real person.
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "No user id in payload. Expected one of " + USER_ID_FIELDS
-                        + " but the body carried " + new ArrayList<>(root.propertyNames()));
+    /**
+     * @param root the parsed payload
+     * @return the created user's id
+     * @throws ResponseStatusException 400 if it is missing or not a string
+     */
+    private static String requireAggregateId(JsonNode root) {
+        JsonNode aggregateId = root.get(AGGREGATE_ID_FIELD);
+        if (aggregateId == null || !aggregateId.isString() || aggregateId.asString().isBlank()) {
+            // Names only, never values: this body describes a real person.
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "No " + AGGREGATE_ID_FIELD + " in payload. The body carried "
+                            + new ArrayList<>(root.propertyNames()));
+        }
+        return aggregateId.asString();
     }
 }

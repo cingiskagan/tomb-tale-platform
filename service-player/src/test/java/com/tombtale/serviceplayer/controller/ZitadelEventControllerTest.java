@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
 
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -34,6 +35,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * us create a player? The signing key comes from {@code application-test.yml},
  * through the same {@code SecurityConfig} bean production uses.
  */
+// TooManyStaticImports: MockMvc's fluent API is assembled from static imports,
+// and the Mockito verifications are what prove the wrong user is not provisioned.
+@SuppressWarnings("PMD.TooManyStaticImports")
 @WebMvcTest(ZitadelEventController.class)
 @Import(SecurityConfig.class)
 @ActiveProfiles("test")
@@ -41,8 +45,31 @@ class ZitadelEventControllerTest {
 
     private static final String URL = "/internal/zitadel/user-created";
     private static final String KEY = "test-signing-key";
-    private static final String ZITADEL_USER_ID = "zitadel-sub-314159";
-    private static final String BODY = "{\"userID\":\"" + ZITADEL_USER_ID + "\"}";
+
+    /** The account that was created — the aggregate the event is about. */
+    private static final String CREATED_USER_ID = "336494809936035843";
+
+    /** The admin who created it. Carried by the same payload, and not who we provision. */
+    private static final String ACTING_USER_ID = "336392597046755331";
+
+    /** Shaped after the payload in Zitadel's own Actions v2 event documentation. */
+    private static final String BODY = """
+            {
+              "aggregateID": "336494809936035843",
+              "aggregateType": "user",
+              "resourceOwner": "336392597046099971",
+              "instanceID": "336392597046034435",
+              "version": "v2",
+              "sequence": 1,
+              "event_type": "user.human.added",
+              "created_at": "2026-09-05T08:55:36.156333Z",
+              "userID": "336392597046755331",
+              "event_payload": {
+                "email": "mini@mouse.com",
+                "displayName": "Minnie Mouse"
+              }
+            }
+            """;
 
     @Autowired
     private MockMvc mockMvc;
@@ -61,7 +88,7 @@ class ZitadelEventControllerTest {
                 .content(BODY))
                 .andExpect(status().isNoContent());
 
-        verify(playerService).provisionPlayer(ZITADEL_USER_ID);
+        verify(playerService).provisionPlayer(CREATED_USER_ID);
     }
 
     @Test
@@ -85,12 +112,43 @@ class ZitadelEventControllerTest {
         verifyNoInteractions(playerService);
     }
 
+    /**
+     * The payload carries two user ids. Provisioning the wrong one would give the
+     * admin who created the account a second player and the new user none — and
+     * it would pass unnoticed wherever a user signs themselves up.
+     */
+    @Test
+    void provisionsTheCreatedUserRatherThanTheOneWhoCreatedThem() throws Exception {
+        mockMvc.perform(post(URL)
+                .header(ZitadelSignatureVerifier.SIGNATURE_HEADER, signatureFor(BODY, Instant.now(), KEY))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(BODY))
+                .andExpect(status().isNoContent());
+
+        verify(playerService).provisionPlayer(CREATED_USER_ID);
+        verify(playerService, never()).provisionPlayer(ACTING_USER_ID);
+    }
+
+    /** An event about something that is not a user must not create a player. */
+    @Test
+    void eventAboutAnotherAggregateIsRefused() throws Exception {
+        String orgEvent = "{\"aggregateID\":\"1\",\"aggregateType\":\"org\"}";
+
+        mockMvc.perform(post(URL)
+                .header(ZitadelSignatureVerifier.SIGNATURE_HEADER, signatureFor(orgEvent, Instant.now(), KEY))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(orgEvent))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(playerService);
+    }
+
     @Test
     void bodyChangedAfterSigningIsRefused() throws Exception {
         mockMvc.perform(post(URL)
                 .header(ZitadelSignatureVerifier.SIGNATURE_HEADER, signatureFor(BODY, Instant.now(), KEY))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"userID\":\"somebody-else\"}"))
+                .content("{\"aggregateID\":\"somebody-else\",\"aggregateType\":\"user\"}"))
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(playerService);
@@ -115,7 +173,7 @@ class ZitadelEventControllerTest {
      */
     @Test
     void signedPayloadWithoutAUserIdIsABadRequest() throws Exception {
-        String noUser = "{\"somethingElse\":\"x\"}";
+        String noUser = "{\"aggregateType\":\"user\",\"somethingElse\":\"x\"}";
 
         mockMvc.perform(post(URL)
                 .header(ZitadelSignatureVerifier.SIGNATURE_HEADER, signatureFor(noUser, Instant.now(), KEY))
