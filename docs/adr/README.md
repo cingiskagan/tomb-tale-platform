@@ -77,3 +77,4 @@ in sequence here — a record written later can describe an earlier choice.
 | [0016](0016-lists-answer-with-a-paged-envelope.md) | Lists answer with a paged envelope of our own | 2026-09-17 | accepted |
 | [0017](0017-an-api-field-is-named-after-the-field-behind-it.md) | An API field is named after the field behind it | 2026-09-17 | accepted |
 | [0018](0018-zitadel-provisions-players-and-me-is-the-fallback.md) | Zitadel provisions players, and `/me` is the fallback that complains | 2026-09-17 | accepted |
+| [0019](0019-zitadel-configuration-is-code.md) | Zitadel configuration is code | 2026-09-18 | accepted |

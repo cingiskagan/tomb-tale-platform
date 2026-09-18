@@ -7,6 +7,6 @@
 export const environment = {
   production: false,
   zitadelIssuerUri: 'http://localhost:8080',
-  zitadelClientId: '378280910304378886',
+  zitadelClientId: '391325886529404931',
   apiBaseUrl: 'http://localhost:8080',
 } as const;
