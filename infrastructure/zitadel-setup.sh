@@ -270,12 +270,17 @@ find_or_create_oidc_app() {
 
   # Public client, authorization code + PKCE, no secret: the portal is a SPA
   # and the Unity client will be native (F1). Neither can hold a secret.
+  #
+  # devMode is what lets the redirect URI be http. Zitadel refuses http for a
+  # USER_AGENT app without it, and every URI here is http://localhost. It must
+  # be false wherever the portal is served over https.
   PORTAL_CLIENT_ID="$(api POST "/management/v1/projects/${PROJECT_ID}/apps/oidc" \
     "$(jq -nc \
       --arg name "${ZITADEL_OIDC_APP_NAME}" \
       --arg redirect "${ZITADEL_OIDC_REDIRECT_URI}" \
       --arg logout "${ZITADEL_OIDC_POST_LOGOUT_URI}" \
       --arg origin "${ZITADEL_OIDC_ALLOWED_ORIGIN}" \
+      --argjson devmode "${ZITADEL_OIDC_DEV_MODE:-true}" \
       '{
          name: $name,
          redirectUris: [$redirect],
@@ -284,6 +289,7 @@ find_or_create_oidc_app() {
          grantTypes: ["OIDC_GRANT_TYPE_AUTHORIZATION_CODE"],
          appType: "OIDC_APP_TYPE_USER_AGENT",
          authMethodType: "OIDC_AUTH_METHOD_TYPE_NONE",
+         devMode: $devmode,
          accessTokenType: "OIDC_TOKEN_TYPE_JWT",
          accessTokenRoleAssertion: true,
          idTokenRoleAssertion: true,
@@ -336,9 +342,87 @@ ensure_execution() {
   done_ "execution points at ${TARGET_ID}"
 }
 
+# The project is created with projectRoleCheck, so Zitadel refuses to issue a
+# token for the portal to a user holding no role on it. That is the gate keeping
+# the identity provider's own admin out of the game: administering Zitadel and
+# administering the platform are different jobs, and the console at :8080 is
+# where the first one happens.
+#
+# So this grants nobody unless a username is named. An empty value is a
+# decision, not an oversight.
+grant_bootstrap_admin() {
+  step "Bootstrap admin grant"
+
+  if [[ -z "${ZITADEL_BOOTSTRAP_ADMIN_USERNAME:-}" ]]; then
+    info "ZITADEL_BOOTSTRAP_ADMIN_USERNAME is empty, granting nobody"
+    info "create a portal user in the console and grant it a role there, or name"
+    info "it here — until something holds a role, nobody can log in to the portal"
+    return
+  fi
+
+  local user_id existing
+  user_id="$(api POST /management/v1/users/_search '{}' |
+    jq -r --arg name "${ZITADEL_BOOTSTRAP_ADMIN_USERNAME}" \
+      '[.result[]? | select(.userName == $name)] | if length == 1 then .[0].id else empty end')"
+
+  if [[ -z "${user_id}" ]]; then
+    fail "No single user matches ZITADEL_BOOTSTRAP_ADMIN_USERNAME=${ZITADEL_BOOTSTRAP_ADMIN_USERNAME}"
+  fi
+
+  existing="$(api POST /management/v1/users/grants/_search '{}' |
+    jq -r --arg project "${PROJECT_ID}" --arg user "${user_id}" \
+      '.result[]? | select(.projectId == $project and .userId == $user) | .id // empty')"
+
+  if [[ -n "${existing}" ]]; then
+    info "already granted (${existing})"
+    return
+  fi
+
+  api POST "/management/v1/users/${user_id}/grants" \
+    "$(jq -nc --arg project "${PROJECT_ID}" --arg roles "${ZITADEL_BOOTSTRAP_ADMIN_ROLES:-platform_admin}" \
+      '{projectId: $project, roleKeys: ($roles | split(","))}')" >/dev/null
+  done_ "granted ${ZITADEL_BOOTSTRAP_ADMIN_ROLES:-platform_admin} to ${user_id}"
+}
+
+# service-player has to grant the player role itself when someone registers:
+# Zitadel refuses a token to a user with no role, and nothing inside Zitadel can
+# add one on v4 (Actions v1 had appendUserGrant and no longer fires). So it
+# needs an account of its own — ORG_OWNER scoped to this org, not IAM_OWNER.
+ensure_provisioner_account() {
+  step "Provisioner account: ${PROVISIONER_USERNAME}"
+
+  local user_id
+  user_id="$(api POST /management/v1/users/_search '{}' |
+    jq -r --arg name "${PROVISIONER_USERNAME}" \
+      '[.result[]? | select(.userName == $name)] | if length == 1 then .[0].id else empty end')"
+
+  if [[ -n "${user_id}" ]]; then
+    info "already exists (${user_id})"
+    info "its token is only shown at creation, so it is not reissued here"
+    return
+  fi
+
+  user_id="$(api POST /management/v1/users/machine \
+    "$(jq -nc --arg name "${PROVISIONER_USERNAME}" \
+      '{userName: $name,
+        name: "Player provisioner",
+        description: "Grants the player role to self-registered users",
+        accessTokenType: "ACCESS_TOKEN_TYPE_BEARER"}')" | jq -r '.userId')"
+
+  api POST /management/v1/orgs/me/members \
+    "$(jq -nc --arg user "${user_id}" '{userId: $user, roles: ["ORG_OWNER"]}')" >/dev/null
+
+  PROVISIONER_TOKEN="$(api POST "/management/v1/users/${user_id}/pats" \
+    "$(jq -nc --arg expiry "${ZITADEL_PROVISIONER_PAT_EXPIRATION}" '{expirationDate: $expiry}')" |
+    jq -r '.token')"
+
+  done_ "created ${PROVISIONER_USERNAME} (${user_id})"
+}
+
 write_back() {
   step "Writing generated values back"
 
+  set_env_value ZITADEL_PROJECT_ID "${PROJECT_ID}"
   set_env_value ZITADEL_PORTAL_CLIENT_ID "${PORTAL_CLIENT_ID}"
   printf '%s\n' "${PORTAL_CLIENT_ID}" >"${CLIENT_ID_FILE}"
   info "client id → .env, .client-id"
@@ -346,6 +430,11 @@ write_back() {
   if [[ -n "${SIGNING_KEY:-}" ]]; then
     set_env_value ZITADEL_WEBHOOK_SIGNING_KEY "${SIGNING_KEY}"
     info "signing key → .env"
+  fi
+
+  if [[ -n "${PROVISIONER_TOKEN:-}" ]]; then
+    set_env_value ZITADEL_PROVISIONER_TOKEN "${PROVISIONER_TOKEN}"
+    info "provisioner token → .env"
   fi
 
   # The portal bakes the client id in at build time, so it lives in a source
@@ -365,6 +454,13 @@ main() {
     ZITADEL_OIDC_ALLOWED_ORIGIN ZITADEL_TARGET_ENDPOINT
 
   TARGET_NAME="player-provisioning"
+  PROVISIONER_USERNAME="player-provisioner"
+  : "${ZITADEL_PROVISIONER_PAT_EXPIRATION:=${ZITADEL_ADMIN_PAT_EXPIRATION}}"
+  # user.human.added, not selfregistered. LoginV2 registers users by calling the
+  # v2 API as the login client, so a self-registration raises "added" like any
+  # other creation — verified against a real registration. The selfregistered
+  # event is a login-v1 leftover that never fires here, and binding it meant the
+  # target never ran at all.
   PROVISIONING_EVENT="user.human.added"
 
   read_admin_pat
@@ -375,6 +471,8 @@ main() {
   find_or_create_oidc_app
   ensure_target
   ensure_execution
+  grant_bootstrap_admin
+  ensure_provisioner_account
   write_back
   revoke_admin_pat
 
