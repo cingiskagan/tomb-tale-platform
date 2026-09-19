@@ -150,7 +150,8 @@ public class PlayerService {
         try {
             return createNewPlayerWithCharacter(zitadelUserId);
         } catch (DataIntegrityViolationException e) {
-            log.warn("Concurrent creation detected for zitadel user: {}. Fetching existing record.", zitadelUserId);
+            log.warn("Concurrent creation detected for zitadel user: {}. Fetching existing record.",
+                    LogUtils.maskId(zitadelUserId));
             return playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
                     .orElseThrow(() -> new IllegalStateException("Failed to find player after creation collision"));
         }
