@@ -439,25 +439,51 @@ ensure_provisioner_account() {
 
   if [[ -n "${user_id}" ]]; then
     info "already exists (${user_id})"
-    info "its token is only shown at creation, so it is not reissued here"
-    return
+    if provisioner_token_works "${user_id}"; then
+      info "its token still works, so a new one is not issued"
+      return
+    fi
+    info "the token in .env does not work — issuing a new one"
+  else
+    user_id="$(api POST /management/v1/users/machine \
+      "$(jq -nc --arg name "${PROVISIONER_USERNAME}" \
+        '{userName: $name,
+          name: "Player provisioner",
+          description: "Grants the player role to self-registered users",
+          accessTokenType: "ACCESS_TOKEN_TYPE_BEARER"}')" | jq -r '.userId')"
+
+    api POST /management/v1/orgs/me/members \
+      "$(jq -nc --arg user "${user_id}" '{userId: $user, roles: ["ORG_OWNER"]}')" >/dev/null
+
+    done_ "created ${PROVISIONER_USERNAME} (${user_id})"
   fi
-
-  user_id="$(api POST /management/v1/users/machine \
-    "$(jq -nc --arg name "${PROVISIONER_USERNAME}" \
-      '{userName: $name,
-        name: "Player provisioner",
-        description: "Grants the player role to self-registered users",
-        accessTokenType: "ACCESS_TOKEN_TYPE_BEARER"}')" | jq -r '.userId')"
-
-  api POST /management/v1/orgs/me/members \
-    "$(jq -nc --arg user "${user_id}" '{userId: $user, roles: ["ORG_OWNER"]}')" >/dev/null
 
   PROVISIONER_TOKEN="$(api POST "/management/v1/users/${user_id}/pats" \
     "$(jq -nc --arg expiry "${ZITADEL_PROVISIONER_PAT_EXPIRATION}" '{expirationDate: $expiry}')" |
     jq -r '.token')"
 
-  done_ "created ${PROVISIONER_USERNAME} (${user_id})"
+  done_ "issued a token for ${PROVISIONER_USERNAME}"
+}
+
+# A PAT is shown once, at creation, so .env is the only copy of it. The account
+# outliving a usable token is an ordinary state: a rebuilt .env, an expired
+# token, a run that died between creating the account and writing the token
+# back. Finding the account is therefore not evidence that provisioning works,
+# and the failure is silent — registration succeeds and the user gets no role.
+# So ask Zitadel. The id has to match too, or a stale token belonging to some
+# other account would pass.
+provisioner_token_works() {
+  local expected_user_id="$1"
+  [[ -n "${ZITADEL_PROVISIONER_TOKEN:-}" ]] || return 1
+
+  local response status
+  response="$(curl -sS -w $'\n%{http_code}' "${ZITADEL_ISSUER_URI%/}/auth/v1/users/me" \
+    -H "Authorization: Bearer ${ZITADEL_PROVISIONER_TOKEN}")" || return 1
+
+  status="${response##*$'\n'}"
+  [[ "${status}" == 2* ]] || return 1
+
+  [[ "$(jq -r '.user.id // empty' <<<"${response%$'\n'*}")" == "${expected_user_id}" ]]
 }
 
 write_back() {
