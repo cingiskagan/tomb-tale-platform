@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import com.tombtale.serviceplayer.client.ZitadelClient;
 import com.tombtale.serviceplayer.mapper.PlayerMapper;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,9 @@ class PlayerServiceTest {
 
     @Mock
     private PlayerMapper playerMapper;
+
+    @Mock
+    private ZitadelClient zitadelClient;
 
     @InjectMocks
     private PlayerService playerService;
@@ -168,8 +172,14 @@ class PlayerServiceTest {
 
         assertThat(captured.list).isEmpty();
         verify(playerRepository).save(any(Player.class));
+        verify(zitadelClient).grantPlayerRole("z1");
     }
 
+    /**
+     * A repeated event writes no second row, but still asks for the grant. The
+     * row and the role live in different systems, so "row exists" does not mean
+     * "role granted" — and the grant call is a no-op when it already is.
+     */
     @Test
     void shouldNotWriteWhenTheEventArrivesTwice() {
         when(playerRepository.findByZitadelUserIdWithCharacters("z1"))
@@ -178,6 +188,22 @@ class PlayerServiceTest {
         playerService.provisionPlayer("z1");
 
         verify(playerRepository, never()).save(any());
+        verify(zitadelClient).grantPlayerRole("z1");
+    }
+
+    /**
+     * The grant failing must fail the whole call. Zitadel retries it, and a user
+     * left with a profile and no role cannot log in at all.
+     */
+    @Test
+    void shouldFailProvisioningWhenTheRoleCannotBeGranted() {
+        when(playerRepository.findByZitadelUserIdWithCharacters("z1"))
+                .thenReturn(Optional.of(new Player()));
+        org.mockito.Mockito.doThrow(new IllegalStateException("zitadel down"))
+                .when(zitadelClient).grantPlayerRole("z1");
+
+        assertThatThrownBy(() -> playerService.provisionPlayer("z1"))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.tombtale.serviceplayer.service;
 
+import com.tombtale.serviceplayer.client.ZitadelClient;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.dto.UpdateMyProfileRequest;
@@ -54,6 +55,7 @@ public class PlayerService {
 
     private final PlayerRepository playerRepository;
     private final PlayerMapper playerMapper;
+    private final ZitadelClient zitadelClient;
 
     /**
      * Returns a paginated, filtered list of players.
@@ -109,26 +111,33 @@ public class PlayerService {
     }
 
     /**
-     * Creates the player for a Zitadel user that has just been created there,
-     * and does nothing if the row already exists.
+     * Gives a newly self-registered user everything they need to play: the
+     * player row, and the {@code player} role that lets them get a token at all.
      *
      * <p>This is the path the Zitadel event drives, so it is silent: creating a
      * row here is the design working. {@link #getOrCreatePlayer} raises an alarm
      * for the same write because reaching it there means this never ran.
      *
-     * <p>Safe to call twice. Zitadel retries a target it could not reach, and a
-     * duplicate lands on {@code uq_players_zitadel_user_id} rather than on a
-     * second row.
+     * <p>The grant is attempted every time, not only when the row is new. The
+     * two live in different systems and nothing makes them atomic, so a user
+     * with a row and no role is a state this can be asked to repair.
      *
-     * @param zitadelUserId the subject of the newly created Zitadel user
+     * <p>Safe to call twice. Zitadel retries a target it could not reach, a
+     * duplicate row lands on {@code uq_players_zitadel_user_id} rather than on a
+     * second one, and a duplicate grant comes back as a conflict the client
+     * treats as success.
+     *
+     * @param zitadelUserId the subject of the newly registered Zitadel user
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void provisionPlayer(String zitadelUserId) {
         if (playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId).isPresent()) {
             log.debug("Player already exists for Zitadel user: {}", LogUtils.maskId(zitadelUserId));
-            return;
+        } else {
+            createOrRecoverPlayer(zitadelUserId);
         }
-        createOrRecoverPlayer(zitadelUserId);
+
+        zitadelClient.grantPlayerRole(zitadelUserId);
     }
 
     /**
