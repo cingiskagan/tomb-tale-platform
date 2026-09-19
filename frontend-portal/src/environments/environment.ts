@@ -1,12 +1,10 @@
 /**
- * Development environment configuration.
+ * Development build flags.
  *
- * Connects to local Zitadel instance and backend services
- * running via docker-compose in the infrastructure directory.
+ * Only what the build itself decides lives here. The Zitadel issuer, client id
+ * and API base URL are read at startup from `config.json` — see
+ * `core/config/runtime-config.ts`.
  */
 export const environment = {
   production: false,
-  zitadelIssuerUri: 'http://localhost:8080',
-  zitadelClientId: '391384737463205891',
-  apiBaseUrl: 'http://localhost:8080',
 } as const;
