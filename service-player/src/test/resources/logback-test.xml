@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Test logging. Spring Boot's own console format is included rather than
+    rewritten, so test output looks like the application's.
+
+    The one rule here silences the provisioning alarm. There is no Zitadel in a
+    test run, so GET /players/me always takes the fallback path and would shout
+    on every build. An alarm that fires when nothing is wrong is an alarm people
+    learn to scroll past (ADR 0018). Tests that are about the alarm itself raise
+    the level back for their own duration.
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <logger name="com.tombtale.provisioning.fallback" level="OFF"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

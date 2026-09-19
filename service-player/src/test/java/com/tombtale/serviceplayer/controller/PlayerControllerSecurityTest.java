@@ -16,8 +16,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.tombtale.serviceplayer.config.SecurityConfig;
 import com.tombtale.serviceplayer.dto.CharacterResponse;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
-import com.tombtale.serviceplayer.entity.Player;
-import com.tombtale.serviceplayer.mapper.PlayerMapper;
 import com.tombtale.commons.security.ZitadelRoleConverter;
 import com.tombtale.serviceplayer.service.PlayerService;
 
@@ -53,9 +51,6 @@ class PlayerControllerSecurityTest {
     private PlayerService playerService;
 
     @MockitoBean
-    private PlayerMapper playerMapper;
-
-    @MockitoBean
     private JwtDecoder jwtDecoder;
 
     private static final String PLAYERS_URL = "/api/v1/players";
@@ -89,11 +84,6 @@ class PlayerControllerSecurityTest {
               "displayName": ""
             }
             """;
-
-    /** Content irrelevant: PlayerMapper is mocked, so this entity is never read. */
-    private static Player aPlayer() {
-        return Player.builder().build();
-    }
 
     private static PlayerResponse aPlayerResponse() {
         return new PlayerResponse(
@@ -175,8 +165,7 @@ class PlayerControllerSecurityTest {
 
     @Test
     void meAsPlayerReturns200() throws Exception {
-        when(playerService.getOrCreatePlayer(any())).thenReturn(aPlayer());
-        when(playerMapper.toResponse(any(Player.class))).thenReturn(aPlayerResponse());
+        when(playerService.getOrCreatePlayer(any())).thenReturn(aPlayerResponse());
 
         mockMvc.perform(get(ME_URL)
                 .with(tokenWithRoles(ROLE_PLAYER)))

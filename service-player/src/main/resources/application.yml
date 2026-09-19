@@ -56,6 +56,25 @@ management:
     health:
       show-details: when-authorized
 
+# --- Zitadel API client (grants the player role on self-registration) ---
+# The token belongs to a machine user zitadel-setup.sh creates; it may grant
+# roles on this project and nothing else. Blank means a self-registered user is
+# provisioned a row and then cannot log in, so provisionPlayer fails loudly
+# rather than leaving that state behind.
+app:
+  zitadel:
+    api:
+      base-url: ${ZITADEL_ISSUER_URI:}
+      token: ${ZITADEL_PROVISIONER_TOKEN:}
+      project-id: ${ZITADEL_PROJECT_ID:}
+
+    # The signing key Zitadel shows when the target is created (ADR 0018).
+    # Blank refuses every call to /internal/zitadel/**, which is the safe
+    # default for an unconfigured environment.
+    webhook:
+      signing-key: ${ZITADEL_WEBHOOK_SIGNING_KEY:}
+      tolerance: 5m
+
 logging:
   level:
     com.tombtale: INFO

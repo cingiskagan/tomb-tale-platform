@@ -1,5 +1,6 @@
 package com.tombtale.serviceplayer.service;
 
+import com.tombtale.serviceplayer.client.ZitadelClient;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.dto.UpdateMyProfileRequest;
@@ -7,7 +8,10 @@ import com.tombtale.serviceplayer.entity.GameCharacter;
 import com.tombtale.serviceplayer.entity.Player;
 import com.tombtale.serviceplayer.mapper.PlayerMapper;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
+import com.tombtale.serviceplayer.util.LogUtils;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -38,8 +42,20 @@ public class PlayerService {
      */
     private static final int DISPLAY_NAME_ID_PREFIX_LENGTH = 8;
 
+    /**
+     * The alarm for {@code GET /players/me} having to create a row.
+     *
+     * <p>Its own category, not this class's logger, so it can be silenced
+     * without silencing anything else. The test profile turns it off: there is
+     * no Zitadel there, so the fallback is the only path tests can take and an
+     * alarm on every run would be noise. See ADR 0018.
+     */
+    private static final Logger PROVISIONING_FALLBACK =
+            LoggerFactory.getLogger("com.tombtale.provisioning.fallback");
+
     private final PlayerRepository playerRepository;
     private final PlayerMapper playerMapper;
+    private final ZitadelClient zitadelClient;
 
     /**
      * Returns a paginated, filtered list of players.
@@ -63,25 +79,82 @@ public class PlayerService {
      * Retrieves a player profile by their Zitadel user ID, or creates a new one
      * if it does not exist yet (JIT Provisioning).
      *
+     * <p>The entity never leaves this method. Mapping happens here so the
+     * controller deals only in DTOs.
+     *
+     * <p>{@code NOT_SUPPORTED} is not decoration. The class declares
+     * {@code readOnly = true}, which would make the creation below a write in a
+     * read-only transaction. Running outside one also lets {@code save} keep its
+     * own transaction, so a collision can be caught and retried instead of
+     * poisoning an outer one.
+     *
      * <p>Reading never writes. A player is always created together with a
      * default character, in one transaction, so an existing player is returned
      * exactly as it was stored.
      *
      * @param zitadelUserId the subject claim from the JWT
-     * @return the existing or newly created player
+     * @return the existing or newly created profile
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public Player getOrCreatePlayer(String zitadelUserId) {
-        return playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
+    public PlayerResponse getOrCreatePlayer(String zitadelUserId) {
+        Player player = playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
                 .orElseGet(() -> {
-                    try {
-                        return createNewPlayerWithCharacter(zitadelUserId);
-                    } catch (DataIntegrityViolationException e) {
-                        log.warn("Concurrent creation detected for zitadel user: {}. Fetching existing record.", zitadelUserId);
-                        return playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
-                                .orElseThrow(() -> new IllegalStateException("Failed to find player after creation collision"));
-                    }
+                    PROVISIONING_FALLBACK.error(
+                            "No player row for Zitadel user {} when reading their profile. The "
+                                    + "provisioning event never arrived — check the Zitadel target and "
+                                    + "execution. Creating the row now so the request succeeds.",
+                            LogUtils.maskId(zitadelUserId));
+                    return createOrRecoverPlayer(zitadelUserId);
                 });
+
+        return playerMapper.toResponse(player);
+    }
+
+    /**
+     * Gives a newly self-registered user everything they need to play: the
+     * player row, and the {@code player} role that lets them get a token at all.
+     *
+     * <p>This is the path the Zitadel event drives, so it is silent: creating a
+     * row here is the design working. {@link #getOrCreatePlayer} raises an alarm
+     * for the same write because reaching it there means this never ran.
+     *
+     * <p>The grant is attempted every time, not only when the row is new. The
+     * two live in different systems and nothing makes them atomic, so a user
+     * with a row and no role is a state this can be asked to repair.
+     *
+     * <p>Safe to call twice. Zitadel retries a target it could not reach, a
+     * duplicate row lands on {@code uq_players_zitadel_user_id} rather than on a
+     * second one, and a duplicate grant comes back as a conflict the client
+     * treats as success.
+     *
+     * @param zitadelUserId the subject of the newly registered Zitadel user
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void provisionPlayer(String zitadelUserId) {
+        if (playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId).isPresent()) {
+            log.debug("Player already exists for Zitadel user: {}", LogUtils.maskId(zitadelUserId));
+        } else {
+            createOrRecoverPlayer(zitadelUserId);
+        }
+
+        zitadelClient.grantPlayerRole(zitadelUserId);
+    }
+
+    /**
+     * Creates the player, or returns the row a concurrent caller committed first.
+     *
+     * @param zitadelUserId the subject claim from the JWT
+     * @return the created or recovered player
+     */
+    private Player createOrRecoverPlayer(String zitadelUserId) {
+        try {
+            return createNewPlayerWithCharacter(zitadelUserId);
+        } catch (DataIntegrityViolationException e) {
+            log.warn("Concurrent creation detected for zitadel user: {}. Fetching existing record.",
+                    LogUtils.maskId(zitadelUserId));
+            return playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
+                    .orElseThrow(() -> new IllegalStateException("Failed to find player after creation collision"));
+        }
     }
 
     /**

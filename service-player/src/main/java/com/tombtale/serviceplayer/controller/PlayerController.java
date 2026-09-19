@@ -4,8 +4,6 @@ import com.tombtale.commons.security.RoleConstants;
 import com.tombtale.commons.web.PagedResponse;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
-import com.tombtale.serviceplayer.entity.Player;
-import com.tombtale.serviceplayer.mapper.PlayerMapper;
 import com.tombtale.serviceplayer.service.PlayerService;
 import com.tombtale.serviceplayer.util.LogUtils;
 import jakarta.validation.Valid;
@@ -36,13 +34,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlayerController {
 
     private final PlayerService playerService;
-    private final PlayerMapper playerMapper;
 
     /**
      * GET /api/v1/players/me
      * <p>
      * Returns the current authenticated player's profile.
-     * If the player doesn't exist yet, creates a new profile automatically.
+     * <p>
+     * It still creates the row when it finds none, but that is now the fallback
+     * rather than the design. Zitadel provisions players on user creation
+     * (ADR 0018); reaching the creation path here means that event never
+     * arrived, so it logs an error while still answering the request.
      *
      * @param jwt the injected JWT token from the authenticated request
      * @return the player profile DTO
@@ -53,10 +54,7 @@ public class PlayerController {
         String zitadelUserId = jwt.getSubject();
         log.debug("Fetching profile for Zitadel user: {}", LogUtils.maskId(zitadelUserId));
 
-        Player player = playerService.getOrCreatePlayer(zitadelUserId);
-
-        //TODO: this mapper will be moved to service class in following commits
-        return ResponseEntity.ok(playerMapper.toResponse(player));
+        return ResponseEntity.ok(playerService.getOrCreatePlayer(zitadelUserId));
     }
 
     /**

@@ -25,3 +25,9 @@ spring:
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+
+# A fixed key so a test can sign a body the way Zitadel would.
+app:
+  zitadel:
+    webhook:
+      signing-key: test-signing-key
