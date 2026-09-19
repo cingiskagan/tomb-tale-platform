@@ -195,13 +195,35 @@ api() {
   echo "${payload}"
 }
 
+# ── File editing ───────────────────────────────────────────────────────────
+# sed -i is not portable — BSD sed wants a suffix argument — and an in-place
+# edit that dies halfway can leave the file truncated. This one only writes
+# back once sed has succeeded.
+#
+# It copies through the original file rather than moving a temp file over it,
+# so the mode and owner survive. .env holds secrets and its permissions are
+# not ours to change.
+sed_inplace() {
+  local script="$1" file="$2" tmp status
+  tmp="$(mktemp)" || return 1
+
+  if sed "${script}" "${file}" >"${tmp}" && cat "${tmp}" >"${file}"; then
+    status=0
+  else
+    status=1
+  fi
+
+  rm -f "${tmp}"
+  return "${status}"
+}
+
 # ── .env write-back ────────────────────────────────────────────────────────
 set_env_value() {
   local key="$1" value="$2"
 
   if grep -q "^${key}=" "${ENV_FILE}"; then
     # The value can contain slashes, so use a delimiter that cannot appear.
-    sed -i "s|^${key}=.*|${key}=${value}|" "${ENV_FILE}"
+    sed_inplace "s|^${key}=.*|${key}=${value}|" "${ENV_FILE}"
   else
     printf '%s=%s\n' "${key}" "${value}" >>"${ENV_FILE}"
   fi
@@ -441,7 +463,7 @@ write_back() {
   # file. A change here belongs in a commit, which is why it is patched rather
   # than written to some untracked place.
   if [[ -f "${FRONTEND_ENV}" ]]; then
-    sed -i "s|zitadelClientId: '[^']*'|zitadelClientId: '${PORTAL_CLIENT_ID}'|" "${FRONTEND_ENV}"
+    sed_inplace "s|zitadelClientId: '[^']*'|zitadelClientId: '${PORTAL_CLIENT_ID}'|" "${FRONTEND_ENV}"
     info "client id → environment.ts (check git diff)"
   fi
 }
