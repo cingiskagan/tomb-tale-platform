@@ -1,5 +1,6 @@
 package com.tombtale.serviceplayer.config;
 
+import com.tombtale.serviceplayer.client.ZitadelApiUrl;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +16,9 @@ import java.time.Duration;
  * <p>Both timeouts are set on purpose. This call sits inside the provisioning
  * request Zitadel itself is waiting on, so a Zitadel that has stopped answering
  * must not hold a thread here until something else gives up first.
+ *
+ * <p>The base URL is checked before the token is attached, so a URL that would
+ * leak it stops start-up instead of working quietly. See {@link ZitadelApiUrl}.
  */
 @Configuration
 public class ZitadelClientConfig {
@@ -40,7 +44,7 @@ public class ZitadelClientConfig {
         requestFactory.setReadTimeout(READ_TIMEOUT);
 
         return RestClient.builder()
-                .baseUrl(baseUrl)
+                .baseUrl(ZitadelApiUrl.requireSecure(baseUrl))
                 .requestFactory(requestFactory)
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + serviceToken)
                 .build();
