@@ -489,14 +489,28 @@ write_back() {
   # The portal reads this at startup, so a rebuilt instance changes no tracked
   # file. It is gitignored for that reason: the client id belongs to one
   # instance, and a commit carrying it would mean nothing.
-  mkdir -p "$(dirname "${PORTAL_CONFIG}")"
-  jq -n \
+  #
+  # jq writes beside the target, never over it: a redirect truncates the file
+  # before jq runs, so a failure there would leave the portal with an empty
+  # config and no way to start. mv is atomic and the file holds nothing secret,
+  # so unlike .env it can be replaced rather than written through. mktemp makes
+  # it 0600; whatever serves it later has to be able to read it.
+  local config_dir tmp
+  config_dir="$(dirname "${PORTAL_CONFIG}")"
+  mkdir -p "${config_dir}"
+  tmp="$(mktemp "${config_dir}/.config.json.XXXXXX")" || fail "cannot write in ${config_dir}"
+
+  if jq -n \
     --arg issuer "${ZITADEL_ISSUER_URI}" \
     --arg clientId "${PORTAL_CLIENT_ID}" \
     --arg apiBaseUrl "${PORTAL_API_BASE_URL}" \
     '{zitadelIssuerUri: $issuer, zitadelClientId: $clientId, apiBaseUrl: $apiBaseUrl}' \
-    >"${PORTAL_CONFIG}"
-  info "portal config → frontend-portal/public/config.json"
+    >"${tmp}" && chmod 644 "${tmp}" && mv "${tmp}" "${PORTAL_CONFIG}"; then
+    info "portal config → frontend-portal/public/config.json"
+  else
+    rm -f "${tmp}"
+    fail "could not write ${PORTAL_CONFIG}"
+  fi
 }
 
 main() {
