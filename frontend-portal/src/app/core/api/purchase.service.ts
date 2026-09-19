@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { RUNTIME_CONFIG } from '../config';
 import {
   CreatePurchaseRequest,
   PurchaseFilterRequest,
@@ -19,7 +19,7 @@ import { PagedResponse } from './common.model';
 })
 export class PurchaseService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = `${environment.apiBaseUrl}/api/v1/purchases`;
+  private readonly baseUrl = `${inject(RUNTIME_CONFIG).apiBaseUrl}/api/v1/purchases`;
 
   /**
    * Retrieves a paginated list of purchases based on filters.

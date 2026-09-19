@@ -44,6 +44,8 @@ out/
 .angular/
 dist/
 coverage/
+# Written by infrastructure/zitadel-setup.sh — belongs to one Zitadel instance.
+frontend-portal/public/config.json
 
 # =========================
 # Docker

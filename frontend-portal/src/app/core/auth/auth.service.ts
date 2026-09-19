@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { OAuthService } from 'angular-oauth2-oidc';
 import { BehaviorSubject } from 'rxjs';
-import { AUTH_CONFIG } from './auth.config';
+import { buildAuthConfig } from './auth.config';
+import { RUNTIME_CONFIG } from '../config';
 import { PlatformRole } from './auth.models';
 
 /** Decoded identity claims from the Zitadel ID token. */
@@ -29,10 +30,11 @@ export class AuthService {
   private readonly authenticatedSubject = new BehaviorSubject<boolean>(false);
 
   private readonly oauthService = inject(OAuthService);
+  private readonly runtimeConfig = inject(RUNTIME_CONFIG);
   private initPromise?: Promise<void>;
 
   constructor() {
-    this.oauthService.configure(AUTH_CONFIG);
+    this.oauthService.configure(buildAuthConfig(this.runtimeConfig));
     this.oauthService.setupAutomaticSilentRefresh();
   }
 

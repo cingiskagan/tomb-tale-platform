@@ -42,6 +42,11 @@ person would reasonably ask "why is it like this?". Data ownership, boundaries
 between services, the identity model, and the shape of the build all qualify. A
 choice you would happily redo in an afternoon does not.
 
+**A record is at most 30 lines.** A record nobody reads is worse than one that
+left something out. Cut the Context to the pressure itself, state the Decision
+as a rule, and keep Consequences to short bullets naming real costs. Records
+0001 to 0019 predate this and are append-only like everything else here.
+
 ## A note on these records
 
 Records 0001 to 0011 were written on 2026-09-08, after the fact. The dates are
@@ -78,3 +83,4 @@ in sequence here — a record written later can describe an earlier choice.
 | [0017](0017-an-api-field-is-named-after-the-field-behind-it.md) | An API field is named after the field behind it | 2026-09-17 | accepted |
 | [0018](0018-zitadel-provisions-players-and-me-is-the-fallback.md) | Zitadel provisions players, and `/me` is the fallback that complains | 2026-09-17 | accepted |
 | [0019](0019-zitadel-configuration-is-code.md) | Zitadel configuration is code | 2026-09-18 | accepted |
+| [0020](0020-the-portal-reads-its-configuration-at-runtime.md) | The portal reads its configuration at runtime | 2026-09-19 | accepted |
