@@ -580,6 +580,30 @@ ensure_provisioner_account() {
   done_ "issued a token for ${PROVISIONER_USERNAME}"
 }
 
+# Zitadel raises user.human.added for every account, however it was made, and
+# has no separate self-registration event — user.human.selfregistered is a
+# login-v1 leftover that never fires here. What tells them apart is who caused
+# the event: Login V2 creates the account by calling the API as this machine
+# user, so a registration carries its id where an account made in the console
+# carries the administrator's.
+#
+# The id is generated at instance init, so it cannot be hardcoded and is looked
+# up here by the username docker-compose.yml pins.
+find_login_client() {
+  step "Login client: ${LOGIN_CLIENT_USERNAME}"
+
+  LOGIN_CLIENT_ID="$(api POST /management/v1/users/_search '{}' |
+    jq -r --arg name "${LOGIN_CLIENT_USERNAME}" \
+      '[.result[]? | select(.userName == $name)] | if length == 1 then .[0].id else empty end')"
+
+  [[ -n "${LOGIN_CLIENT_ID}" ]] ||
+    fail "No machine user named ${LOGIN_CLIENT_USERNAME}. It is created at instance init by
+   ZITADEL_FIRSTINSTANCE_ORG_LOGINCLIENT_MACHINE_USERNAME; without it service-player
+   cannot tell a self-registration from an account an administrator created."
+
+  done_ "found ${LOGIN_CLIENT_ID}"
+}
+
 # A PAT is shown once, at creation, so .env is the only copy of it. The account
 # outliving a usable token is an ordinary state: a rebuilt .env, an expired
 # token, a run that died between creating the account and writing the token
@@ -605,6 +629,7 @@ write_back() {
   step "Writing generated values back"
 
   set_env_value ZITADEL_PROJECT_ID "${PROJECT_ID}"
+  set_env_value ZITADEL_LOGIN_CLIENT_ID "${LOGIN_CLIENT_ID}"
   set_env_value ZITADEL_PORTAL_CLIENT_ID "${PORTAL_CLIENT_ID}"
   printf '%s\n' "${PORTAL_CLIENT_ID}" >"${CLIENT_ID_FILE}"
   info "client id → .env, .client-id"
@@ -656,6 +681,10 @@ main() {
 
   TARGET_NAME="player-provisioning"
   PROVISIONER_USERNAME="player-provisioner"
+  # Pinned in docker-compose.yml as
+  # ZITADEL_FIRSTINSTANCE_ORG_LOGINCLIENT_MACHINE_USERNAME. Change one and the
+  # other stops finding it.
+  LOGIN_CLIENT_USERNAME="login-client"
   # How the provider is recognised on a second run. Zitadel allows several
   # and gives them no names, so the description is the only handle.
   SMTP_PROVIDER_DESCRIPTION="Tomb Tale platform"
@@ -678,6 +707,7 @@ main() {
   ensure_smtp_provider
   ensure_login_policy
   grant_bootstrap_admin
+  find_login_client
   ensure_provisioner_account
   write_back
   revoke_admin_pat

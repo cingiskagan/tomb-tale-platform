@@ -31,3 +31,7 @@ app:
   zitadel:
     webhook:
       signing-key: test-signing-key
+    # The BODY the controller tests post carries userID = this, so the payload
+    # reads as a self-registration. One test overrides it to prove the opposite.
+    registration:
+      login-client-id: "336392597046755331"

@@ -37,7 +37,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 // TooManyStaticImports: MockMvc's fluent API is assembled from static imports,
 // and the Mockito verifications are what prove the wrong user is not provisioned.
-@SuppressWarnings("PMD.TooManyStaticImports")
+// TooManyMethods: this endpoint has no token behind it, so every way in is a
+// case worth its own test. Splitting them to satisfy a count would hide that.
+@SuppressWarnings({"PMD.TooManyStaticImports", "PMD.TooManyMethods"})
 @WebMvcTest(ZitadelEventController.class)
 @Import(SecurityConfig.class)
 @ActiveProfiles("test")
@@ -49,8 +51,15 @@ class ZitadelEventControllerTest {
     /** The account that was created — the aggregate the event is about. */
     private static final String CREATED_USER_ID = "336494809936035843";
 
-    /** The admin who created it. Carried by the same payload, and not who we provision. */
+    /**
+     * Who created it — the login client, which is what a self-registration looks
+     * like. Carried by the same payload, and not who we provision.
+     * Matches {@code app.zitadel.registration.login-client-id} in the test profile.
+     */
     private static final String ACTING_USER_ID = "336392597046755331";
+
+    /** Any other actor: an administrator in the console, or a service account. */
+    private static final String ADMIN_USER_ID = "336392597046000001";
 
     /** Shaped after the payload in Zitadel's own Actions v2 event documentation. */
     private static final String BODY = """
@@ -127,6 +136,45 @@ class ZitadelEventControllerTest {
 
         verify(playerService).provisionPlayer(CREATED_USER_ID);
         verify(playerService, never()).provisionPlayer(ACTING_USER_ID);
+    }
+
+    /**
+     * The point of the whole filter. Zitadel raises the same
+     * {@code user.human.added} whoever created the account, so without this an
+     * administrator adding a colleague in the console would hand them a player
+     * and a game role they never asked for.
+     *
+     * <p>Answered 204, not an error: the event is legitimate and Zitadel retries
+     * anything else, which would turn "nothing to do" into a permanent failure.
+     */
+    @Test
+    void accountCreatedByAnAdministratorIsNotProvisioned() throws Exception {
+        String adminCreated = BODY.replace(ACTING_USER_ID, ADMIN_USER_ID);
+
+        mockMvc.perform(post(URL)
+                .header(ZitadelSignatureVerifier.SIGNATURE_HEADER, signatureFor(adminCreated, Instant.now(), KEY))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(adminCreated))
+                .andExpect(status().isNoContent());
+
+        verifyNoInteractions(playerService);
+    }
+
+    /**
+     * Zitadel leaves the actor empty for the accounts it creates itself at
+     * instance init. Those are nobody's player either.
+     */
+    @Test
+    void accountWithNoActorIsNotProvisioned() throws Exception {
+        String noActor = BODY.replace("\"userID\": \"" + ACTING_USER_ID + "\",", "");
+
+        mockMvc.perform(post(URL)
+                .header(ZitadelSignatureVerifier.SIGNATURE_HEADER, signatureFor(noActor, Instant.now(), KEY))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(noActor))
+                .andExpect(status().isNoContent());
+
+        verifyNoInteractions(playerService);
     }
 
     /** An event about something that is not a user must not create a player. */

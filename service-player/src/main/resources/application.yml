@@ -75,6 +75,19 @@ app:
       signing-key: ${ZITADEL_WEBHOOK_SIGNING_KEY:}
       tolerance: 5m
 
+    # Login V2 creates a self-registered account by calling the API as this
+    # machine user, so the provisioning event carries its id. An account made in
+    # the console carries the administrator's instead, and Zitadel raises the
+    # same user.human.added for both. Matching on it is what keeps the player
+    # role to people who signed themselves up.
+    #
+    # Blank provisions every new account, which is how this behaved before the
+    # id was written back. That is the lesser evil: refusing on a blank would
+    # mean an environment whose .env predates it silently stops provisioning
+    # anyone, and a registered player with no role cannot log in at all.
+    registration:
+      login-client-id: ${ZITADEL_LOGIN_CLIENT_ID:}
+
 logging:
   level:
     com.tombtale: INFO
