@@ -73,14 +73,17 @@
       "Bash(npm install:*)"
     ],
     "deny": [
-      "Read(./infrastructure/.env)",
-      "Read(./**/.env)",
       "Read(./**/*.pem)",
       "Read(./**/*.key)",
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
       "Bash(docker compose down -v:*)",
       "Bash(rm -rf:*)"
+    ],
+    "//": "Parked until MVP: the two .env read rules below. They are off so Claude can read and edit infrastructure/.env while the stack is still being wired from code. Move them back into deny at the MVP point, before .env holds anything but local dev values. JSON has no comments, and a // line comment would break this file and silently disable every rule in it, so they sit in an unused key instead.",
+    "denyParkedUntilMvp": [
+      "Read(./infrastructure/.env)",
+      "Read(./**/.env)"
     ]
   },
   "env": {
