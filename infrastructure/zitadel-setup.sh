@@ -3,8 +3,9 @@
 # zitadel-setup.sh — Create this platform's Zitadel objects from code.
 #
 # Replaces the clicking: the project, its three roles, the portal's OIDC
-# client, the provisioning target and execution behind ADR 0018, and the email
-# provider Zitadel sends verification codes through.
+# client, the provisioning target and execution behind ADR 0018, the email
+# provider Zitadel sends verification codes through, and the login policy that
+# forces the emailed second factor.
 #
 # Idempotent. Every step looks for the object first and only creates what is
 # missing, so running it twice changes nothing.
@@ -34,6 +35,11 @@ PAT_READER_IMAGE="alpine"
 # key:displayName — the keys are the contract with @PreAuthorize and the
 # frontend's PlatformRole enum; the display names are what the console shows.
 ROLE_KEYS=(player:Player game_master:"Game Master" platform_admin:"Platform Admin")
+
+# The only second factor a player may use. Zitadel's defaults also offer an
+# authenticator app and a security key; both are dropped so that signing in
+# needs nothing but the address they registered with.
+LOGIN_SECOND_FACTORS=(SECOND_FACTOR_TYPE_OTP_EMAIL)
 
 # ── Output helpers ─────────────────────────────────────────────────────────
 # Values are never printed. Ids are, names are; tokens and keys are not.
@@ -427,6 +433,71 @@ ensure_smtp_provider() {
   fi
 }
 
+# Zitadel ships with MFA optional, an authenticator app and a security key as
+# the second factors, and passkeys allowed. This platform forces a second
+# factor and allows only the emailed code, so a player carries nothing but
+# their address. Passkeys are turned off because one satisfies MFA on its own
+# and would walk straight past the code.
+#
+# The emailed factor cannot be added to an unverified address, which is why the
+# login UI runs with EMAIL_VERIFICATION=true (see docker-compose.yml). Turn one
+# off without the other and new players reach an empty "Set up 2-Factor" screen.
+ensure_login_policy() {
+  step "Login policy"
+
+  # Sent whole rather than patched: the endpoint replaces the policy, so a
+  # field left out here is a field reset to Zitadel's default.
+  api PUT /admin/v1/policies/login "$(jq -nc '{
+     allowUsernamePassword: true,
+     allowRegister: true,
+     allowExternalIdp: true,
+     allowDomainDiscovery: true,
+     forceMfa: true,
+     forceMfaLocalOnly: false,
+     passwordlessType: "PASSWORDLESS_TYPE_NOT_ALLOWED",
+     hidePasswordReset: false,
+     ignoreUnknownUsernames: false,
+     disableLoginWithEmail: false,
+     disableLoginWithPhone: false,
+     passwordCheckLifetime: "864000s",
+     externalLoginCheckLifetime: "864000s",
+     mfaInitSkipLifetime: "2592000s",
+     secondFactorCheckLifetime: "64800s",
+     multiFactorCheckLifetime: "43200s"
+   }')" >/dev/null
+  done_ "MFA forced, passkeys off"
+
+  # The factor lists hang off their own endpoints, and adding one that is
+  # already there is an error, so both directions are reconciled against what
+  # the instance currently has.
+  local -a current=()
+  mapfile -t current < <(api GET /admin/v1/policies/login | jq -r '.policy.secondFactors[]?')
+
+  local factor
+  for factor in "${current[@]}"; do
+    if [[ " ${LOGIN_SECOND_FACTORS[*]} " != *" ${factor} "* ]]; then
+      api DELETE "/admin/v1/policies/login/second_factors/${factor}" >/dev/null
+      info "removed ${factor}"
+    fi
+  done
+
+  for factor in "${LOGIN_SECOND_FACTORS[@]}"; do
+    if [[ " ${current[*]} " != *" ${factor} "* ]]; then
+      api POST /admin/v1/policies/login/second_factors \
+        "$(jq -nc --arg type "${factor}" '{type: $type}')" >/dev/null
+      done_ "added ${factor}"
+    fi
+  done
+
+  # A multi-factor is one that satisfies MFA by itself. Leaving any in place
+  # would give a way around the emailed code, so the list is emptied.
+  local multi
+  for multi in $(api GET /admin/v1/policies/login | jq -r '.policy.multiFactors[]?'); do
+    api DELETE "/admin/v1/policies/login/multi_factors/${multi}" >/dev/null
+    info "removed ${multi}"
+  done
+}
+
 # The project is created with projectRoleCheck, so Zitadel refuses to issue a
 # token for the portal to a user holding no role on it. That is the gate keeping
 # the identity provider's own admin out of the game: administering Zitadel and
@@ -605,6 +676,7 @@ main() {
   ensure_target
   ensure_execution
   ensure_smtp_provider
+  ensure_login_policy
   grant_bootstrap_admin
   ensure_provisioner_account
   write_back

@@ -147,6 +147,14 @@ services:
       ZITADEL_SERVICE_USER_TOKEN_FILE: /zitadel/bootstrap/login-client.pat
       CUSTOM_REQUEST_HEADERS: Host:${ZITADEL_DOMAIN},X-Forwarded-Proto:${ZITADEL_PUBLIC_SCHEME}
 
+      # Self-registration creates the user with the address unverified and
+      # sends nothing. This makes the login UI send the code and hold the user
+      # at /verify until they enter it, instead of letting them straight in.
+      # The login policy allows only the emailed code as a second factor, and
+      # Zitadel refuses that factor on an unverified address, so without this
+      # every new player reaches an empty "Set up 2-Factor" screen and stops.
+      EMAIL_VERIFICATION: "true"
+
       # Future-ready placeholders for upcoming Login OTEL support.
       OTEL_SERVICE_NAME: ${LOGIN_OTEL_SERVICE_NAME}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${LOGIN_OTEL_EXPORTER_OTLP_ENDPOINT}
