@@ -1,12 +1,10 @@
 /**
- * Production environment configuration.
+ * Production build flags.
  *
- * These values should be overridden during the CI/CD build pipeline
- * using Angular's fileReplacements in angular.json.
+ * Not reachable yet: angular.json has no `fileReplacements`, so every build
+ * uses environment.ts. Everything that varies per environment rather than per
+ * build is in `config.json` instead.
  */
 export const environment = {
   production: true,
-  zitadelIssuerUri: 'https://auth.tombtale.com',
-  zitadelClientId: 'REPLACE_IN_CI',
-  apiBaseUrl: 'https://api.tombtale.com',
 } as const;

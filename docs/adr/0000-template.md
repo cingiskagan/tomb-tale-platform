@@ -5,23 +5,19 @@
 
 ## Context
 
-What forced a choice. The pressure, the constraint, the thing that was broken,
-the option that ran out. Describe the situation, not the answer. Someone who
-disagrees with the decision should still recognise this section as a fair
-account of the problem.
+The pressure that forced a choice, not the answer. Someone who disagrees with
+the decision should still call this a fair account of the problem.
 
 ## Decision
 
-What we chose, stated actively: "We will ...". Name the specific mechanism —
-the setting, the library, the boundary — so the record can be checked against
-the code.
+"We will ...", naming the mechanism — the setting, the library, the boundary —
+so the record can be checked against the code.
 
 ## Consequences
 
-What is true now because of this choice. Include what it costs, not only what
-it buys: the new constraint, the thing that got slower, the two files that must
-now change together. If nothing here is uncomfortable, the section is not
-finished.
+What is true now, in short bullets, including the costs: the new constraint,
+the two files that must change together. If nothing here is uncomfortable, the
+section is not finished. Thirty lines for the whole record — see README.md.
 
 ---
 

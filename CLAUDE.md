@@ -116,13 +116,14 @@ core/auth/   → AuthService, authGuard (requires login), roleGuard (requires ro
                auth.interceptor (attaches bearer token), PlatformRole enum
 core/api/    → typed HTTP clients per backend resource (player.service.ts, purchase.service.ts),
                models, playerProfileResolver
+core/config/ → RUNTIME_CONFIG token and the config.json loader that fills it
 features/    → one folder per routed feature (login, callback, dashboard, profile, players, purchases)
 layout/      → MainLayoutComponent — authenticated shell
 ```
 
 `app.routes.ts` nests all authenticated routes under `MainLayoutComponent` behind `authGuard`, with `playerProfileResolver` resolving once for the whole subtree; feature components are lazy-loaded via `loadComponent`. Role-gated routes (`/purchases`, `/players`) add `roleGuard` + `data: { roles: [...] }` — use this pattern for new role-restricted routes rather than checking roles inside components.
 
-`src/environments/environment*.ts` hold the Zitadel issuer/client id and API base URL; these must stay consistent with `infrastructure/.env` and the OAuth client registered in Zitadel.
+`frontend-portal/public/config.json` holds the Zitadel issuer, client id and API base URL. `zitadel-setup.sh` writes it, git ignores it, and `main.ts` fetches it before the app bootstraps, so nothing reads these values at import time. `src/environments/environment*.ts` keep only the `production` flag. The values must stay consistent with `infrastructure/.env` and the OAuth client registered in Zitadel. See ADR 0020.
 
 Prettier config is inline in `package.json`: `singleQuote: true`, `printWidth: 100`, Angular parser for `.html`.
 
@@ -135,3 +136,4 @@ Traefik proxies Zitadel (API + v2 login UI) on port 8080. The frontend runs the 
 - Strict typing and explicit formatting are mandatory across the stack (per README).
 - MegaLinter also runs shellcheck on `scripts/*.sh`, yamllint, markdownlint, hadolint, gitleaks, and checkov in CI — new shell scripts and YAML must pass those.
 - use plain language, short sentences, and avoid dense or overly compressed phrasing.
+- Commit messages are at most 10 lines: a subject, a blank line, and up to eight lines of body. Trailers do not count. If the reasoning does not fit, it was never commit-message material — it belongs in an ADR, and those are capped at 30 lines (`docs/adr/README.md`).
