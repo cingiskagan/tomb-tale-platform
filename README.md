@@ -23,7 +23,7 @@ below runs locally against the Docker Compose stack.
 | `service-player` | Partial | Read and update your own profile; list players with filtering, sorting and paging (admin and game master); update a character's stats with an ownership check. Flyway-managed schema, 58 tests. |
 | `service-commerce` | Working | Create, read, list, update and cancel purchases, with a purchase status state machine. Mutations are admin-only, reads are open to game masters too. Flyway-managed schema, 64 tests. |
 | `frontend-portal` | Working | Zitadel login and callback, dashboard, own-profile page, and role-gated player and purchase lists. |
-| `infrastructure` | Working | Traefik, Zitadel, Postgres, Redis, MongoDB and RabbitMQ, started with one `docker compose up`. |
+| `infrastructure` | Working | Traefik, Zitadel, Postgres, Redis, MongoDB, RabbitMQ and Mailpit, started with one `docker compose up`. |
 | `service-inventory` | Planned | See the [development pathway](docs/design/pathway.md). |
 | `service-dungeon` | Planned | See the [development pathway](docs/design/pathway.md). |
 | Unity game client | Planned | Deliberately last. |

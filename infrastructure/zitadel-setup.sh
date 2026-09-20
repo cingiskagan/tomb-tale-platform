@@ -3,7 +3,8 @@
 # zitadel-setup.sh — Create this platform's Zitadel objects from code.
 #
 # Replaces the clicking: the project, its three roles, the portal's OIDC
-# client, and the provisioning target and execution behind ADR 0018.
+# client, the provisioning target and execution behind ADR 0018, and the email
+# provider Zitadel sends verification codes through.
 #
 # Idempotent. Every step looks for the object first and only creates what is
 # missing, so running it twice changes nothing.
@@ -365,6 +366,67 @@ ensure_execution() {
   done_ "execution points at ${TARGET_ID}"
 }
 
+# Without an email provider Zitadel generates verification codes and
+# password-reset links and then drops them, answering "SMTP configuration not
+# found". The values live in .env because prod points them at a real provider
+# and only the values change — the mechanism is the same one.
+ensure_smtp_provider() {
+  step "Email provider: ${ZITADEL_SMTP_HOST}"
+
+  local tls="${ZITADEL_SMTP_TLS:-false}"
+  [[ "${tls}" == true || "${tls}" == false ]] ||
+    fail "ZITADEL_SMTP_TLS must be true or false, not ${tls}"
+
+  # Create and update take the same body. Auth is a choice of one: plain when a
+  # user is named, none when it is blank. Mailpit wants neither, a real
+  # provider wants plain, and the blank is what makes the dev default work.
+  local body
+  body="$(jq -nc \
+    --arg senderAddress "${ZITADEL_SMTP_SENDER_ADDRESS}" \
+    --arg senderName "${ZITADEL_SMTP_SENDER_NAME}" \
+    --arg host "${ZITADEL_SMTP_HOST}" \
+    --arg user "${ZITADEL_SMTP_USER:-}" \
+    --arg password "${ZITADEL_SMTP_PASSWORD:-}" \
+    --arg replyTo "${ZITADEL_SMTP_REPLY_TO_ADDRESS:-}" \
+    --arg description "${SMTP_PROVIDER_DESCRIPTION}" \
+    --argjson tls "${tls}" \
+    '{
+       senderAddress: $senderAddress,
+       senderName: $senderName,
+       tls: $tls,
+       host: $host,
+       replyToAddress: $replyTo,
+       description: $description
+     }
+     + (if $user == "" then {none: {}} else {user: $user, plain: {password: $password}} end)')"
+
+  local existing id state
+  existing="$(api POST /admin/v1/email/_search '{}' |
+    jq -c --arg description "${SMTP_PROVIDER_DESCRIPTION}" \
+      '[.result[]? | select(.description == $description) | {id, state}][0] // empty')"
+
+  if [[ -n "${existing}" ]]; then
+    id="$(jq -r '.id' <<<"${existing}")"
+    state="$(jq -r '.state' <<<"${existing}")"
+    api PUT "/admin/v1/email/smtp/${id}" "${body}" >/dev/null
+    info "updated ${id}"
+  else
+    id="$(api POST /admin/v1/email/smtp "${body}" | jq -r '.id')"
+    state=""
+    done_ "created ${id}"
+  fi
+
+  # Adding a provider does not make it the one Zitadel uses, so it is activated
+  # here. Only when it is not already: a second activation is an error, and
+  # this script has to survive being run twice.
+  if [[ "${state}" == "EMAIL_PROVIDER_ACTIVE" ]]; then
+    info "already active"
+  else
+    api POST "/admin/v1/email/${id}/_activate" '{}' >/dev/null
+    done_ "activated ${id}"
+  fi
+}
+
 # The project is created with projectRoleCheck, so Zitadel refuses to issue a
 # token for the portal to a user holding no role on it. That is the gate keeping
 # the identity provider's own admin out of the game: administering Zitadel and
@@ -518,10 +580,14 @@ main() {
   load_env
   require_env ZITADEL_ISSUER_URI ZITADEL_PROJECT_NAME ZITADEL_OIDC_APP_NAME \
     ZITADEL_OIDC_REDIRECT_URI ZITADEL_OIDC_POST_LOGOUT_URI \
-    ZITADEL_OIDC_ALLOWED_ORIGIN ZITADEL_TARGET_ENDPOINT PORTAL_API_BASE_URL
+    ZITADEL_OIDC_ALLOWED_ORIGIN ZITADEL_TARGET_ENDPOINT PORTAL_API_BASE_URL \
+    ZITADEL_SMTP_HOST ZITADEL_SMTP_SENDER_ADDRESS ZITADEL_SMTP_SENDER_NAME
 
   TARGET_NAME="player-provisioning"
   PROVISIONER_USERNAME="player-provisioner"
+  # How the provider is recognised on a second run. Zitadel allows several
+  # and gives them no names, so the description is the only handle.
+  SMTP_PROVIDER_DESCRIPTION="Tomb Tale platform"
   : "${ZITADEL_PROVISIONER_PAT_EXPIRATION:=${ZITADEL_ADMIN_PAT_EXPIRATION}}"
   # user.human.added, not selfregistered. LoginV2 registers users by calling the
   # v2 API as the login client, so a self-registration raises "added" like any
@@ -538,6 +604,7 @@ main() {
   find_or_create_oidc_app
   ensure_target
   ensure_execution
+  ensure_smtp_provider
   grant_bootstrap_admin
   ensure_provisioner_account
   write_back

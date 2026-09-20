@@ -227,6 +227,27 @@ services:
     networks:
       - tombtale
 
+  # Dev-only mail catcher. Zitadel reaches it at mailpit:1025 inside the
+  # network; the inbox is at http://localhost:8025 on the host. It accepts
+  # every message and delivers none, and keeps no volume, so a restart
+  # empties it. Prod points the same ZITADEL_SMTP_* values at a real provider.
+  mailpit:
+    # Defaulted like redis, so a .env written before this service existed
+    # still brings the stack up.
+    image: ${MAILPIT_IMAGE:-axllent/mailpit:v1.31.2}
+    restart: unless-stopped
+    environment:
+      # Accept any credentials, including none, over an unencrypted
+      # connection. Zitadel sends none today. This keeps the handshake working
+      # if ZITADEL_SMTP_USER is filled in to rehearse a real provider.
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    ports:
+      - "1025:1025"   # SMTP, for Zitadel
+      - "8025:8025"   # Web UI, for you
+    networks:
+      - tombtale
+
   otel-collector:
     image: ${OTEL_COLLECTOR_IMAGE}
     restart: unless-stopped
