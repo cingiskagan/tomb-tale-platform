@@ -346,6 +346,16 @@ ensure_target() {
     return
   fi
 
+  # interruptOnError decides what Zitadel records for a call that failed. False
+  # counted a refused connection as a delivered event, logging "job processed
+  # successfully". True records the truth: the queue row ends state=cancelled
+  # with the error on it, which is the difference between a lost grant you can
+  # find and one you cannot.
+  #
+  # Neither retries. Zitadel cancels the job on the first failure whatever the
+  # cause — a 401 and a refused connection both finalised at attempt 1 of the 25
+  # the queue advertises — so a service that was down when the event fired never
+  # receives it. Recovering that grant is ProvisioningReconciler's job.
   local created
   created="$(api POST /v2/actions/targets \
     "$(jq -nc \
@@ -355,7 +365,7 @@ ensure_target() {
          name: $name,
          endpoint: $endpoint,
          timeout: "10s",
-         restWebhook: {interruptOnError: false}
+         restWebhook: {interruptOnError: true}
        }')")"
 
   TARGET_ID="$(jq -r '.id' <<<"${created}")"
