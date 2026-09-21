@@ -28,8 +28,9 @@ import java.util.Set;
  * text for the error it actually hit.
  *
  * <p>Runs in every instance rather than electing a leader. The work is
- * idempotent — an existing grant answers 409 and an existing row is left
- * alone — so a duplicate sweep costs two wasted calls and nothing else.
+ * idempotent — a grant that is already there is left as it is, and a row that
+ * exists is recovered rather than duplicated — so a duplicate sweep costs a
+ * few wasted calls and nothing else.
  */
 @Slf4j
 @Component
@@ -55,8 +56,8 @@ public class ProvisioningReconciler {
     }
 
     /**
-     * Finds self-registered users with no grant on this project and provisions
-     * them.
+     * Finds self-registered users without the player role on this project and
+     * provisions them.
      *
      * @return how many were repaired
      */
@@ -70,7 +71,7 @@ public class ProvisioningReconciler {
             return 0;
         }
 
-        Set<String> granted = new HashSet<>(zitadelClient.listGrantedUserIds());
+        Set<String> granted = new HashSet<>(zitadelClient.listPlayerGrantedUserIds());
         List<String> humans = zitadelClient.listHumanUserIds();
 
         int repaired = 0;

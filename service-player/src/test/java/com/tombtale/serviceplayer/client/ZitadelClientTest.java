@@ -31,6 +31,8 @@ class ZitadelClientTest {
     private static final String PROJECT_ID = "391333321403072515";
     private static final String USER_ID = "336494809936035843";
     private static final String GRANTS_URL = "http://zitadel.test/management/v1/users/" + USER_ID + "/grants";
+    private static final String GRANT_SEARCH_URL = "http://zitadel.test/management/v1/users/grants/_search";
+    private static final String GRANT_ID = "391669319060160519";
 
     private MockRestServiceServer server;
     private ZitadelClient client;
@@ -56,11 +58,20 @@ class ZitadelClientTest {
         server.verify();
     }
 
+    /**
+     * Zitadel refuses a second grant for the same user and project whatever
+     * roles it carries, so a conflict alone proves nothing. Here the role is
+     * genuinely there and the grant is left untouched.
+     */
     @Test
-    @DisplayName("a conflict means the role is already there, which is the outcome we wanted")
-    void treatsConflictAsSuccess() {
+    @DisplayName("a conflict on a grant that already has the role changes nothing")
+    void leavesAGrantThatAlreadyHasTheRole() {
         server.expect(requestTo(GRANTS_URL))
                 .andRespond(withStatus(HttpStatus.CONFLICT));
+        server.expect(requestTo(GRANT_SEARCH_URL))
+                .andRespond(withSuccess(
+                        "{\"result\":[{\"id\":\"" + GRANT_ID + "\",\"roleKeys\":[\"player\"]}]}",
+                        MediaType.APPLICATION_JSON));
 
         assertThatCode(() -> client.grantPlayerRole(USER_ID)).doesNotThrowAnyException();
 
@@ -68,12 +79,50 @@ class ZitadelClientTest {
     }
 
     /**
-     * Anything else has to propagate. Zitadel retries a provisioning call that
-     * fails, and swallowing this would leave a user with a profile, no role, and
-     * no way in — while the registration looked like it worked.
+     * The case the conflict used to hide. Someone holds {@code game_master} and
+     * nothing else, so creating a grant is refused while the player role is
+     * still missing. Counting that as done would lock them out of the game and
+     * leave the sweep finding them for ever.
      */
     @Test
-    @DisplayName("any other failure propagates so the provisioning call is retried")
+    @DisplayName("a conflict on a grant without the role adds it to that grant")
+    void addsTheRoleToAGrantThatLacksIt() {
+        server.expect(requestTo(GRANTS_URL))
+                .andRespond(withStatus(HttpStatus.CONFLICT));
+        server.expect(requestTo(GRANT_SEARCH_URL))
+                .andRespond(withSuccess(
+                        "{\"result\":[{\"id\":\"" + GRANT_ID + "\",\"roleKeys\":[\"game_master\"]}]}",
+                        MediaType.APPLICATION_JSON));
+        server.expect(requestTo(GRANTS_URL + "/" + GRANT_ID))
+                .andExpect(method(org.springframework.http.HttpMethod.PUT))
+                .andExpect(jsonPath("$.roleKeys").value(org.hamcrest.Matchers.hasItems("game_master", "player")))
+                .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
+
+        client.grantPlayerRole(USER_ID);
+
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("only users holding the player role count as granted")
+    void asksZitadelForThePlayerRoleSpecifically() {
+        server.expect(requestTo(GRANT_SEARCH_URL))
+                .andExpect(jsonPath("$.queries[1].roleKeyQuery.roleKey").value("player"))
+                .andRespond(withSuccess("{\"result\":[{\"userId\":\"" + USER_ID + "\"}]}",
+                        MediaType.APPLICATION_JSON));
+
+        assertThat(client.listPlayerGrantedUserIds()).containsExactly(USER_ID);
+
+        server.verify();
+    }
+
+    /**
+     * Anything else has to propagate. Swallowing it would leave a user with a
+     * profile, no role and no way in, while the registration looked like it
+     * worked — and Zitadel does not retry, so nothing would come back for it.
+     */
+    @Test
+    @DisplayName("any other failure propagates rather than passing for success")
     void letsOtherFailuresThrough() {
         server.expect(requestTo(GRANTS_URL))
                 .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));

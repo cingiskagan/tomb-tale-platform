@@ -82,8 +82,67 @@ public class ZitadelClient {
 
             log.info("Granted {} to Zitadel user: {}", RoleConstants.PLAYER, LogUtils.maskId(zitadelUserId));
         } catch (HttpClientErrorException.Conflict e) {
-            log.debug("Zitadel user {} already holds {}", LogUtils.maskId(zitadelUserId), RoleConstants.PLAYER);
+            addPlayerToExistingGrant(zitadelUserId);
         }
+    }
+
+    /**
+     * Adds the player role to a grant that exists without it.
+     *
+     * <p>Zitadel refuses a second grant for the same user and project whatever
+     * roles it carries, so a conflict does not by itself mean the role is
+     * there — someone granted {@code game_master} alone and the create is
+     * refused all the same. Treating that as success would leave the user
+     * short of the role for good, and the sweep would keep finding them.
+     *
+     * @param zitadelUserId the user whose grant conflicted
+     */
+    private void addPlayerToExistingGrant(String zitadelUserId) {
+        Map<String, Object> body = restClient.post()
+                .uri("/management/v1/users/grants/_search")
+                .body(Map.of("queries", List.of(
+                        Map.of("userIdQuery", Map.of("userId", zitadelUserId)),
+                        Map.of("projectIdQuery", Map.of("projectId", projectId)))))
+                .retrieve()
+                .body(MAP_TYPE);
+
+        Optional<Map<String, Object>> existing = results(body).stream().findFirst();
+        if (existing.isEmpty()) {
+            // The grant that caused the conflict is gone already. Next sweep.
+            log.warn("Zitadel refused a grant for user {} but has none to update",
+                    LogUtils.maskId(zitadelUserId));
+            return;
+        }
+
+        List<String> roles = rolesOf(existing.get());
+        if (roles.contains(RoleConstants.PLAYER)) {
+            log.debug("Zitadel user {} already holds {}", LogUtils.maskId(zitadelUserId), RoleConstants.PLAYER);
+            return;
+        }
+
+        List<String> withPlayer = new ArrayList<>(roles);
+        withPlayer.add(RoleConstants.PLAYER);
+
+        restClient.put()
+                .uri("/management/v1/users/{userId}/grants/{grantId}", zitadelUserId, existing.get().get("id"))
+                .body(Map.of("roleKeys", withPlayer))
+                .retrieve()
+                .toBodilessEntity();
+
+        log.info("Added {} to the existing grant of Zitadel user: {}",
+                RoleConstants.PLAYER, LogUtils.maskId(zitadelUserId));
+    }
+
+    /**
+     * @param grant a grant row from a search
+     * @return the roles on it, empty when it carries none
+     */
+    @SuppressWarnings("unchecked")
+    private static List<String> rolesOf(Map<String, Object> grant) {
+        if (grant.get("roleKeys") instanceof List<?> roles) {
+            return (List<String>) roles;
+        }
+        return List.of();
     }
 
     /**
@@ -101,15 +160,20 @@ public class ZitadelClient {
     }
 
     /**
-     * The users already holding any role on this project.
+     * The users already holding the player role on this project.
+     *
+     * <p>Holding some other role is not the same thing and must not count: a
+     * user granted only {@code game_master} still needs this one.
      *
      * @return their Zitadel ids
      */
-    public List<String> listGrantedUserIds() {
+    public List<String> listPlayerGrantedUserIds() {
         return searchAll("/management/v1/users/grants/_search",
                 offset -> Map.of(
                         "query", Map.of("offset", offset, "limit", PAGE_SIZE),
-                        "queries", List.of(Map.of("projectIdQuery", Map.of("projectId", projectId))))).stream()
+                        "queries", List.of(
+                                Map.of("projectIdQuery", Map.of("projectId", projectId)),
+                                Map.of("roleKeyQuery", Map.of("roleKey", RoleConstants.PLAYER))))).stream()
                 .map(grant -> (String) grant.get("userId"))
                 .filter(java.util.Objects::nonNull)
                 .toList();

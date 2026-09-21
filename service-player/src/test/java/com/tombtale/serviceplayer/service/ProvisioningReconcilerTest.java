@@ -53,7 +53,7 @@ class ProvisioningReconcilerTest {
 
     @Test
     void repairsSelfRegisteredUserWithNoGrant() {
-        when(zitadelClient.listGrantedUserIds()).thenReturn(List.of());
+        when(zitadelClient.listPlayerGrantedUserIds()).thenReturn(List.of());
         when(zitadelClient.listHumanUserIds()).thenReturn(List.of(SELF_REGISTERED));
         when(zitadelClient.creatorOf(SELF_REGISTERED)).thenReturn(Optional.of(LOGIN_CLIENT));
 
@@ -64,7 +64,7 @@ class ProvisioningReconcilerTest {
     /** The whole reason the sweep looks at who created the account. */
     @Test
     void leavesAnAdministratorCreatedUserAlone() {
-        when(zitadelClient.listGrantedUserIds()).thenReturn(List.of());
+        when(zitadelClient.listPlayerGrantedUserIds()).thenReturn(List.of());
         when(zitadelClient.listHumanUserIds()).thenReturn(List.of(ADMIN_CREATED));
         when(zitadelClient.creatorOf(ADMIN_CREATED)).thenReturn(Optional.of(ADMIN));
 
@@ -75,7 +75,7 @@ class ProvisioningReconcilerTest {
     /** The normal case: everybody already has their role, so nothing is touched. */
     @Test
     void skipsUsersThatAlreadyHoldTheRole() {
-        when(zitadelClient.listGrantedUserIds()).thenReturn(List.of(ALREADY_GRANTED));
+        when(zitadelClient.listPlayerGrantedUserIds()).thenReturn(List.of(ALREADY_GRANTED));
         when(zitadelClient.listHumanUserIds()).thenReturn(List.of(ALREADY_GRANTED));
 
         assertThat(reconciler.reconcile()).isZero();
@@ -86,7 +86,7 @@ class ProvisioningReconcilerTest {
     /** One user's failure is not the next user's problem. */
     @Test
     void carriesOnAfterOneUserFails() {
-        when(zitadelClient.listGrantedUserIds()).thenReturn(List.of());
+        when(zitadelClient.listPlayerGrantedUserIds()).thenReturn(List.of());
         when(zitadelClient.listHumanUserIds()).thenReturn(List.of(ADMIN_CREATED, SELF_REGISTERED));
         when(zitadelClient.creatorOf(ADMIN_CREATED)).thenThrow(new ResourceAccessException("Zitadel is down"));
         when(zitadelClient.creatorOf(SELF_REGISTERED)).thenReturn(Optional.of(LOGIN_CLIENT));
@@ -111,7 +111,7 @@ class ProvisioningReconcilerTest {
     /** A user with no change history at all is not a self-registration. */
     @Test
     void leavesAUserWithNoCreatorAlone() {
-        when(zitadelClient.listGrantedUserIds()).thenReturn(List.of());
+        when(zitadelClient.listPlayerGrantedUserIds()).thenReturn(List.of());
         when(zitadelClient.listHumanUserIds()).thenReturn(List.of(SELF_REGISTERED));
         when(zitadelClient.creatorOf(SELF_REGISTERED)).thenReturn(Optional.empty());
 
