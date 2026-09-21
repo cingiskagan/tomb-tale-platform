@@ -62,6 +62,11 @@ management:
 # provisioned a row and then cannot log in, so provisionPlayer fails loudly
 # rather than leaving that state behind.
 app:
+  # The provisioning sweep is the only scheduled work here. On unless this says
+  # otherwise; the test profile turns it off so no test calls out to Zitadel.
+  scheduling:
+    enabled: true
+
   zitadel:
     api:
       base-url: ${ZITADEL_ISSUER_URI:}

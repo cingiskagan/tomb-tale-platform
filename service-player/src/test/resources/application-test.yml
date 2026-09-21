@@ -28,6 +28,12 @@ spring:
 
 # A fixed key so a test can sign a body the way Zitadel would.
 app:
+  # ProvisioningReconciler is the only scheduled job, and it calls Zitadel. A
+  # @SpringBootTest would start it against nothing, so it stays off here and is
+  # driven directly by its own unit tests.
+  scheduling:
+    enabled: false
+
   zitadel:
     webhook:
       signing-key: test-signing-key
