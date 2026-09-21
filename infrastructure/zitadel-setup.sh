@@ -343,6 +343,22 @@ ensure_target() {
     TARGET_ID="$(jq -r '.id' <<<"${existing}")"
     SIGNING_KEY="$(jq -r '.signingKey' <<<"${existing}")"
     info "already exists (${TARGET_ID})"
+
+    # A target created before interruptOnError was set still has it off, and
+    # finding one is not evidence it is configured the way this script says.
+    # expirationSigningKey is deliberately absent: sending it rotates the key,
+    # and service-player is still holding the old one.
+    api POST "/v2/actions/targets/${TARGET_ID}" \
+      "$(jq -nc \
+        --arg name "${TARGET_NAME}" \
+        --arg endpoint "${ZITADEL_TARGET_ENDPOINT}" \
+        '{
+           name: $name,
+           endpoint: $endpoint,
+           timeout: "10s",
+           restWebhook: {interruptOnError: true}
+         }')" >/dev/null
+    info "updated it to interrupt on error"
     return
   fi
 
