@@ -21,9 +21,9 @@ extending it that adds only the exceptions it alone throws.
   detail, so its advice is an empty subclass that registers the inherited handlers.
 - Commerce's keys change: `message` to `detail`, `error` to `title`, `timestamp` gone.
   The portal branches on status alone, so the break is paid now, while it is free.
-- A rejected sort field becomes 400 through `InvalidSortFieldException`, and validation
-  failures gain an `errors` member that points at the field.
-- Inheritance couples the two services: a base-class handler changes both at once.
+- A rejected sort field becomes 400 through `InvalidSortFieldException` in commons.
+- Access denial is the exception to the envelope. Spring Security's filter chain answers
+  401 and 403, which is what keeps a missing token apart from an insufficient role.
 
 ---
 

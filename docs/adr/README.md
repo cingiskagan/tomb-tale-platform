@@ -26,10 +26,11 @@ Every record has the same five parts. Start from `0000-template.md`.
 
 **A decision is append-only.** Once a record is accepted, what it decided never
 changes. Reality changing is not a reason to edit a record. It is a reason to
-write the next one. Shortening the wording is the one edit that is allowed,
-because the decision, the date, the status and the links come through it
-unchanged. Records 0001 to 0019 were cut that way on 2026-09-21, and none of
-them changed its mind.
+write the next one. Shortening the wording is the one edit to the content that
+is allowed, because the decision, the date, the status and the links come
+through it unchanged. Records 0001 to 0019 were cut that way on 2026-09-21, and
+none of them changed its mind. The rule below adds the one other edit a record
+ever takes: a status that becomes `superseded by NNNN`.
 
 **A changed decision gets a new record.** Set the old one's status to
 `superseded by NNNN` and link forward to it. The new record links back. That

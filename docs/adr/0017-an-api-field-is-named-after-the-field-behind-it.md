@@ -18,8 +18,8 @@ becomes `publicId`, `purchasedAt` becomes `createdAt`, `purchasedAfter` and
 
 ## Consequences
 
-- The mappings leave `PurchaseMapper` and the allow-list is names from the Q-type again,
-  so a renamed entity field breaks the build instead of the endpoint.
+- The per-name `@Mapping` entries leave `PurchaseMapper`, and the sort allow-list is a `Set`
+  read from the Q-type again, so a renamed entity field breaks the build, not the endpoint.
 - `?sort=id` and `?sort=purchasedAt` are 400s, and so is `?sort=id` against players. The
   portal is the only client and changes in the same commit, so the break is free this once.
 - `playerId` keeps its name ([0014](0014-player-publicid-is-the-cross-service-identifier.md)),

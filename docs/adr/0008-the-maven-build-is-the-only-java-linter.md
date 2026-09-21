@@ -2,6 +2,7 @@
 
 - **Date:** 2026-09-07
 - **Status:** accepted
+- **Supersedes:** [0004](0004-pin-pmd-to-the-version-megalinter-ships.md)
 
 ## Context
 
@@ -20,9 +21,8 @@ leave `.mega-linter.yml`.
 ## Consequences
 
 - Local and CI cannot disagree: one engine at one pinned version for both.
-- `verify` runs after code generation, so both tools read hand-written source
-  only, like the Jacoco exclusions in
-  [0009](0009-jacoco-measures-everything-we-write.md).
+- `verify` runs after code generation, so both tools read hand-written source only, like
+  the Jacoco exclusions in [0009](0009-jacoco-measures-everything-we-write.md).
 - MegaLinter no longer checks Java, and a third Java tool recreates this problem.
 
 ---
