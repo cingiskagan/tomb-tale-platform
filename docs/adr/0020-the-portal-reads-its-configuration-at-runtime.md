@@ -6,14 +6,14 @@
 ## Context
 
 Zitadel generates the OIDC client id, so `zitadel-setup.sh` wrote it into the
-tracked `environment.ts` and every rebuild produced a diff that meant nothing.
-[ADR 0019](0019-zitadel-configuration-is-code.md) called this the next step.
+tracked `environment.ts`, and every rebuild produced a diff that meant nothing.
+[ADR 0019](0019-zitadel-configuration-is-code.md) put it there.
 
 ## Decision
 
 We will serve the client id, issuer and API base URL from a gitignored
 `frontend-portal/public/config.json`. `main.ts` fetches it before
-`bootstrapApplication` and provides `RUNTIME_CONFIG`; `environment.ts` keeps
+`bootstrapApplication` and provides `RUNTIME_CONFIG`, and `environment.ts` keeps
 only `production`.
 
 ## Consequences
@@ -23,7 +23,6 @@ only `production`.
   keys and names the script, and `npm start` needs that script to have run.
 - Import-time reads are gone: `AUTH_CONFIG` is now `buildAuthConfig(config)`.
 - `.env` gained `PORTAL_API_BASE_URL`, which the script requires.
-- 0019's `environment.ts` bullet is now wrong. Append-only, so it stays.
 
 ---
 
