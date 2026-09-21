@@ -78,4 +78,27 @@ class BaseEntityTest {
 
         assertThat(set).contains(entity);
     }
+
+    // An uninitialised Hibernate proxy reads its own null field in both methods
+    // below, so the guards are live code rather than defensive padding.
+
+    @Test
+    @DisplayName("an entity without a publicId hashes to zero")
+    void hashesToZeroWithoutAPublicId() {
+        FixtureEntity entity = new FixtureEntity();
+        entity.setPublicId(null);
+
+        assertThat(entity.hashCode()).isZero();
+    }
+
+    @Test
+    @DisplayName("an entity without a publicId equals nothing but itself")
+    void equalsNothingButItselfWithoutAPublicId() {
+        FixtureEntity one = new FixtureEntity();
+        FixtureEntity two = new FixtureEntity();
+        one.setPublicId(null);
+        two.setPublicId(null);
+
+        assertThat(one).isEqualTo(one).isNotEqualTo(two);
+    }
 }
