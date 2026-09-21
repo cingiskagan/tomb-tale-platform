@@ -5,12 +5,16 @@ import com.tombtale.serviceplayer.util.LogUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.IntFunction;
 
 /**
  * The only outbound call this service makes to Zitadel.
@@ -28,6 +32,12 @@ import java.util.Map;
 @Slf4j
 @Component
 public class ZitadelClient {
+
+    /** How many rows a search asks for at a time. */
+    private static final int PAGE_SIZE = 100;
+
+    private static final ParameterizedTypeReference<Map<String, Object>> MAP_TYPE =
+            new ParameterizedTypeReference<>() { };
 
     private final RestClient restClient;
     private final String projectId;
@@ -48,9 +58,10 @@ public class ZitadelClient {
      *
      * <p>Safe to call for a user who already has it: Zitadel answers 409, which
      * is the outcome we wanted rather than a failure. Anything else is allowed
-     * to propagate, so the provisioning call fails and Zitadel retries it — a
-     * user left with a profile and no role could not log in, and silence here
-     * would make that look like a working registration.
+     * to propagate, so the provisioning call fails rather than reporting a
+     * success it did not have — a user left with a profile and no role cannot
+     * log in at all. Recovering one is
+     * {@link com.tombtale.serviceplayer.service.ProvisioningReconciler}'s job.
      *
      * @param zitadelUserId the subject of the newly registered user
      */
@@ -71,7 +82,158 @@ public class ZitadelClient {
 
             log.info("Granted {} to Zitadel user: {}", RoleConstants.PLAYER, LogUtils.maskId(zitadelUserId));
         } catch (HttpClientErrorException.Conflict e) {
-            log.debug("Zitadel user {} already holds {}", LogUtils.maskId(zitadelUserId), RoleConstants.PLAYER);
+            addPlayerToExistingGrant(zitadelUserId);
         }
+    }
+
+    /**
+     * Adds the player role to a grant that exists without it.
+     *
+     * <p>Zitadel refuses a second grant for the same user and project whatever
+     * roles it carries, so a conflict does not by itself mean the role is
+     * there — someone granted {@code game_master} alone and the create is
+     * refused all the same. Treating that as success would leave the user
+     * short of the role for good, and the sweep would keep finding them.
+     *
+     * @param zitadelUserId the user whose grant conflicted
+     */
+    private void addPlayerToExistingGrant(String zitadelUserId) {
+        Map<String, Object> body = restClient.post()
+                .uri("/management/v1/users/grants/_search")
+                .body(Map.of("queries", List.of(
+                        Map.of("userIdQuery", Map.of("userId", zitadelUserId)),
+                        Map.of("projectIdQuery", Map.of("projectId", projectId)))))
+                .retrieve()
+                .body(MAP_TYPE);
+
+        Optional<Map<String, Object>> existing = results(body).stream().findFirst();
+        if (existing.isEmpty()) {
+            // The grant that caused the conflict is gone already. Next sweep.
+            log.warn("Zitadel refused a grant for user {} but has none to update",
+                    LogUtils.maskId(zitadelUserId));
+            return;
+        }
+
+        List<String> roles = rolesOf(existing.get());
+        if (roles.contains(RoleConstants.PLAYER)) {
+            log.debug("Zitadel user {} already holds {}", LogUtils.maskId(zitadelUserId), RoleConstants.PLAYER);
+            return;
+        }
+
+        List<String> withPlayer = new ArrayList<>(roles);
+        withPlayer.add(RoleConstants.PLAYER);
+
+        restClient.put()
+                .uri("/management/v1/users/{userId}/grants/{grantId}", zitadelUserId, existing.get().get("id"))
+                .body(Map.of("roleKeys", withPlayer))
+                .retrieve()
+                .toBodilessEntity();
+
+        log.info("Added {} to the existing grant of Zitadel user: {}",
+                RoleConstants.PLAYER, LogUtils.maskId(zitadelUserId));
+    }
+
+    /**
+     * @param grant a grant row from a search
+     * @return the roles on it, empty when it carries none
+     */
+    @SuppressWarnings("unchecked")
+    private static List<String> rolesOf(Map<String, Object> grant) {
+        if (grant.get("roleKeys") instanceof List<?> roles) {
+            return (List<String>) roles;
+        }
+        return List.of();
+    }
+
+    /**
+     * Every human user in the organisation, machine accounts excluded.
+     *
+     * @return their Zitadel ids
+     */
+    public List<String> listHumanUserIds() {
+        return searchAll("/management/v1/users/_search",
+                offset -> Map.of("query", Map.of("offset", offset, "limit", PAGE_SIZE))).stream()
+                .filter(user -> user.containsKey("human"))
+                .map(user -> (String) user.get("id"))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    /**
+     * The users already holding the player role on this project.
+     *
+     * <p>Holding some other role is not the same thing and must not count: a
+     * user granted only {@code game_master} still needs this one.
+     *
+     * @return their Zitadel ids
+     */
+    public List<String> listPlayerGrantedUserIds() {
+        return searchAll("/management/v1/users/grants/_search",
+                offset -> Map.of(
+                        "query", Map.of("offset", offset, "limit", PAGE_SIZE),
+                        "queries", List.of(
+                                Map.of("projectIdQuery", Map.of("projectId", projectId)),
+                                Map.of("roleKeyQuery", Map.of("roleKey", RoleConstants.PLAYER))))).stream()
+                .map(grant -> (String) grant.get("userId"))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    /**
+     * Who created this account, which is what separates a self-registration
+     * from one an administrator made.
+     *
+     * @param zitadelUserId the account to look up
+     * @return the editor of its oldest change, empty if it has none
+     */
+    public Optional<String> creatorOf(String zitadelUserId) {
+        // Oldest change first: for a user aggregate that is user.human.added.
+        Map<String, Object> body = restClient.post()
+                .uri("/management/v1/users/{userId}/changes/_search", zitadelUserId)
+                .body(Map.of("query", Map.of("limit", 1, "asc", true)))
+                .retrieve()
+                .body(MAP_TYPE);
+
+        return results(body).stream()
+                .findFirst()
+                .map(change -> (String) change.get("editorId"));
+    }
+
+    /**
+     * Reads a paged Zitadel search to the end.
+     *
+     * @param uri              the search endpoint
+     * @param requestForOffset builds the body for a given offset
+     * @return every row across all pages
+     */
+    private List<Map<String, Object>> searchAll(String uri, IntFunction<Map<String, Object>> requestForOffset) {
+        List<Map<String, Object>> all = new ArrayList<>();
+        List<Map<String, Object>> page;
+
+        do {
+            Map<String, Object> body = restClient.post()
+                    .uri(uri)
+                    .body(requestForOffset.apply(all.size()))
+                    .retrieve()
+                    .body(MAP_TYPE);
+
+            page = results(body);
+            all.addAll(page);
+            // A short page is the last one; a full page means there may be more.
+        } while (page.size() == PAGE_SIZE);
+
+        return all;
+    }
+
+    /**
+     * @param body a search response, or null
+     * @return its result rows, empty when there are none
+     */
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> results(Map<String, Object> body) {
+        if (body == null || !(body.get("result") instanceof List<?> rows)) {
+            return List.of();
+        }
+        return (List<Map<String, Object>>) rows;
     }
 }

@@ -62,6 +62,11 @@ management:
 # provisioned a row and then cannot log in, so provisionPlayer fails loudly
 # rather than leaving that state behind.
 app:
+  # The provisioning sweep is the only scheduled work here. On unless this says
+  # otherwise; the test profile turns it off so no test calls out to Zitadel.
+  scheduling:
+    enabled: true
+
   zitadel:
     api:
       base-url: ${ZITADEL_ISSUER_URI:}
@@ -74,6 +79,28 @@ app:
     webhook:
       signing-key: ${ZITADEL_WEBHOOK_SIGNING_KEY:}
       tolerance: 5m
+
+    # Login V2 creates a self-registered account by calling the API as this
+    # machine user, so the provisioning event carries its id. An account made in
+    # the console carries the administrator's instead, and Zitadel raises the
+    # same user.human.added for both. Matching on it is what keeps the player
+    # role to people who signed themselves up.
+    #
+    # Blank provisions every new account, which is how this behaved before the
+    # id was written back. That is the lesser evil: refusing on a blank would
+    # mean an environment whose .env predates it silently stops provisioning
+    # anyone, and a registered player with no role cannot log in at all.
+    registration:
+      login-client-id: ${ZITADEL_LOGIN_CLIENT_ID:}
+
+      # The sweep that catches registrations the provisioning event never
+      # reached. Zitadel retries a failed call, but gives up eventually, and a
+      # user left without the role cannot log in at all — projectRoleCheck
+      # refuses their token, so they never reach the fallback in PlayerService.
+      # The interval only bounds how long such a user waits; the work is
+      # normally a single search that finds nothing.
+      reconcile-initial-delay: PT2M
+      reconcile-interval: PT15M
 
 logging:
   level:

@@ -10,7 +10,7 @@ Monorepo for the "Tomb Tale Online RPG" platform: two Spring Boot microservices,
 - `platform-commons/` — the Java library both services depend on: `BaseEntity`, `SystemActor`
 - `service-player/` — Spring Boot service for player accounts and characters (port 8081)
 - `service-commerce/` — Spring Boot service for purchases/economy (port 8082)
-- `infrastructure/` — Docker Compose stack: Traefik, Zitadel (auth), Postgres, Redis, MongoDB, RabbitMQ
+- `infrastructure/` — Docker Compose stack: Traefik, Zitadel (auth), Postgres, Redis, MongoDB, RabbitMQ, Mailpit (catches Zitadel's mail in dev, inbox at :8025)
 - `config/checkstyle/`, `config/pmd/` — static-analysis rulesets shared by both Java services
 - `scripts/pre-pr-tests.sh` — full local pre-PR check pipeline across all three modules
 

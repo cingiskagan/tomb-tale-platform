@@ -3,7 +3,9 @@
 # zitadel-setup.sh — Create this platform's Zitadel objects from code.
 #
 # Replaces the clicking: the project, its three roles, the portal's OIDC
-# client, and the provisioning target and execution behind ADR 0018.
+# client, the provisioning target and execution behind ADR 0018, the email
+# provider Zitadel sends verification codes through, and the login policy that
+# forces the emailed second factor.
 #
 # Idempotent. Every step looks for the object first and only creates what is
 # missing, so running it twice changes nothing.
@@ -33,6 +35,11 @@ PAT_READER_IMAGE="alpine"
 # key:displayName — the keys are the contract with @PreAuthorize and the
 # frontend's PlatformRole enum; the display names are what the console shows.
 ROLE_KEYS=(player:Player game_master:"Game Master" platform_admin:"Platform Admin")
+
+# The only second factor a player may use. Zitadel's defaults also offer an
+# authenticator app and a security key; both are dropped so that signing in
+# needs nothing but the address they registered with.
+LOGIN_SECOND_FACTORS=(SECOND_FACTOR_TYPE_OTP_EMAIL)
 
 # ── Output helpers ─────────────────────────────────────────────────────────
 # Values are never printed. Ids are, names are; tokens and keys are not.
@@ -336,9 +343,35 @@ ensure_target() {
     TARGET_ID="$(jq -r '.id' <<<"${existing}")"
     SIGNING_KEY="$(jq -r '.signingKey' <<<"${existing}")"
     info "already exists (${TARGET_ID})"
+
+    # A target created before interruptOnError was set still has it off, and
+    # finding one is not evidence it is configured the way this script says.
+    # expirationSigningKey is deliberately absent: sending it rotates the key,
+    # and service-player is still holding the old one.
+    api POST "/v2/actions/targets/${TARGET_ID}" \
+      "$(jq -nc \
+        --arg name "${TARGET_NAME}" \
+        --arg endpoint "${ZITADEL_TARGET_ENDPOINT}" \
+        '{
+           name: $name,
+           endpoint: $endpoint,
+           timeout: "10s",
+           restWebhook: {interruptOnError: true}
+         }')" >/dev/null
+    info "updated it to interrupt on error"
     return
   fi
 
+  # interruptOnError decides what Zitadel records for a call that failed. False
+  # counted a refused connection as a delivered event, logging "job processed
+  # successfully". True records the truth: the queue row ends state=cancelled
+  # with the error on it, which is the difference between a lost grant you can
+  # find and one you cannot.
+  #
+  # Neither retries. Zitadel cancels the job on the first failure whatever the
+  # cause — a 401 and a refused connection both finalised at attempt 1 of the 25
+  # the queue advertises — so a service that was down when the event fired never
+  # receives it. Recovering that grant is ProvisioningReconciler's job.
   local created
   created="$(api POST /v2/actions/targets \
     "$(jq -nc \
@@ -348,7 +381,7 @@ ensure_target() {
          name: $name,
          endpoint: $endpoint,
          timeout: "10s",
-         restWebhook: {interruptOnError: false}
+         restWebhook: {interruptOnError: true}
        }')")"
 
   TARGET_ID="$(jq -r '.id' <<<"${created}")"
@@ -363,6 +396,132 @@ ensure_execution() {
     "$(jq -nc --arg event "${PROVISIONING_EVENT}" --arg target "${TARGET_ID}" \
       '{condition: {event: {event: $event}}, targets: [$target]}')" >/dev/null
   done_ "execution points at ${TARGET_ID}"
+}
+
+# Without an email provider Zitadel generates verification codes and
+# password-reset links and then drops them, answering "SMTP configuration not
+# found". The values live in .env because prod points them at a real provider
+# and only the values change — the mechanism is the same one.
+ensure_smtp_provider() {
+  step "Email provider: ${ZITADEL_SMTP_HOST}"
+
+  local tls="${ZITADEL_SMTP_TLS:-false}"
+  [[ "${tls}" == true || "${tls}" == false ]] ||
+    fail "ZITADEL_SMTP_TLS must be true or false, not ${tls}"
+
+  # Create and update take the same body. Auth is a choice of one: plain when a
+  # user is named, none when it is blank. Mailpit wants neither, a real
+  # provider wants plain, and the blank is what makes the dev default work.
+  local body
+  body="$(jq -nc \
+    --arg senderAddress "${ZITADEL_SMTP_SENDER_ADDRESS}" \
+    --arg senderName "${ZITADEL_SMTP_SENDER_NAME}" \
+    --arg host "${ZITADEL_SMTP_HOST}" \
+    --arg user "${ZITADEL_SMTP_USER:-}" \
+    --arg password "${ZITADEL_SMTP_PASSWORD:-}" \
+    --arg replyTo "${ZITADEL_SMTP_REPLY_TO_ADDRESS:-}" \
+    --arg description "${SMTP_PROVIDER_DESCRIPTION}" \
+    --argjson tls "${tls}" \
+    '{
+       senderAddress: $senderAddress,
+       senderName: $senderName,
+       tls: $tls,
+       host: $host,
+       replyToAddress: $replyTo,
+       description: $description
+     }
+     + (if $user == "" then {none: {}} else {user: $user, plain: {password: $password}} end)')"
+
+  local existing id state
+  existing="$(api POST /admin/v1/email/_search '{}' |
+    jq -c --arg description "${SMTP_PROVIDER_DESCRIPTION}" \
+      '[.result[]? | select(.description == $description) | {id, state}][0] // empty')"
+
+  if [[ -n "${existing}" ]]; then
+    id="$(jq -r '.id' <<<"${existing}")"
+    state="$(jq -r '.state' <<<"${existing}")"
+    api PUT "/admin/v1/email/smtp/${id}" "${body}" >/dev/null
+    info "updated ${id}"
+  else
+    id="$(api POST /admin/v1/email/smtp "${body}" | jq -r '.id')"
+    state=""
+    done_ "created ${id}"
+  fi
+
+  # Adding a provider does not make it the one Zitadel uses, so it is activated
+  # here. Only when it is not already: a second activation is an error, and
+  # this script has to survive being run twice.
+  if [[ "${state}" == "EMAIL_PROVIDER_ACTIVE" ]]; then
+    info "already active"
+  else
+    api POST "/admin/v1/email/${id}/_activate" '{}' >/dev/null
+    done_ "activated ${id}"
+  fi
+}
+
+# Zitadel ships with MFA optional, an authenticator app and a security key as
+# the second factors, and passkeys allowed. This platform forces a second
+# factor and allows only the emailed code, so a player carries nothing but
+# their address. Passkeys are turned off because one satisfies MFA on its own
+# and would walk straight past the code.
+#
+# The emailed factor cannot be added to an unverified address, which is why the
+# login UI runs with EMAIL_VERIFICATION=true (see docker-compose.yml). Turn one
+# off without the other and new players reach an empty "Set up 2-Factor" screen.
+ensure_login_policy() {
+  step "Login policy"
+
+  # Sent whole rather than patched: the endpoint replaces the policy, so a
+  # field left out here is a field reset to Zitadel's default.
+  api PUT /admin/v1/policies/login "$(jq -nc '{
+     allowUsernamePassword: true,
+     allowRegister: true,
+     allowExternalIdp: true,
+     allowDomainDiscovery: true,
+     forceMfa: true,
+     forceMfaLocalOnly: false,
+     passwordlessType: "PASSWORDLESS_TYPE_NOT_ALLOWED",
+     hidePasswordReset: false,
+     ignoreUnknownUsernames: false,
+     disableLoginWithEmail: false,
+     disableLoginWithPhone: false,
+     passwordCheckLifetime: "864000s",
+     externalLoginCheckLifetime: "864000s",
+     mfaInitSkipLifetime: "2592000s",
+     secondFactorCheckLifetime: "64800s",
+     multiFactorCheckLifetime: "43200s"
+   }')" >/dev/null
+  done_ "MFA forced, passkeys off"
+
+  # The factor lists hang off their own endpoints, and adding one that is
+  # already there is an error, so both directions are reconciled against what
+  # the instance currently has.
+  local -a current=()
+  mapfile -t current < <(api GET /admin/v1/policies/login | jq -r '.policy.secondFactors[]?')
+
+  local factor
+  for factor in "${current[@]}"; do
+    if [[ " ${LOGIN_SECOND_FACTORS[*]} " != *" ${factor} "* ]]; then
+      api DELETE "/admin/v1/policies/login/second_factors/${factor}" >/dev/null
+      info "removed ${factor}"
+    fi
+  done
+
+  for factor in "${LOGIN_SECOND_FACTORS[@]}"; do
+    if [[ " ${current[*]} " != *" ${factor} "* ]]; then
+      api POST /admin/v1/policies/login/second_factors \
+        "$(jq -nc --arg type "${factor}" '{type: $type}')" >/dev/null
+      done_ "added ${factor}"
+    fi
+  done
+
+  # A multi-factor is one that satisfies MFA by itself. Leaving any in place
+  # would give a way around the emailed code, so the list is emptied.
+  local multi
+  for multi in $(api GET /admin/v1/policies/login | jq -r '.policy.multiFactors[]?'); do
+    api DELETE "/admin/v1/policies/login/multi_factors/${multi}" >/dev/null
+    info "removed ${multi}"
+  done
 }
 
 # The project is created with projectRoleCheck, so Zitadel refuses to issue a
@@ -447,6 +606,30 @@ ensure_provisioner_account() {
   done_ "issued a token for ${PROVISIONER_USERNAME}"
 }
 
+# Zitadel raises user.human.added for every account, however it was made, and
+# has no separate self-registration event — user.human.selfregistered is a
+# login-v1 leftover that never fires here. What tells them apart is who caused
+# the event: Login V2 creates the account by calling the API as this machine
+# user, so a registration carries its id where an account made in the console
+# carries the administrator's.
+#
+# The id is generated at instance init, so it cannot be hardcoded and is looked
+# up here by the username docker-compose.yml pins.
+find_login_client() {
+  step "Login client: ${LOGIN_CLIENT_USERNAME}"
+
+  LOGIN_CLIENT_ID="$(api POST /management/v1/users/_search '{}' |
+    jq -r --arg name "${LOGIN_CLIENT_USERNAME}" \
+      '[.result[]? | select(.userName == $name)] | if length == 1 then .[0].id else empty end')"
+
+  [[ -n "${LOGIN_CLIENT_ID}" ]] ||
+    fail "No machine user named ${LOGIN_CLIENT_USERNAME}. It is created at instance init by
+   ZITADEL_FIRSTINSTANCE_ORG_LOGINCLIENT_MACHINE_USERNAME; without it service-player
+   cannot tell a self-registration from an account an administrator created."
+
+  done_ "found ${LOGIN_CLIENT_ID}"
+}
+
 # A PAT is shown once, at creation, so .env is the only copy of it. The account
 # outliving a usable token is an ordinary state: a rebuilt .env, an expired
 # token, a run that died between creating the account and writing the token
@@ -472,6 +655,7 @@ write_back() {
   step "Writing generated values back"
 
   set_env_value ZITADEL_PROJECT_ID "${PROJECT_ID}"
+  set_env_value ZITADEL_LOGIN_CLIENT_ID "${LOGIN_CLIENT_ID}"
   set_env_value ZITADEL_PORTAL_CLIENT_ID "${PORTAL_CLIENT_ID}"
   printf '%s\n' "${PORTAL_CLIENT_ID}" >"${CLIENT_ID_FILE}"
   info "client id → .env, .client-id"
@@ -518,10 +702,18 @@ main() {
   load_env
   require_env ZITADEL_ISSUER_URI ZITADEL_PROJECT_NAME ZITADEL_OIDC_APP_NAME \
     ZITADEL_OIDC_REDIRECT_URI ZITADEL_OIDC_POST_LOGOUT_URI \
-    ZITADEL_OIDC_ALLOWED_ORIGIN ZITADEL_TARGET_ENDPOINT PORTAL_API_BASE_URL
+    ZITADEL_OIDC_ALLOWED_ORIGIN ZITADEL_TARGET_ENDPOINT PORTAL_API_BASE_URL \
+    ZITADEL_SMTP_HOST ZITADEL_SMTP_SENDER_ADDRESS ZITADEL_SMTP_SENDER_NAME
 
   TARGET_NAME="player-provisioning"
   PROVISIONER_USERNAME="player-provisioner"
+  # Pinned in docker-compose.yml as
+  # ZITADEL_FIRSTINSTANCE_ORG_LOGINCLIENT_MACHINE_USERNAME. Change one and the
+  # other stops finding it.
+  LOGIN_CLIENT_USERNAME="login-client"
+  # How the provider is recognised on a second run. Zitadel allows several
+  # and gives them no names, so the description is the only handle.
+  SMTP_PROVIDER_DESCRIPTION="Tomb Tale platform"
   : "${ZITADEL_PROVISIONER_PAT_EXPIRATION:=${ZITADEL_ADMIN_PAT_EXPIRATION}}"
   # user.human.added, not selfregistered. LoginV2 registers users by calling the
   # v2 API as the login client, so a self-registration raises "added" like any
@@ -538,7 +730,10 @@ main() {
   find_or_create_oidc_app
   ensure_target
   ensure_execution
+  ensure_smtp_provider
+  ensure_login_policy
   grant_bootstrap_admin
+  find_login_client
   ensure_provisioner_account
   write_back
   revoke_admin_pat
