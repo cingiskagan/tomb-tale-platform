@@ -24,9 +24,12 @@ Every record has the same five parts. Start from `0000-template.md`.
 
 ## The rules
 
-**Records are append-only.** Once a record is accepted, its Context, Decision
-and Consequences are never rewritten. Reality changing is not a reason to edit a
-record. It is a reason to write the next one.
+**A decision is append-only.** Once a record is accepted, what it decided never
+changes. Reality changing is not a reason to edit a record. It is a reason to
+write the next one. Shortening the wording is the one edit that is allowed,
+because the decision, the date, the status and the links come through it
+unchanged. Records 0001 to 0019 were cut that way on 2026-09-21, and none of
+them changed its mind.
 
 **A changed decision gets a new record.** Set the old one's status to
 `superseded by NNNN` and link forward to it. The new record links back. That
@@ -44,8 +47,8 @@ choice you would happily redo in an afternoon does not.
 
 **A record is at most 30 lines.** A record nobody reads is worse than one that
 left something out. Cut the Context to the pressure itself, state the Decision
-as a rule, and keep Consequences to short bullets naming real costs. Records
-0001 to 0019 predate this and are append-only like everything else here.
+as a rule, and keep Consequences to short bullets naming real costs. Detail that
+does not fit belongs in the commit message that carried the change.
 
 ## A note on these records
 
