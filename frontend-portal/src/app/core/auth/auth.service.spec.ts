@@ -111,7 +111,10 @@ describe('AuthService', () => {
     it('keeps a name out of the profile when it is not a string', () => {
       idTokenHolds({ sub: 'u-1', name: 42 });
 
-      expect(service.getUserProfile()?.name).toBeUndefined();
+      const profile = service.getUserProfile();
+
+      expect(profile).not.toBeNull();
+      expect(profile?.name).toBeUndefined();
     });
   });
 
