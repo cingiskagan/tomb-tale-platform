@@ -14,8 +14,22 @@ expiry. `logs` keeps application output under a TTL index, so log lines expire
 and the record of deeds does not. Fluentd ships the logs through the Docker
 `fluentd` log driver, with `fluentd-async` set, because a synchronous driver
 blocks a container when Fluentd is down. Metabase draws the dashboards, because
-Kibana talks only to Elasticsearch. Postgres holds the authoritative copy: the
-outbox rows stay after publish, so a replay rebuilds either collection.
+Kibana talks only to Elasticsearch.
+
+The two collections have different recovery paths, and only one of them has a
+second copy. Postgres is authoritative for the events, because the outbox rows
+stay after publish, so a replay rebuilds `events` in full. Logs have no second
+copy: Fluentd is a sink, not a projection, and a lost `logs` collection is gone
+apart from whatever the rotated container files still hold. Losing it costs
+debugging history and nothing else, which is why the TTL sits there and not on
+`events`.
+
+One service owns MongoDB. `service-audit` consumes the events from RabbitMQ,
+writes both collections, and serves the timeline endpoint the portal calls. No
+other service carries a MongoDB dependency or its credentials, which is the
+single-writer rule [ADR 0006](../adr/0006-one-postgres-schema-and-user-per-service.md)
+applies to Postgres schemas, kept by hand because MongoDB does not enforce it.
+The service starts when the outbox in Commit E1 produces its first event.
 
 The choice is deliberate and it overrides the comparison below. ClickHouse
 answers the analytical questions better, and Loki or Elasticsearch handle logs
@@ -56,8 +70,12 @@ a second store.
   lists, blocked lists and offline messages.
 - Telemetry. Pokemon GO writes every action into Bigtable, and Fortnite pushes
   125 million events per minute through Kinesis.
-- Derived state. A leaderboard is a Redis sorted set, because `ZREVRANK` answers
-  "what place am I in" in O(log N). MongoDB has no rank operation.
+- Derived state. A leaderboard is a Redis sorted set, because `ZREVRANK` reads
+  one player's rank from an order the store already maintains, in O(log N).
+  MongoDB has `$rank` inside `$setWindowFields` since 5.0, so the operator
+  exists. It ranks a sorted partition on each call instead of reading a
+  maintained order, which is the wrong cost for a rank that is read constantly
+  and updated constantly.
 
 No scale argument above applies to this platform. Data shape is the argument that
 does apply.
@@ -143,12 +161,16 @@ On pickup, find a row of the same template with room under the template
 `maxStackSize`, increment it, and insert a new row for the remainder. Delete a
 row when its quantity reaches zero.
 
+`template_ver` records the version the roll happened against. It is provenance,
+not a pin. A read always resolves the current template, which is what lets a
+rebalance reach every player with no migration, and it keeps the answer to "why
+does this sword have these numbers" auditable. A stackable row rolled nothing,
+so it leaves the column null and merges with any other stack of that template.
+
 ## Open questions for the first commit
 
-- Does a stackable row pin the template version? An item that rolled nothing
-  reads its stats from the current template, so pinning only blocks a merge.
-- Which candidate workload gets built first, and does it want MongoDB or
-  ClickHouse? Candidate 1 is a timeline read, and candidate 2 is an aggregation.
+- Which candidate workload gets built first? Candidate 1 needs a timeline
+  endpoint, and candidate 2 needs scheduled rollups to stay fast.
 - What carries `publicId` and the audit columns in a document? `BaseEntity` needs
   a `Long id`, so ADR 0013 does not reach MongoDB as written.
 

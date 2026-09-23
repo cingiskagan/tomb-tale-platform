@@ -12,8 +12,10 @@ This document categorizes both the standard game design systems and the necessar
 | **service-inventory** | PostgreSQL | Item catalog templates, player-owned item instances (template + rolled stats pattern). `jsonb` holds the stat pools that vary per item type. |
 | **service-dungeon** | PostgreSQL | Procedural dungeon generation, room/corridor templates, seed management. `jsonb` holds the generated floor layouts. Multithreaded floor generation. |
 | **service-commerce** | PostgreSQL | Shop storefront, virtual currency wallets, purchase transactions. *(Already exists)* |
+| **service-audit** | MongoDB | Domain events consumed from RabbitMQ and shipped application logs. The only writer to MongoDB, and the read API behind the player timeline. |
 
-MongoDB stays in the infrastructure stack and waits for a workload that fits it.
+MongoDB holds domain events and application logs, never game state, and
+`service-audit` is the only service that connects to it.
 Read [data store research](data-store-research.md) before either service starts.
 
 ### Item Architecture: Template vs. Instance Pattern
@@ -21,8 +23,8 @@ Read [data store research](data-store-research.md) before either service starts.
 Items use a two-layer design for easy rebalancing:
 
 - **Item Template** (`item_templates` table): Admin-controlled blueprint defining base stats and random stat roll rules. Changing a template affects all players on next read.
-- **Item Instance** (`item_instances` table): The player's unique copy storing only the RNG-rolled modifiers and a reference to the template.
-- **Final Stats**: Computed at read time (`template base + rolled stats`), never stored. This allows global rebalancing without data migrations.
+- **Item Instance** (`item_instances` table): One owned stack. The row references its template, carries a `quantity` that exceeds one for stackable items, and stores the RNG-rolled modifiers. An item that rolls modifiers cannot stack, so its row has quantity 1.
+- **Final Stats**: Computed at read time from the current template (`template base + rolled stats`), never stored. The version an instance records is provenance for its roll, not a pin, which is what allows global rebalancing without data migrations.
 
 ---
 
