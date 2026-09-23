@@ -9,16 +9,19 @@ This document categorizes both the standard game design systems and the necessar
 | Microservice | Database | Responsibility |
 | --- | --- | --- |
 | **service-player** | PostgreSQL | Player accounts, core stats (level, XP, base attributes). Fixed relational schema. |
-| **service-inventory** | MongoDB | Item catalog templates, player-owned item instances (template + rolled stats pattern). Document DB for flexible item schemas. |
-| **service-dungeon** | MongoDB | Procedural dungeon generation, room/corridor templates, seed management. Multithreaded floor generation. |
+| **service-inventory** | PostgreSQL | Item catalog templates, player-owned item instances (template + rolled stats pattern). `jsonb` holds the stat pools that vary per item type. |
+| **service-dungeon** | PostgreSQL | Procedural dungeon generation, room/corridor templates, seed management. `jsonb` holds the generated floor layouts. Multithreaded floor generation. |
 | **service-commerce** | PostgreSQL | Shop storefront, virtual currency wallets, purchase transactions. *(Already exists)* |
+
+MongoDB stays in the infrastructure stack and waits for a workload that fits it.
+Read [data store research](data-store-research.md) before either service starts.
 
 ### Item Architecture: Template vs. Instance Pattern
 
 Items use a two-layer design for easy rebalancing:
 
-- **Item Template** (`item_templates` collection): Admin-controlled blueprint defining base stats and random stat roll rules. Changing a template affects all players on next read.
-- **Item Instance** (`item_instances` collection): The player's unique copy storing only the RNG-rolled modifiers and a reference to the template.
+- **Item Template** (`item_templates` table): Admin-controlled blueprint defining base stats and random stat roll rules. Changing a template affects all players on next read.
+- **Item Instance** (`item_instances` table): The player's unique copy storing only the RNG-rolled modifiers and a reference to the template.
 - **Final Stats**: Computed at read time (`template base + rolled stats`), never stored. This allows global rebalancing without data migrations.
 
 ---
