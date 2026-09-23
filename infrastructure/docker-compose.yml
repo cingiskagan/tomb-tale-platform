@@ -1,10 +1,20 @@
 ---
 name: tombtale
 
+# Docker's json-file driver keeps a container's log with no size limit, so the
+# file grows until the disk complains. Rotation caps it. The log still dies
+# with the container: a recreate starts an empty file.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "3"
+
 services:
   proxy:
     image: ${TRAEFIK_IMAGE}
     restart: unless-stopped
+    logging: *default-logging
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
@@ -35,6 +45,7 @@ services:
   zitadel-api:
     image: ghcr.io/zitadel/zitadel:${ZITADEL_VERSION}
     restart: unless-stopped
+    logging: *default-logging
     user: "0"
     command: start-from-init --masterkeyFile /run/secrets/zitadel-masterkey
     # The services run on the host (run-local.sh), not in this stack, so the
@@ -140,6 +151,7 @@ services:
   zitadel-login:
     image: ghcr.io/zitadel/zitadel-login:${ZITADEL_VERSION}
     restart: unless-stopped
+    logging: *default-logging
     user: "0"
     environment:
       ZITADEL_API_URL: http://zitadel-api:8080
@@ -199,6 +211,7 @@ services:
   postgres:
     image: ${POSTGRES_IMAGE}
     restart: unless-stopped
+    logging: *default-logging
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD}
       POSTGRES_USER: ${POSTGRES_ADMIN_USER}
@@ -228,6 +241,7 @@ services:
   redis:
     image: ${REDIS_IMAGE:-redis:7.4.2-alpine}
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "6379:6379"
     volumes:
@@ -244,6 +258,7 @@ services:
     # still brings the stack up.
     image: ${MAILPIT_IMAGE:-axllent/mailpit:v1.31.2}
     restart: unless-stopped
+    logging: *default-logging
     environment:
       # Accept any credentials, including none, over an unencrypted
       # connection. Zitadel sends none today. This keeps the handshake working
@@ -259,6 +274,7 @@ services:
   otel-collector:
     image: ${OTEL_COLLECTOR_IMAGE}
     restart: unless-stopped
+    logging: *default-logging
     profiles:
       - observability
     command:
@@ -271,6 +287,7 @@ services:
   # --- CUSTOM PLATFORM SERVICES ---
   mongodb:
     image: mongo:6.0
+    logging: *default-logging
     ports:
       - "27017:27017"
     environment:
@@ -283,6 +300,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
+    logging: *default-logging
     ports:
       - "5672:5672"   # Internal Message Port
       - "15672:15672" # Management Web UI Port
