@@ -9,6 +9,8 @@
 server:
   port: 0
 spring:
+  # Rabbit auto-configuration runs, and nothing connects: with scheduling off,
+  # the outbox publisher never sends.
   rabbitmq:
     host: localhost
     port: 5672
@@ -21,18 +23,18 @@ spring:
         jwt:
           issuer-uri: https://issuer.test.example.com
 
-  # Disable auto-connect to external services during tests
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
-
 # A fixed key so a test can sign a body the way Zitadel would.
 app:
-  # ProvisioningReconciler is the only scheduled job, and it calls Zitadel. A
-  # @SpringBootTest would start it against nothing, so it stays off here and is
-  # driven directly by its own unit tests.
+  # Both scheduled jobs call out, to Zitadel and to RabbitMQ. A @SpringBootTest
+  # would start them against nothing, so they stay off and their tests call them.
   scheduling:
     enabled: false
+
+  # Scheduling is off, so the interval and the cron are not needed.
+  outbox:
+    batch-size: 100
+    confirm-timeout: PT5S
+    retention: P30D
 
   zitadel:
     webhook:
