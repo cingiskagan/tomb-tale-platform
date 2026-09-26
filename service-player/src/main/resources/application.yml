@@ -35,6 +35,8 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER}
     password: ${RABBITMQ_PASSWORD}
+    # The outbox marks a row sent only after the broker confirms the message.
+    publisher-confirm-type: simple
 
   # --- OAuth2 Resource Server (Zitadel JWT) ---
   security:
@@ -62,10 +64,18 @@ management:
 # provisioned a row and then cannot log in, so provisionPlayer fails loudly
 # rather than leaving that state behind.
 app:
-  # The provisioning sweep is the only scheduled work here. On unless this says
-  # otherwise; the test profile turns it off so no test calls out to Zitadel.
+  # The provisioning sweep and the outbox publisher. On unless this says
+  # otherwise; the test profile turns it off so no test calls out to anything.
   scheduling:
     enabled: true
+
+  # From infrastructure/.env. .env.example says what each value does.
+  outbox:
+    publish-interval: ${OUTBOX_PUBLISH_INTERVAL}
+    batch-size: ${OUTBOX_BATCH_SIZE}
+    confirm-timeout: ${OUTBOX_CONFIRM_TIMEOUT}
+    retention: ${OUTBOX_RETENTION}
+    purge-cron: ${OUTBOX_PURGE_CRON}
 
   zitadel:
     api:

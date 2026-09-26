@@ -1,6 +1,7 @@
 package com.tombtale.serviceplayer.service;
 
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
+import com.tombtale.serviceplayer.dto.event.PlayerCreatedPayload;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.dto.UpdateMyProfileRequest;
 import com.tombtale.serviceplayer.entity.GameCharacter;
@@ -17,6 +18,7 @@ import com.tombtale.serviceplayer.repository.PlayerRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -24,6 +26,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -36,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -58,12 +63,29 @@ class PlayerServiceTest {
     @Mock
     private ZitadelClient zitadelClient;
 
+    @Mock
+    private OutboxService outboxService;
+
+    @Mock
+    private TransactionTemplate transactionTemplate;
+
     @InjectMocks
     private PlayerService playerService;
 
     private ch.qos.logback.classic.Logger fallbackLogger;
     private ListAppender<ILoggingEvent> attachedAppender;
     private Level originalLevel;
+
+    /**
+     * Runs the callback the creation path hands to the template, which a mock
+     * otherwise swallows. Only the tests that create a player need it.
+     */
+    private void runTheTransaction() {
+        when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
+            TransactionCallback<?> work = invocation.getArgument(0);
+            return work.doInTransaction(null);
+        });
+    }
 
     /** Content irrelevant: these tests assert on the repository, not on the mapping. */
     private static PlayerResponse aPlayerResponse() {
@@ -115,6 +137,7 @@ class PlayerServiceTest {
 
     @Test
     void shouldCreateNewPlayerIfNotFound() {
+        runTheTransaction();
         when(playerRepository.findByZitadelUserIdWithCharacters("new-z1")).thenReturn(Optional.empty());
         
         Player newPlayer = new Player();
@@ -134,12 +157,41 @@ class PlayerServiceTest {
     }
 
     /**
+     * The event is written from inside the template's callback, so it shares the
+     * transaction the player and the character commit in.
+     */
+    @Test
+    void shouldWriteThePlayerCreatedEventWithTheNewPlayer() {
+        runTheTransaction();
+        Player saved = new Player();
+        saved.setDisplayName("Player_random1");
+
+        when(playerRepository.findByZitadelUserIdWithCharacters("new-z1")).thenReturn(Optional.empty());
+        when(playerRepository.save(any(Player.class))).thenReturn(saved);
+        when(playerMapper.toResponse(saved)).thenReturn(aPlayerResponse());
+
+        playerService.getOrCreatePlayer("new-z1");
+
+        ArgumentCaptor<PlayerCreatedPayload> payload = ArgumentCaptor.forClass(PlayerCreatedPayload.class);
+        verify(outboxService).append(
+                eq(PlayerCreatedPayload.EVENT_TYPE),
+                eq(PlayerCreatedPayload.EVENT_VERSION),
+                eq(saved.getPublicId()),
+                payload.capture());
+
+        assertThat(payload.getValue().playerPublicId()).isEqualTo(saved.getPublicId());
+        assertThat(payload.getValue().displayName()).isEqualTo("Player_random1");
+        assertThat(payload.getValue().characterPublicId()).isNotNull();
+    }
+
+    /**
      * The alarm is the only thing that says the Zitadel event is not working,
      * so it gets a test. Creating a row here means provisioning never ran.
      */
     @Test
     void shouldRaiseTheAlarmWhenItHasToCreateTheRow() {
         ListAppender<ILoggingEvent> captured = captureFallbackLog();
+        runTheTransaction();
 
         when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.empty());
         when(playerRepository.save(any(Player.class))).thenReturn(new Player());
@@ -164,6 +216,7 @@ class PlayerServiceTest {
     @Test
     void shouldProvisionSilentlyForTheEventPath() {
         ListAppender<ILoggingEvent> captured = captureFallbackLog();
+        runTheTransaction();
 
         when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.empty());
         when(playerRepository.save(any(Player.class))).thenReturn(new Player());
@@ -237,6 +290,7 @@ class PlayerServiceTest {
 
     @Test
     void shouldRecoverFromConcurrentCreationConflict() {
+        runTheTransaction();
         Player winner = new Player();
 
         when(playerRepository.findByZitadelUserIdWithCharacters("z1"))
@@ -258,6 +312,7 @@ class PlayerServiceTest {
 
     @Test
     void shouldThrowIfRecoverFromConcurrentCreationFails() {
+        runTheTransaction();
         when(playerRepository.findByZitadelUserIdWithCharacters("z1"))
                 .thenReturn(Optional.empty()) // First check: not found
                 .thenReturn(Optional.empty()); // Second check after exception: still not found!
