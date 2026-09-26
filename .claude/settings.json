@@ -93,8 +93,8 @@
         "hooks": [
           {
             "type": "command",
-            "if": "Bash(git commit:*)",
-            "command": "b=$(git branch --show-current 2>/dev/null); if [ \"$b\" = \"main\" ] || [ \"$b\" = \"master\" ]; then printf '%s' \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PreToolUse\\\",\\\"permissionDecision\\\":\\\"deny\\\",\\\"permissionDecisionReason\\\":\\\"You are on $b. Create a branch first, then commit.\\\"}}\"; fi",
+            "if": "Bash(git:*)",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/refuse-commit-on-main.sh",
             "statusMessage": "Checking the branch"
           }
         ]
