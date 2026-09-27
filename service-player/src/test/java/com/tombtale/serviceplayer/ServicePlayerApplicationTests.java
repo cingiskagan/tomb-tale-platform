@@ -1,6 +1,7 @@
 package com.tombtale.serviceplayer;
 
 import com.jayway.jsonpath.JsonPath;
+import com.tombtale.serviceplayer.repository.OutboxEventRepository;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
 import com.tombtale.commons.security.ZitadelRoleConverter;
 import com.tombtale.serviceplayer.support.PostgresTestBase;
@@ -62,6 +63,9 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
     @Autowired
     private PlayerRepository playerRepository;
 
+    @Autowired
+    private OutboxEventRepository outboxEventRepository;
+
     private String subject;
 
     @BeforeEach
@@ -70,7 +74,7 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
     }
 
     /**
-     * Removes the row this class commits.
+     * Removes the player and its outbox row, which this class commits.
      *
      * <p>Every other test in this suite is transactional and rolls itself back.
      * These are not: {@code getOrCreatePlayer} runs with
@@ -81,7 +85,12 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
      */
     @AfterEach
     void removeCommittedPlayer() {
-        playerRepository.findByZitadelUserIdWithCharacters(subject).ifPresent(playerRepository::delete);
+        playerRepository.findByZitadelUserIdWithCharacters(subject).ifPresent(player -> {
+            outboxEventRepository.deleteAll(outboxEventRepository.findAll().stream()
+                    .filter(event -> event.getAggregateId().equals(player.getPublicId()))
+                    .toList());
+            playerRepository.delete(player);
+        });
     }
 
     @Test

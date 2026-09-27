@@ -4,6 +4,7 @@ import com.tombtale.serviceplayer.client.ZitadelClient;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.dto.UpdateMyProfileRequest;
+import com.tombtale.serviceplayer.dto.event.PlayerCreatedPayload;
 import com.tombtale.serviceplayer.entity.GameCharacter;
 import com.tombtale.serviceplayer.entity.Player;
 import com.tombtale.serviceplayer.mapper.PlayerMapper;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.dao.DataIntegrityViolationException;
 
@@ -56,6 +58,8 @@ public class PlayerService {
     private final PlayerRepository playerRepository;
     private final PlayerMapper playerMapper;
     private final ZitadelClient zitadelClient;
+    private final OutboxService outboxService;
+    private final TransactionTemplate transactionTemplate;
 
     /**
      * Returns a paginated, filtered list of players.
@@ -160,6 +164,9 @@ public class PlayerService {
     /**
      * Creates a brand-new player with a default character (JIT provisioning).
      *
+     * <p>The template is the transaction the outbox needs: the player, the
+     * character and the {@code player.created} row commit together or not at all.
+     *
      * @param zitadelUserId the subject claim from the JWT
      * @return the newly created player
      */
@@ -179,7 +186,18 @@ public class PlayerService {
 
         newPlayer.addCharacter(initialCharacter);
 
-        return playerRepository.save(newPlayer);
+        return transactionTemplate.execute(status -> {
+            Player saved = playerRepository.save(newPlayer);
+            outboxService.append(
+                    PlayerCreatedPayload.EVENT_TYPE,
+                    PlayerCreatedPayload.EVENT_VERSION,
+                    saved.getPublicId(),
+                    new PlayerCreatedPayload(
+                            saved.getPublicId(),
+                            saved.getDisplayName(),
+                            initialCharacter.getPublicId()));
+            return saved;
+        });
     }
 
     /**

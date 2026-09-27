@@ -16,13 +16,14 @@ and the record of deeds does not. Fluentd ships the logs through the Docker
 blocks a container when Fluentd is down. Metabase draws the dashboards, because
 Kibana talks only to Elasticsearch.
 
-The two collections have different recovery paths, and only one of them has a
-second copy. Postgres is authoritative for the events, because the outbox rows
-stay after publish, so a replay rebuilds `events` in full. Logs have no second
-copy: Fluentd is a sink, not a projection, and a lost `logs` collection is gone
-apart from whatever the rotated container files still hold. Losing it costs
-debugging history and nothing else, which is why the TTL sits there and not on
-`events`.
+The two collections have different recovery paths, and neither one holds a full
+second copy. The outbox keeps a published row for 30 days, so a replay rebuilds
+the recent part of `events` and nothing older. Beyond that window `events` is
+the only record of a domain fact, and its loss is permanent, which is why it
+carries no expiry. Logs are weaker still. Fluentd is a sink, not a projection,
+and a lost `logs` collection is gone apart from the rotated container files.
+Losing it costs debugging history and nothing else, which is why the TTL index
+sits there and not on `events`.
 
 One service owns MongoDB. `service-audit` consumes the events from RabbitMQ,
 writes both collections, and serves the timeline endpoint the portal calls. No
@@ -100,9 +101,9 @@ same requirement: timestamped, immutable audit trails, queryable for replay.
 - Timestamp on the server. A client timestamp is evidence of nothing.
 - Give the writer insert rights only, with no update and no delete.
 - Keep the history longer than the chargeback window, which runs past 120 days.
-- Keep the outbox rows instead of deleting them after publish. Postgres then
-  holds the authoritative sequence, and the document store is a projection that
-  a replay rebuilds.
+- Keep a published outbox row for 30 days, then delete it. Postgres holds the
+  recent sequence a replay rebuilds from, and the document store holds the
+  history that outlives the chargeback window.
 - The consumer writes the document before it acknowledges the message. No queue
   gets a message TTL, and somebody watches the dead-letter queue. A dropped
   message puts a hole in the record where a cheater sits.
