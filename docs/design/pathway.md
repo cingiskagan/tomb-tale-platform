@@ -36,7 +36,7 @@ Flyway owns the shape of `item_templates`, not its rows. Templates are content, 
 - Apply writes that diff in one transaction. If the catalog changed after the preview, apply returns 409.
 - A template that is missing from its set is retired, never deleted. It stops dropping and leaves the shop, but copies that players own still resolve.
 - Export writes every set back to files. The files are a backup, and they move the catalog to a new system.
-- Each applied import goes to `service-audit`. Without it, nothing keeps the balance history.
+- Apply also writes an audit event with the diff to the outbox table, in the same transaction. The outbox publisher delivers it to `service-audit` through RabbitMQ, at least once ([events](events.md)). Without this, nothing keeps the balance history.
 
 Definitions come first. You import an item set before the client release that carries its assets, and the import never checks what clients hold. The server refuses every operation on a `code` that has no template.
 
