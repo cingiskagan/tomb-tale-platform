@@ -129,7 +129,7 @@ Prettier config is inline in `package.json`: `singleQuote: true`, `printWidth: 1
 
 ### Auth flow end-to-end
 
-Traefik proxies Zitadel (API + v2 login UI) on port 8080. The frontend runs the OIDC code flow against Zitadel, then calls the backend services directly with the resulting JWT; backends only contact Zitadel via `issuer-uri` for token validation. Adding a protected backend endpoint means a `@PreAuthorize` check with the lowercase Zitadel role names; adding the corresponding frontend route means `roleGuard` with the matching `PlatformRole` values.
+Traefik on port 8080 fronts both: `/api` goes to the backend services and every other path to Zitadel (API + v2 login UI). `infrastructure/README.md` lists the routes, and a new controller prefix needs its router in `traefik-dynamic.yml` (ADR 0021). The frontend runs the OIDC code flow against Zitadel, then calls the backend services through Traefik with the resulting JWT. Backends only contact Zitadel via `issuer-uri` for token validation. Adding a protected backend endpoint means a `@PreAuthorize` check with the lowercase Zitadel role names; adding the corresponding frontend route means `roleGuard` with the matching `PlatformRole` values.
 
 ## Conventions
 

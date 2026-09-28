@@ -2,6 +2,7 @@
 # Traefik Dynamic Configuration — File Provider
 # Routes locally-running backend microservices through Traefik.
 # Used during development when services run outside Docker via ./run-local.sh.
+# A new controller prefix needs a router here, or it answers 404. See README.md.
 
 http:
   routers:

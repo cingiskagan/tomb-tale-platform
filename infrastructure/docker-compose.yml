@@ -129,19 +129,12 @@ services:
 
       - traefik.http.services.zitadel-api.loadbalancer.server.port=8080
       - traefik.http.services.zitadel-api.loadbalancer.server.scheme=h2c
-      - traefik.http.middlewares.zitadel-strip-api.stripprefix.prefixes=/api
-      - traefik.http.middlewares.zitadel-strip-api.stripprefix.forceSlash=false
 
       # Note: no dedicated gRPC router needed. All gRPC and Connect-RPC traffic
       # is handled by the catch-all router below since the backend already uses h2c.
 
-      - traefik.http.routers.zitadel-api-alias-web.rule=Host(`${ZITADEL_DOMAIN}`) && PathPrefix(`/api`)
-      - traefik.http.routers.zitadel-api-alias-web.entrypoints=web
-      - traefik.http.routers.zitadel-api-alias-web.middlewares=zitadel-strip-api
-      - traefik.http.routers.zitadel-api-alias-web.service=zitadel-api
-      - traefik.http.routers.zitadel-api-alias-web.priority=200
-
-
+      # /api belongs to the platform services (traefik-dynamic.yml). An /api
+      # path with no service router must get Traefik's 404, never Zitadel.
       - traefik.http.routers.zitadel-canonical-web.rule=Host(`${ZITADEL_DOMAIN}`) && !PathPrefix(`/ui/v2/login`) && !PathPrefix(`/api`) && !Path(`/`)
       - traefik.http.routers.zitadel-canonical-web.entrypoints=web
       - traefik.http.routers.zitadel-canonical-web.service=zitadel-api
