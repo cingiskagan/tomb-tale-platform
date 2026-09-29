@@ -3,13 +3,6 @@ server:
   port: 0
 
 spring:
-  # Seed data belongs to the running application, not to tests. With a real
-  # Postgres, `always` would insert five purchases before every repository
-  # test and the assertions would be counting somebody else's rows.
-  sql:
-    init:
-      mode: never
-
   rabbitmq:
     host: localhost
     port: 5672

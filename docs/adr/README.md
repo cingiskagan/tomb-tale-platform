@@ -89,3 +89,4 @@ in sequence here — a record written later can describe an earlier choice.
 | [0019](0019-zitadel-configuration-is-code.md) | Zitadel configuration is code | 2026-09-18 | accepted |
 | [0020](0020-the-portal-reads-its-configuration-at-runtime.md) | The portal reads its configuration at runtime | 2026-09-19 | accepted |
 | [0021](0021-api-belongs-to-the-platform-not-zitadel.md) | `/api` belongs to the platform, not to Zitadel | 2026-09-28 | accepted |
+| [0022](0022-separate-services-not-a-modular-monolith.md) | Separate services, not a modular monolith | 2026-09-28 | accepted |

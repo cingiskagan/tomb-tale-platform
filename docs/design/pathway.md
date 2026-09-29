@@ -26,6 +26,26 @@ Items use a two-layer design for easy rebalancing:
 - **Item Instance** (`item_instances` table): One owned stack. The row references its template, carries a `quantity` that exceeds one for stackable items, and stores the RNG-rolled modifiers. An item that rolls modifiers cannot stack, so its row has quantity 1.
 - **Final Stats**: Computed at read time from the current template (`template base + rolled stats`), never stored. The version an instance records is provenance for its roll, not a pin, which is what allows global rebalancing without data migrations.
 
+### Item Sets: How Templates Change
+
+Flyway owns the shape of `item_templates`, not its rows. Templates are content, and the portal writes them only through item sets.
+
+- An item set is one file, for example `potions.json`, that holds many template rows. Each template belongs to exactly one set.
+- A template is matched by a stable `code` such as `SWORD_IRON`, never by `publicId`, because UUIDs differ between environments.
+- Import computes the diff for one set on the server, and a preview page shows the added, changed and retired templates.
+- Apply writes that diff in one transaction. If the catalog changed after the preview, apply returns 409.
+- A template that is missing from its set is retired, never deleted. It stops dropping and leaves the shop, but copies that players own still resolve.
+- Export writes every set back to files. The files are a backup, and they move the catalog to a new system.
+- Apply also writes an audit event with the diff to the outbox table, in the same transaction. The outbox publisher delivers it to `service-audit` through RabbitMQ, at least once ([events](events.md)). Without this, nothing keeps the balance history.
+
+Definitions come first. You import an item set before the client release that carries its assets, and the import never checks what clients hold. The server refuses every operation on a `code` that has no template.
+
+Each template carries an `assetKey`, the Addressables address of its asset, because artists move files and the address stays. A client with no asset for a template shows the item as a gray, generic object that the player cannot use. When a gray item is not acceptable, the platform forces a client update.
+
+Clients never read the set files. They know only the template rows, and so does the validator in Unity CI. It fails the build for an asset that no template uses, because its definition must be imported first. A template with no asset is only a warning.
+
+Open question: which credentials Unity CI uses to read the template rows.
+
 ---
 
 ## 📋 Platform Development Phases (No Unity Required)
@@ -38,7 +58,7 @@ Items use a two-layer design for easy rebalancing:
 
 ### Phase 2: Inventory & Item Catalog (`service-inventory`)
 
-- Item template CRUD (define base stats, random stat pools, rarity)
+- Item set import with a change preview, and export (templates define base stats, random stat pools, rarity)
 - Assign item instances to players with rolled stats
 - Admin view: inspect a player's full equipment and backpack
 - Template versioning for rebalancing

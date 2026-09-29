@@ -38,7 +38,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     REVOKE ALL ON SCHEMA public FROM ${POSTGRES_PLAYER_USER};
     REVOKE ALL ON SCHEMA public FROM ${POSTGRES_COMMERCE_USER};
 
-    -- Belt and braces for psql sessions and any unqualified SQL (data.sql).
+    -- Belt and braces for psql sessions and any unqualified SQL.
     -- The authoritative setting is spring.jpa.properties.hibernate.default_schema
     -- in each service's application.yml, where a reviewer can see it.
     ALTER ROLE ${POSTGRES_PLAYER_USER}   SET search_path = player;
