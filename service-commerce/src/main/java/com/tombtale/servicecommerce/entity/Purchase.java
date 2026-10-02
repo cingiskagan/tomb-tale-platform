@@ -49,6 +49,7 @@ public class Purchase extends BaseEntity {
 
     private static final int ITEM_CODE_MAX_LENGTH = 100;
     private static final int STATUS_MAX_LENGTH = 20;
+    private static final int IDEMPOTENCY_KEY_MAX_LENGTH = 64;
     private static final int CURRENCY_PRECISION = 19;
     private static final int CURRENCY_SCALE = 4;
 
@@ -84,6 +85,10 @@ public class Purchase extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = STATUS_MAX_LENGTH)
     private PurchaseStatus status;
+
+    /** Makes a repeated request or event produce one purchase per player, or null for no deduplication. */
+    @Column(name = "idempotency_key", length = IDEMPOTENCY_KEY_MAX_LENGTH)
+    private String idempotencyKey;
 
     /** JPA optimistic-lock version — incremented on every update. */
     @Version

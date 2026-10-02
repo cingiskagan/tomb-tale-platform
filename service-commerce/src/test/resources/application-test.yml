@@ -8,6 +8,11 @@ spring:
     port: 5672
     username: guest
     password: guest
+    # No broker listens here, so the consumer stays stopped. A test with a
+    # RabbitMQ container sets this back to true.
+    listener:
+      simple:
+        auto-startup: false
 
   security:
     oauth2:

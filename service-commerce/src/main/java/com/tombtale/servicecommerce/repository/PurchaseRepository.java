@@ -26,4 +26,13 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long>, Purch
      * @return the purchase, if one carries that id
      */
     Optional<Purchase> findByPublicId(UUID publicId);
+
+    /**
+     * Tells whether the player already has a purchase with this idempotency key.
+     *
+     * @param playerId       the player's {@code publicId}
+     * @param idempotencyKey the key the caller chose
+     * @return true if such a purchase exists
+     */
+    boolean existsByPlayerIdAndIdempotencyKey(UUID playerId, String idempotencyKey);
 }

@@ -49,10 +49,8 @@ when the fact happened, not when the publisher reached the broker.
 ## Who owns the beginner set
 
 The event says a player exists, and the reward is consumer policy.
-`service-inventory` owns the two healing potions and `service-commerce` owns
-the 10 gold ([pathway](pathway.md)), so each grants its half on
-`player.created`, keyed by the player and the grant code `beginner-set`. One
-service holding the whole definition would have to tell the other to credit a
-wallet, and that command needs a reply, a retry policy and a failure path, for
-a grant worth 10 gold. Nothing consumes the event yet, so E1 ships the
-producer alone.
+`service-commerce` owns the whole set. On `player.created`, it records one
+free, completed `BEGINNER_SET` purchase, keyed by the player and
+`beginner_set`. A later step turns that purchase into 10 gold and the starter
+items, on the path that every purchase takes. So one service defines the set,
+and the set needs no path of its own.
