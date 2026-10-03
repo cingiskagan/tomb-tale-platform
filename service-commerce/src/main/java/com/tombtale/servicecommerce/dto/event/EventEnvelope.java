@@ -1,6 +1,7 @@
 package com.tombtale.servicecommerce.dto.event;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -21,4 +22,9 @@ public record EventEnvelope<T>(
         Instant occurredAt,
         String producer,
         T data) {
+
+    /** An event with no payload fails conversion, so it goes to the DLQ with no retry. */
+    public EventEnvelope {
+        Objects.requireNonNull(data, "data");
+    }
 }

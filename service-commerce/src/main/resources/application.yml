@@ -37,6 +37,17 @@ spring:
     password: ${RABBITMQ_PASSWORD}
     publisher-confirm-type: correlated
     publisher-returns: true
+    # A failed message is retried after 1s, 2s and 4s, then goes to its DLQ.
+    # A rejected message never returns to its queue, so nothing loops.
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-retries: 3
+          initial-interval: 1s
+          multiplier: 2
+          max-interval: 10s
 
   # --- OAuth2 Resource Server (Zitadel JWT) ---
   security:

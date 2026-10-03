@@ -13,6 +13,10 @@ spring:
     listener:
       simple:
         auto-startup: false
+        # Short waits, so a test reaches the DLQ in well under a second.
+        retry:
+          initial-interval: 10ms
+          max-interval: 40ms
 
   security:
     oauth2:
