@@ -302,6 +302,19 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+      # The directory, not the file: an editor that saves by renaming a new
+      # file over the old one would hide the change from a file mount.
+      - ./rabbitmq:/etc/rabbitmq/platform:ro
+    # Loads rabbitmq/definitions.json once the broker runs. As the rabbitmq
+    # user, because a root CLI call before startup breaks the Erlang cookie.
+    post_start:
+      - user: rabbitmq
+        command:
+          - sh
+          - -c
+          - >-
+            for i in $$(seq 60); do rabbitmq-diagnostics -q check_running >/dev/null 2>&1 && break; sleep 1; done;
+            rabbitmqctl -q import_definitions /etc/rabbitmq/platform/definitions.json
     networks:
       - tombtale
 
