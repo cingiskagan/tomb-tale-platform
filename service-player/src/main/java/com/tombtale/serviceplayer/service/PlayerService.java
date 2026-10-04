@@ -116,7 +116,9 @@ public class PlayerService {
 
     /**
      * Gives a newly self-registered user everything they need to play: the
-     * player row, and the {@code player} role that lets them get a token at all.
+     * player row with its {@code publicId} metadata, and the {@code player} role
+     * that lets them get a token at all. The role comes after the row commits, so
+     * no token is issued before the metadata exists.
      *
      * <p>This is the path the Zitadel event drives, so it is silent: creating a
      * row here is the design working. {@link #getOrCreatePlayer} raises an alarm
@@ -166,6 +168,7 @@ public class PlayerService {
      *
      * <p>The template is the transaction the outbox needs: the player, the
      * character and the {@code player.created} row commit together or not at all.
+     * The {@code publicId} metadata write runs inside it too, so no player commits without it (ADR 0023).
      *
      * @param zitadelUserId the subject claim from the JWT
      * @return the newly created player
@@ -196,6 +199,9 @@ public class PlayerService {
                             saved.getPublicId(),
                             saved.getDisplayName(),
                             initialCharacter.getPublicId()));
+            // After the inserts: a concurrent duplicate fails on uq_players_zitadel_user_id
+            // before it can overwrite the winner's metadata.
+            zitadelClient.writePublicId(zitadelUserId, saved.getPublicId());
             return saved;
         });
     }

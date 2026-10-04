@@ -58,11 +58,10 @@ management:
     health:
       show-details: when-authorized
 
-# --- Zitadel API client (grants the player role on self-registration) ---
-# The token belongs to a machine user zitadel-setup.sh creates; it may grant
-# roles on this project and nothing else. Blank means a self-registered user is
-# provisioned a row and then cannot log in, so provisionPlayer fails loudly
-# rather than leaving that state behind.
+# --- Zitadel API client (writes the publicId metadata, grants the player role) ---
+# The token belongs to the ORG_OWNER machine user that zitadel-setup.sh creates.
+# Whoever holds it can rewrite any player's publicId (ADR 0023). Blank fails
+# every player creation, because no row commits without its metadata.
 app:
   # The provisioning sweep and the outbox publisher. On unless this says
   # otherwise; the test profile turns it off so no test calls out to anything.

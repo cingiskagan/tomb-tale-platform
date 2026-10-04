@@ -23,8 +23,10 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.rabbitmq.RabbitMQContainer;
 
+import com.tombtale.serviceplayer.client.ZitadelClient;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.dto.event.PlayerCreatedPayload;
 import com.tombtale.serviceplayer.entity.OutboxEvent;
@@ -54,6 +56,10 @@ class OutboxPublisherRetryTest extends PostgresTestBase {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
+
+    /** Creating a player writes its metadata to Zitadel, and no Zitadel runs here. */
+    @MockitoBean
+    private ZitadelClient zitadelClient;
 
     private static final int HOST_PORT = freePort();
     private static final String QUEUE = "test.player-created";

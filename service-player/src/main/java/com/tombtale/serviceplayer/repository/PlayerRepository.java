@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import com.tombtale.serviceplayer.entity.Player;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,6 +47,10 @@ public interface PlayerRepository
     @Query("select p.publicId from Player p where p.zitadelUserId = :zitadelUserId")
     @QueryHints(@QueryHint(name = "org.hibernate.flushMode", value = "COMMIT"))
     Optional<UUID> findPublicIdByZitadelUserId(String zitadelUserId);
+
+    /** Every Zitadel subject that has a player row, for the provisioning sweep. */
+    @Query("select p.zitadelUserId from Player p")
+    List<String> findAllZitadelUserIds();
 
     /** Find a player by their in-game display name. */
     Optional<Player> findByDisplayName(String displayName);
