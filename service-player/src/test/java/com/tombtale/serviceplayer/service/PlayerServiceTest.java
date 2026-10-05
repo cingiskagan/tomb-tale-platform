@@ -184,6 +184,21 @@ class PlayerServiceTest {
         assertThat(payload.getValue().characterPublicId()).isNotNull();
     }
 
+    /** The metadata has to name the row that commits, or the token carries a publicId nobody owns. */
+    @Test
+    void shouldWriteTheSavedPlayersPublicIdAsMetadata() {
+        runTheTransaction();
+        Player saved = new Player();
+
+        when(playerRepository.findByZitadelUserIdWithCharacters("new-z1")).thenReturn(Optional.empty());
+        when(playerRepository.save(any(Player.class))).thenReturn(saved);
+        when(playerMapper.toResponse(saved)).thenReturn(aPlayerResponse());
+
+        playerService.getOrCreatePlayer("new-z1");
+
+        verify(zitadelClient).writePublicId("new-z1", saved.getPublicId());
+    }
+
     /**
      * The alarm is the only thing that says the Zitadel event is not working,
      * so it gets a test. Creating a row here means provisioning never ran.

@@ -1,6 +1,7 @@
 package com.tombtale.serviceplayer.service;
 
 import com.tombtale.serviceplayer.client.ZitadelClient;
+import com.tombtale.serviceplayer.repository.PlayerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,11 +45,14 @@ class ProvisioningReconcilerTest {
     @Mock
     private PlayerService playerService;
 
+    @Mock
+    private PlayerRepository playerRepository;
+
     private ProvisioningReconciler reconciler;
 
     @BeforeEach
     void setUp() {
-        reconciler = new ProvisioningReconciler(zitadelClient, playerService, LOGIN_CLIENT);
+        reconciler = new ProvisioningReconciler(zitadelClient, playerService, playerRepository, LOGIN_CLIENT);
     }
 
     @Test
@@ -72,15 +76,31 @@ class ProvisioningReconcilerTest {
         verify(playerService, never()).provisionPlayer(anyString());
     }
 
-    /** The normal case: everybody already has their role, so nothing is touched. */
+    /** The normal case: everybody already has their role and their row, so nothing is touched. */
     @Test
     void skipsUsersThatAlreadyHoldTheRole() {
         when(zitadelClient.listPlayerGrantedUserIds()).thenReturn(List.of(ALREADY_GRANTED));
         when(zitadelClient.listHumanUserIds()).thenReturn(List.of(ALREADY_GRANTED));
+        when(playerRepository.findAllZitadelUserIds()).thenReturn(List.of(ALREADY_GRANTED));
 
         assertThat(reconciler.reconcile()).isZero();
         verify(zitadelClient, never()).creatorOf(anyString());
         verify(playerService, never()).provisionPlayer(anyString());
+    }
+
+    /**
+     * A role granted by hand skips the event, so the sweep gives that user a row and its
+     * metadata. Who created the account does not matter once it holds the role (ADR 0023).
+     */
+    @Test
+    void provisionsARoleHolderWithNoPlayerRow() {
+        when(zitadelClient.listPlayerGrantedUserIds()).thenReturn(List.of(ADMIN_CREATED));
+        when(zitadelClient.listHumanUserIds()).thenReturn(List.of(ADMIN_CREATED));
+        when(playerRepository.findAllZitadelUserIds()).thenReturn(List.of());
+
+        assertThat(reconciler.reconcile()).isEqualTo(1);
+        verify(playerService).provisionPlayer(ADMIN_CREATED);
+        verify(zitadelClient, never()).creatorOf(anyString());
     }
 
     /** One user's failure is not the next user's problem. */
@@ -101,11 +121,12 @@ class ProvisioningReconcilerTest {
      */
     @Test
     void doesNothingWhenNoLoginClientIsConfigured() {
-        reconciler = new ProvisioningReconciler(zitadelClient, playerService, "  ");
+        reconciler = new ProvisioningReconciler(zitadelClient, playerService, playerRepository, "  ");
 
         assertThat(reconciler.reconcile()).isZero();
         verifyNoInteractions(zitadelClient);
         verifyNoInteractions(playerService);
+        verifyNoInteractions(playerRepository);
     }
 
     /** A user with no change history at all is not a self-registration. */

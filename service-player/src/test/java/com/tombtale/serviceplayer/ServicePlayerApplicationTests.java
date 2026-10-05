@@ -1,6 +1,7 @@
 package com.tombtale.serviceplayer;
 
 import com.jayway.jsonpath.JsonPath;
+import com.tombtale.serviceplayer.client.ZitadelClient;
 import com.tombtale.serviceplayer.repository.OutboxEventRepository;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
 import com.tombtale.commons.security.ZitadelRoleConverter;
@@ -14,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -38,8 +40,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * application wired together at all — and they are the slowest tests we own.
  *
  * <p>The token is built with the {@code jwt()} post-processor instead of a real
- * signed one, so {@code JwtDecoder} is the single piece of production wiring
- * these tests do not exercise. Signature and issuer checks are Spring's code.
+ * signed one, and {@code ZitadelClient} is a mock because no Zitadel runs here.
+ * Those two are the production wiring these tests do not exercise. Signature and
+ * issuer checks are Spring's code.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -65,6 +68,10 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
 
     @Autowired
     private OutboxEventRepository outboxEventRepository;
+
+    /** Creating a player writes its metadata to Zitadel, and no Zitadel runs here. */
+    @MockitoBean
+    private ZitadelClient zitadelClient;
 
     private String subject;
 

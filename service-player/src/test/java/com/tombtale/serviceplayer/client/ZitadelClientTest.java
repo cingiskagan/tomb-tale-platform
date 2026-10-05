@@ -9,6 +9,8 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClient;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,6 +35,7 @@ class ZitadelClientTest {
     private static final String GRANTS_URL = "http://zitadel.test/management/v1/users/" + USER_ID + "/grants";
     private static final String GRANT_SEARCH_URL = "http://zitadel.test/management/v1/users/grants/_search";
     private static final String GRANT_ID = "391669319060160519";
+    private static final String METADATA_URL = "http://zitadel.test/management/v1/users/" + USER_ID + "/metadata/publicId";
 
     private MockRestServiceServer server;
     private ZitadelClient client;
@@ -42,6 +45,23 @@ class ZitadelClientTest {
         RestClient.Builder builder = RestClient.builder().baseUrl("http://zitadel.test");
         server = MockRestServiceServer.bindTo(builder).build();
         client = new ZitadelClient(builder.build(), PROJECT_ID);
+    }
+
+    /**
+     * The expected value is a literal, not a computation, so the test pins what Zitadel
+     * stores and what every reader of the token decodes.
+     */
+    @Test
+    @DisplayName("writes the publicId as base64 metadata under the key publicId")
+    void writesThePublicIdAsMetadata() {
+        server.expect(requestTo(METADATA_URL))
+                .andExpect(method(org.springframework.http.HttpMethod.POST))
+                .andExpect(jsonPath("$.value").value("NmYxYzJiOWUtNGQzYS00ZThiLTlhNzEtMmM1ZDhlMGYzYjY0"))
+                .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
+
+        client.writePublicId(USER_ID, UUID.fromString("6f1c2b9e-4d3a-4e8b-9a71-2c5d8e0f3b64"));
+
+        server.verify();
     }
 
     @Test

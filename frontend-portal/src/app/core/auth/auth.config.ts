@@ -10,7 +10,15 @@ import { RuntimeConfig } from '../config';
  * The login UI is fully delegated to Zitadel's hosted login page.
  */
 
-const OIDC_SCOPES = 'openid profile email offline_access urn:zitadel:iam:org:project:roles';
+const OIDC_SCOPES = [
+  'openid',
+  'profile',
+  'email',
+  'offline_access',
+  'urn:zitadel:iam:org:project:roles',
+  // Puts the player's publicId in the access token (ADR 0023).
+  'urn:zitadel:iam:user:metadata',
+].join(' ');
 
 /** Builds the OIDC config from the settings fetched at startup. */
 export function buildAuthConfig(config: RuntimeConfig): AuthConfig {

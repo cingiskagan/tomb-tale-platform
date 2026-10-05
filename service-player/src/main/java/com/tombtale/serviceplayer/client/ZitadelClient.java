@@ -1,5 +1,6 @@
 package com.tombtale.serviceplayer.client;
 
+import com.tombtale.commons.security.PublicIdClaim;
 import com.tombtale.commons.security.RoleConstants;
 import com.tombtale.serviceplayer.util.LogUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -10,14 +11,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.IntFunction;
 
 /**
- * The only outbound call this service makes to Zitadel.
+ * Every call this service makes to Zitadel.
  *
  * <p>A self-registered user arrives with no role, and the project is created
  * with {@code projectRoleCheck}, so Zitadel will not issue them a token until
@@ -51,6 +55,24 @@ public class ZitadelClient {
             @Value("${app.zitadel.api.project-id:}") String projectId) {
         this.restClient = restClient;
         this.projectId = projectId;
+    }
+
+    /**
+     * Stores the player's {@code publicId} as user metadata, where their access tokens pick it up
+     * (ADR 0023). A second write replaces the value.
+     *
+     * @param zitadelUserId the user the metadata belongs to
+     * @param publicId      the player's {@code publicId}
+     */
+    public void writePublicId(String zitadelUserId, UUID publicId) {
+        // Zitadel stores metadata as bytes, and JSON carries bytes as base64.
+        String value = Base64.getEncoder().encodeToString(publicId.toString().getBytes(StandardCharsets.UTF_8));
+
+        restClient.post()
+                .uri("/management/v1/users/{userId}/metadata/{key}", zitadelUserId, PublicIdClaim.KEY)
+                .body(Map.of("value", value))
+                .retrieve()
+                .toBodilessEntity();
     }
 
     /**
