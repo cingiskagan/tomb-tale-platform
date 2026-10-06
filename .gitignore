@@ -3,8 +3,6 @@
 # =========================
 .env
 infrastructure/.env
-# Zitadel's local secrets. Kept ignored until every checkout has deleted them.
-infrastructure/.zitadel-masterkey
 
 # =========================
 # IDE / Editor
@@ -50,9 +48,6 @@ coverage/
 # Docker
 # =========================
 docker-compose.override.yml
-infrastructure/.client-id
-infrastructure/.personal_access_token
-infrastructure/*.json
 docs/reviews
 
 # =========================
