@@ -10,13 +10,14 @@ Monorepo for the "Tomb Tale Online RPG" platform: two Spring Boot microservices,
 - `platform-commons/` — the Java library both services depend on: `BaseEntity`, `SystemActor`
 - `service-player/` — Spring Boot service for player accounts and characters (port 8081)
 - `service-commerce/` — Spring Boot service for purchases/economy (port 8082)
+- `infrastructure/keycloak/public-id-mapper/` — the Keycloak extension that gives every user a `public_id` of its own
 - `infrastructure/` — Docker Compose stack: Traefik, Zitadel (auth), Postgres, Redis, MongoDB, RabbitMQ, Mailpit (catches Zitadel's mail in dev, inbox at :8025)
 - `config/checkstyle/`, `config/pmd/` — static-analysis rulesets shared by both Java services
 - `scripts/pre-pr-tests.sh` — full local pre-PR check pipeline across all three modules
 
 Both services use Java 21 and Spring Boot 4. The frontend requires the Node version pinned in `frontend-portal/.nvmrc`.
 
-The root `pom.xml` is an aggregator over `platform-commons` and the two services. It is not their parent — each keeps `spring-boot-starter-parent` — and exists only so Maven resolves `platform-commons` from the reactor. Build Java from the repository root.
+The root `pom.xml` is an aggregator over `platform-commons`, the two services and the Keycloak mapper. It is not their parent — the services and `platform-commons` keep `spring-boot-starter-parent`, and the mapper has none — and exists only so Maven resolves `platform-commons` from the reactor. Build Java from the repository root.
 
 ## Common Commands
 

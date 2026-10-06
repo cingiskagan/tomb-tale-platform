@@ -28,6 +28,11 @@ holds the three roles, `player` as the default role, the portal client, the
 sent by email. Secrets stay in `.env`, because the file reads `${...}`
 placeholders.
 
+`public_id` is a UUID of its own, never Keycloak's user id. The
+`public-id-mapper` module creates it on the user's first token and keeps it as
+a user attribute that players can neither see nor edit. The Keycloak image
+builds the module from source.
+
 Keycloak imports a realm only when the realm does not exist yet. After you
 change the file, delete the `tombtale` realm in the admin console, then restart
 Keycloak:
