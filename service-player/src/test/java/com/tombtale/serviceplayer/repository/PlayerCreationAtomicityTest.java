@@ -53,7 +53,7 @@ import com.tombtale.serviceplayer.support.PostgresTestBase;
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class PlayerCreationAtomicityTest extends PostgresTestBase {
 
-    private static final String SUBJECT_PREFIX = "atomicity-";
+    private static final String NAME_PREFIX = "atomicity-";
     private static final int ONE_ROW = 1;
 
     @Autowired
@@ -62,20 +62,20 @@ class PlayerCreationAtomicityTest extends PostgresTestBase {
     @Autowired
     private CharacterRepository characterRepository;
 
-    private String survivingSubject;
-    private String doomedSubject;
+    private UUID survivingPublicId;
+    private UUID doomedPublicId;
 
     @BeforeEach
-    void freshSubjects() {
-        survivingSubject = SUBJECT_PREFIX + UUID.randomUUID();
-        doomedSubject = SUBJECT_PREFIX + UUID.randomUUID();
+    void freshPlayers() {
+        survivingPublicId = UUID.randomUUID();
+        doomedPublicId = UUID.randomUUID();
     }
 
     @AfterEach
     void removeCommittedRows() {
-        playerRepository.findByZitadelUserIdWithCharacters(survivingSubject)
+        playerRepository.findByPublicIdWithCharacters(survivingPublicId)
                 .ifPresent(playerRepository::delete);
-        playerRepository.findByZitadelUserIdWithCharacters(doomedSubject)
+        playerRepository.findByPublicIdWithCharacters(doomedPublicId)
                 .ifPresent(playerRepository::delete);
     }
 
@@ -87,15 +87,17 @@ class PlayerCreationAtomicityTest extends PostgresTestBase {
      * collision on {@code uq_characters_public_id}. In production
      * {@code GameCharacter.prePersist} fills it with a random UUID.
      */
-    private Player aPlayerWithCharacter(String subject, UUID characterPublicId) {
+    private Player aPlayerWithCharacter(UUID publicId, UUID characterPublicId) {
+        String name = NAME_PREFIX + publicId;
         Player player = Player.builder()
-                .zitadelUserId(subject)
-                .displayName(subject)
+                .publicId(publicId)
+                .keycloakId(name)
+                .displayName(name)
                 .build();
 
         player.addCharacter(GameCharacter.builder()
                 .publicId(characterPublicId)
-                .name(subject)
+                .name(name)
                 .build());
 
         return player;
@@ -107,9 +109,9 @@ class PlayerCreationAtomicityTest extends PostgresTestBase {
      */
     @Test
     void shouldCommitThePlayerAndTheCharacterTogether() {
-        playerRepository.save(aPlayerWithCharacter(survivingSubject, UUID.randomUUID()));
+        playerRepository.save(aPlayerWithCharacter(survivingPublicId, UUID.randomUUID()));
 
-        Player stored = playerRepository.findByZitadelUserIdWithCharacters(survivingSubject).orElseThrow();
+        Player stored = playerRepository.findByPublicIdWithCharacters(survivingPublicId).orElseThrow();
 
         assertThat(stored.getId()).isNotNull();
         assertThat(stored.getCharacters()).hasSize(ONE_ROW);
@@ -123,9 +125,9 @@ class PlayerCreationAtomicityTest extends PostgresTestBase {
     @Test
     void shouldLeaveNoPlayerRowWhenTheCharacterInsertFails() {
         UUID takenPublicId = UUID.randomUUID();
-        playerRepository.save(aPlayerWithCharacter(survivingSubject, takenPublicId));
+        playerRepository.save(aPlayerWithCharacter(survivingPublicId, takenPublicId));
 
-        Player doomed = aPlayerWithCharacter(doomedSubject, takenPublicId);
+        Player doomed = aPlayerWithCharacter(doomedPublicId, takenPublicId);
 
         assertThatThrownBy(() -> playerRepository.save(doomed))
                 .isInstanceOf(DataIntegrityViolationException.class);
@@ -134,7 +136,7 @@ class PlayerCreationAtomicityTest extends PostgresTestBase {
                 .as("Hibernate stamps the IDENTITY key onto the entity, so a non-null id here "
                         + "is proof the players row really was inserted before the character failed")
                 .isNotNull();
-        assertThat(playerRepository.findByZitadelUserIdWithCharacters(doomedSubject)).isEmpty();
+        assertThat(playerRepository.findByPublicIdWithCharacters(doomedPublicId)).isEmpty();
         assertThat(characterRepository.findByPublicId(takenPublicId)).isPresent();
     }
 }

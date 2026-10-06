@@ -49,12 +49,12 @@ spring:
           multiplier: 2
           max-interval: 10s
 
-  # --- OAuth2 Resource Server (Zitadel JWT) ---
+  # --- OAuth2 Resource Server (Keycloak JWT) ---
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${ZITADEL_ISSUER_URI}
+          issuer-uri: ${OIDC_ISSUER_URI}
 
 server:
   port: ${SERVER_PORT}

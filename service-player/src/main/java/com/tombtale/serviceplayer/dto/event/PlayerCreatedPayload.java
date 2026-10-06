@@ -4,7 +4,7 @@ import java.util.UUID;
 
 /**
  * The data object of {@code player.created}: a player and their first character.
- * Identifiers are public ones, because the Zitadel subject stays here (ADR 0014).
+ * Identifiers are public ones, the only kind that leaves this service (ADR 0014).
  *
  * @param playerPublicId    the new player
  * @param displayName       the generated name, so a consumer can label the fact

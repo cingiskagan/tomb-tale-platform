@@ -2,8 +2,8 @@ import { loadRuntimeConfig } from './runtime-config';
 
 /** A config.json that would boot the portal. */
 const VALID = {
-  zitadelIssuerUri: 'http://localhost:8080',
-  zitadelClientId: '391384737463205891',
+  issuerUri: 'http://localhost:8080/realms/tombtale',
+  clientId: 'tombtale-portal',
   apiBaseUrl: 'http://localhost:8080',
 };
 
@@ -20,10 +20,10 @@ describe('loadRuntimeConfig', () => {
     answerWith({ json: () => Promise.resolve(body) });
   }
 
-  /** Every failure has to name the script that writes the file. */
+  /** Every failure has to name the file to check. */
   async function expectRejection(contains: string): Promise<void> {
     await expectAsync(loadRuntimeConfig()).toBeRejectedWithError(
-      new RegExp(`${contains}[\\s\\S]*zitadel-setup\\.sh`),
+      new RegExp(`${contains}[\\s\\S]*public/config\\.json`),
     );
   }
 
@@ -43,8 +43,8 @@ describe('loadRuntimeConfig', () => {
   });
 
   it('names every setting that is missing or blank', async () => {
-    answerWithBody({ ...VALID, zitadelClientId: '', apiBaseUrl: undefined });
-    await expectRejection('zitadelClientId, apiBaseUrl');
+    answerWithBody({ ...VALID, clientId: '', apiBaseUrl: undefined });
+    await expectRejection('clientId, apiBaseUrl');
   });
 
   it('rejects when the file does not hold an object', async () => {

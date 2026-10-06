@@ -1,7 +1,7 @@
 /**
  * Development build flags.
  *
- * Only what the build itself decides lives here. The Zitadel issuer, client id
+ * Only what the build itself decides lives here. The Keycloak issuer, client id
  * and API base URL are read at startup from `config.json` — see
  * `core/config/runtime-config.ts`.
  */

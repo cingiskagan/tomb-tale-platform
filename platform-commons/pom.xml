@@ -61,7 +61,7 @@
 			<scope>provided</scope>
 		</dependency>
 		<!--
-			The security and web types here (ZitadelRoleConverter,
+			The security and web types here (RoleClaimConverter,
 			PlatformCorsPolicy, PlatformExceptionHandler) need Spring Security
 			and Spring MVC to compile. They are optional because a future
 			consumer that only wants BaseEntity — a batch job, a consumer

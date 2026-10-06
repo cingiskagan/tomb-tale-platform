@@ -8,7 +8,7 @@ import { playerProfileResolver } from './core/api/player.resolver';
 /**
  * Top-level application routes.
  *
- * - /login     → Public login page (delegates auth to Zitadel)
+ * - /login     → Public login page (delegates auth to Keycloak)
  * - /callback  → OIDC redirect handler (processes auth code)
  * - /dashboard → Protected placeholder dashboard
  * - /          → Redirects to login

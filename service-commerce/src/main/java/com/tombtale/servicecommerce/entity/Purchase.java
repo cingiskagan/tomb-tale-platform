@@ -54,9 +54,9 @@ public class Purchase extends BaseEntity {
     private static final int CURRENCY_SCALE = 4;
 
     /**
-     * The {@code publicId} of the purchasing player, issued by service-player.
+     * The {@code publicId} of the purchasing player, as the token's {@code public_id} claim carries it.
      *
-     * <p>Not the Zitadel subject, which never leaves service-player, and not
+     * <p>Not the Keycloak user id, which never leaves service-player, and not
      * that service's primary key, which never leaves its persistence layer.
      * There is no foreign key behind this column — commerce has no rights in
      * the player schema — so it is a reference this service cannot validate.

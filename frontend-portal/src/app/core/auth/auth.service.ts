@@ -5,7 +5,7 @@ import { buildAuthConfig } from './auth.config';
 import { RUNTIME_CONFIG } from '../config';
 import { PlatformRole } from './auth.models';
 
-/** Decoded identity claims from the Zitadel ID token. */
+/** Decoded identity claims from the Keycloak ID token. */
 export interface UserProfile {
   readonly sub: string;
   readonly name?: string;
@@ -40,7 +40,7 @@ export class AuthService {
 
   /**
    * Bootstraps the OIDC flow: loads the discovery document from
-   * Zitadel's well-known endpoint and attempts to process any
+   * Keycloak's well-known endpoint and attempts to process any
    * existing authorization code (e.g. after redirect from login).
    * * If initialization fails (e.g., network error), the promise cache is 
    * cleared to allow subsequent retries.
@@ -64,7 +64,7 @@ export class AuthService {
     });
   }
 
-  /** Redirects the user to Zitadel's hosted login page via PKCE flow. */
+  /** Redirects the user to Keycloak's login page via PKCE flow. */
   login(): void {
     this.oauthService.initCodeFlow();
   }
@@ -93,20 +93,13 @@ export class AuthService {
       return null;
     }
 
-    let parsedRoles: PlatformRole[] = [];
-    const rolesClaim = claims['urn:zitadel:iam:org:project:roles'] ?? claims['roles'];
-
-    if (rolesClaim && typeof rolesClaim === 'object') {
-      if (Array.isArray(rolesClaim)) {
-        parsedRoles = rolesClaim as PlatformRole[];
-      } else {
-        parsedRoles = Object.keys(rolesClaim) as PlatformRole[];
-      }
-    }
-
-    // Filter to ensure only valid PlatformRole values are retained
+    // Keycloak lists every realm role, its own ones included. Only a list counts,
+    // and only the platform's three roles survive.
+    const rolesClaim = claims['roles'];
     const validRoles = Object.values(PlatformRole) as string[];
-    parsedRoles = parsedRoles.filter(r => validRoles.includes(r as string));
+    const parsedRoles = Array.isArray(rolesClaim)
+      ? (rolesClaim.filter((r) => validRoles.includes(r as string)) as PlatformRole[])
+      : [];
 
     return {
       sub: claims['sub'],

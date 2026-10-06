@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
  * OpenAPI / Swagger UI configuration for the commerce service.
  *
  * <p>Registers a JWT bearer security scheme so authenticated endpoints
- * can be tested directly from the Swagger UI: paste a Zitadel-issued token
+ * can be tested directly from the Swagger UI: paste a Keycloak-issued token
  * and it is sent as {@code Authorization: Bearer}. Note that role-restricted
  * endpoints still need a token whose project roles satisfy their
  * {@code @PreAuthorize} rule.
@@ -44,6 +44,6 @@ public class OpenApiConfig {
                                         .type(SecurityScheme.Type.HTTP)
                                         .scheme("bearer")
                                         .bearerFormat("JWT")
-                                        .description("Paste a valid Zitadel-issued JWT here")));
+                                        .description("Paste a valid Keycloak-issued JWT here")));
     }
 }

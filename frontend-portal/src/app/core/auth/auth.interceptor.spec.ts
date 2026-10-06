@@ -6,8 +6,8 @@ import { AuthService } from './auth.service';
 import { authInterceptor } from './auth.interceptor';
 
 const CONFIG: RuntimeConfig = {
-  zitadelIssuerUri: 'http://localhost:8080',
-  zitadelClientId: 'test-client',
+  issuerUri: 'http://localhost:8080/realms/tombtale',
+  clientId: 'test-client',
   apiBaseUrl: 'http://localhost:8081',
 };
 

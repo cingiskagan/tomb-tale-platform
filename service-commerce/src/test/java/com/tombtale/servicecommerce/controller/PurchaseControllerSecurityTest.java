@@ -20,7 +20,8 @@ import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import com.tombtale.servicecommerce.dto.CreatePurchaseRequest;
 import com.tombtale.servicecommerce.dto.PurchaseResponse;
 import com.tombtale.servicecommerce.exception.InvalidStatusTransitionException;
-import com.tombtale.commons.security.ZitadelRoleConverter;
+import com.tombtale.commons.security.PublicIdClaim;
+import com.tombtale.commons.security.RoleClaimConverter;
 import com.tombtale.servicecommerce.service.PurchaseService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,9 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -63,16 +62,14 @@ import java.util.UUID;
                 "PMD.TooManyStaticImports",
                 "PMD.TooManyMethods",
                 "PMD.UnitTestShouldIncludeAssert",
-                "PMD.LinguisticNaming",
-                "PMD.UseConcurrentHashMap" })
+                "PMD.LinguisticNaming" })
 class PurchaseControllerSecurityTest {
 
         private static final String PURCHASES_URL = "/api/v1/purchases";
-        private static final String ZITADEL_ROLES_CLAIM = "urn:zitadel:iam:org:project:roles";
         private static final String ROLE_PLAYER = "player";
         private static final String ROLE_GAME_MASTER = "game_master";
         private static final String ROLE_PLATFORM_ADMIN = "platform_admin";
-        private static final String SUBJECT = "zitadel-sub-314159";
+        private static final String SUBJECT = "6f1c2b9e-4d3a-4e8b-9a71-2c5d8e0f3b64";
         private static final UUID PLAYER_ID = UUID.fromString("aaaaaaaa-0000-4000-8000-000000000001");
         private static final UUID PURCHASE_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
         private static final int PAGE_SIZE = 20;
@@ -102,29 +99,22 @@ class PurchaseControllerSecurityTest {
         private JwtDecoder jwtDecoder;
 
         /**
-         * Builds a request post-processor simulating a Zitadel JWT with the given
-         * project roles.
+         * Builds a request post-processor simulating a Keycloak JWT with the given
+         * realm roles, in the flat {@code roles} list real tokens carry.
          *
          * <p>
-         * Roles go into Zitadel's roles claim, the way real tokens carry them. The
-         * production claim value is {@code {"role_name": {"org_id": "org_domain"}}};
-         * only the keys matter to the converter, so tests use empty maps.
-         *
-         * <p>
-         * Authorities are derived by running the real {@link ZitadelRoleConverter}
+         * Authorities are derived by running the real {@link RoleClaimConverter}
          * over that claim, so the claim is the single source of truth here exactly
          * as it is in production. The {@code jwt()} post-processor still bypasses
          * the decoder — no token is signed or validated — but everything from claim
          * parsing onwards is the production path.
          */
         private static JwtRequestPostProcessor tokenWithRoles(String... roles) {
-                Map<String, Object> rolesClaim = new LinkedHashMap<>();
-                for (String role : roles) {
-                        rolesClaim.put(role, Map.of());
-                }
                 return jwt()
-                                .jwt(token -> token.subject(SUBJECT).claim(ZITADEL_ROLES_CLAIM, rolesClaim))
-                                .authorities(new ZitadelRoleConverter());
+                                .jwt(token -> token.subject(SUBJECT)
+                                                .claim(PublicIdClaim.CLAIM, SUBJECT)
+                                                .claim(RoleClaimConverter.ROLES_CLAIM, List.of(roles)))
+                                .authorities(new RoleClaimConverter());
         }
 
         private static PurchaseResponse aPurchaseResponse() {

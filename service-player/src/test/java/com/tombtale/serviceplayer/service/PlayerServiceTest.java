@@ -6,13 +6,6 @@ import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.dto.UpdateMyProfileRequest;
 import com.tombtale.serviceplayer.entity.GameCharacter;
 import com.tombtale.serviceplayer.entity.Player;
-import ch.qos.logback.classic.Level;
-import org.junit.jupiter.api.AfterEach;
-import org.slf4j.LoggerFactory;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
-import com.tombtale.serviceplayer.client.ZitadelClient;
 import com.tombtale.serviceplayer.mapper.PlayerMapper;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
 import org.junit.jupiter.api.Test;
@@ -42,26 +35,30 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 // TooManyMethods: one test class per service is the convention here, and this
-// service has four public methods with several cases each. Splitting by method
+// service has three public methods with several cases each. Splitting by method
 // would scatter the shared mocks rather than simplify anything.
 @SuppressWarnings({"PMD.TooManyStaticImports", "PMD.AvoidDuplicateLiterals", "PMD.TooManyMethods"})
 class PlayerServiceTest {
 
     private static final int PAGE_SIZE = 10;
 
+    /** The {@code public_id} claim of the caller's token. */
+    private static final UUID PUBLIC_ID = UUID.fromString("6f1c2b9e-4d3a-4e8b-9a71-2c5d8e0f3b64");
+
+    /** The {@code sub} claim: Keycloak's own user id, a different value on purpose. */
+    private static final String KEYCLOAK_ID = "a81ce38d-9155-4ee1-8f16-5850387e8029";
+
     @Mock
     private PlayerRepository playerRepository;
 
     @Mock
     private PlayerMapper playerMapper;
-
-    @Mock
-    private ZitadelClient zitadelClient;
 
     @Mock
     private OutboxService outboxService;
@@ -71,10 +68,6 @@ class PlayerServiceTest {
 
     @InjectMocks
     private PlayerService playerService;
-
-    private ch.qos.logback.classic.Logger fallbackLogger;
-    private ListAppender<ILoggingEvent> attachedAppender;
-    private Level originalLevel;
 
     /**
      * Runs the callback the creation path hands to the template, which a mock
@@ -126,34 +119,35 @@ class PlayerServiceTest {
         existing.addCharacter(character);
         PlayerResponse response = aPlayerResponse();
 
-        when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.of(existing));
+        when(playerRepository.findByPublicIdWithCharacters(PUBLIC_ID)).thenReturn(Optional.of(existing));
         when(playerMapper.toResponse(existing)).thenReturn(response);
 
-        PlayerResponse result = playerService.getOrCreatePlayer("z1");
+        PlayerResponse result = playerService.getOrCreatePlayer(PUBLIC_ID, KEYCLOAK_ID);
 
         assertThat(result).isEqualTo(response);
         verify(playerRepository, never()).save(any());
     }
 
+    /** The new row takes both ids from the token: the publicId every service shares, and the sub. */
     @Test
-    void shouldCreateNewPlayerIfNotFound() {
+    void shouldCreateNewPlayerWithTheTokensPublicId() {
         runTheTransaction();
-        when(playerRepository.findByZitadelUserIdWithCharacters("new-z1")).thenReturn(Optional.empty());
-        
+        when(playerRepository.findByPublicIdWithCharacters(PUBLIC_ID)).thenReturn(Optional.empty());
+
         Player newPlayer = new Player();
         newPlayer.setDisplayName("Player_random1");
-        
+
         when(playerRepository.save(any(Player.class))).thenReturn(newPlayer);
         when(playerMapper.toResponse(newPlayer)).thenReturn(aPlayerResponse());
 
-        PlayerResponse result = playerService.getOrCreatePlayer("new-z1");
+        PlayerResponse result = playerService.getOrCreatePlayer(PUBLIC_ID, KEYCLOAK_ID);
 
         assertThat(result).isNotNull();
-        verify(playerRepository).save(argThat(p -> 
-                p.getDisplayName() != null && p.getDisplayName().startsWith("Player_") && 
-                "new-z1".equals(p.getZitadelUserId()) &&
-                p.getCharacters().size() == 1
-        ));
+        verify(playerRepository).save(argThat(p ->
+                PUBLIC_ID.equals(p.getPublicId())
+                        && KEYCLOAK_ID.equals(p.getKeycloakId())
+                        && p.getDisplayName() != null && p.getDisplayName().startsWith("Player_")
+                        && p.getCharacters().size() == 1));
     }
 
     /**
@@ -166,11 +160,11 @@ class PlayerServiceTest {
         Player saved = new Player();
         saved.setDisplayName("Player_random1");
 
-        when(playerRepository.findByZitadelUserIdWithCharacters("new-z1")).thenReturn(Optional.empty());
+        when(playerRepository.findByPublicIdWithCharacters(PUBLIC_ID)).thenReturn(Optional.empty());
         when(playerRepository.save(any(Player.class))).thenReturn(saved);
         when(playerMapper.toResponse(saved)).thenReturn(aPlayerResponse());
 
-        playerService.getOrCreatePlayer("new-z1");
+        playerService.getOrCreatePlayer(PUBLIC_ID, KEYCLOAK_ID);
 
         ArgumentCaptor<PlayerCreatedPayload> payload = ArgumentCaptor.forClass(PlayerCreatedPayload.class);
         verify(outboxService).append(
@@ -184,131 +178,12 @@ class PlayerServiceTest {
         assertThat(payload.getValue().characterPublicId()).isNotNull();
     }
 
-    /** The metadata has to name the row that commits, or the token carries a publicId nobody owns. */
-    @Test
-    void shouldWriteTheSavedPlayersPublicIdAsMetadata() {
-        runTheTransaction();
-        Player saved = new Player();
-
-        when(playerRepository.findByZitadelUserIdWithCharacters("new-z1")).thenReturn(Optional.empty());
-        when(playerRepository.save(any(Player.class))).thenReturn(saved);
-        when(playerMapper.toResponse(saved)).thenReturn(aPlayerResponse());
-
-        playerService.getOrCreatePlayer("new-z1");
-
-        verify(zitadelClient).writePublicId("new-z1", saved.getPublicId());
-    }
-
-    /**
-     * The alarm is the only thing that says the Zitadel event is not working,
-     * so it gets a test. Creating a row here means provisioning never ran.
-     */
-    @Test
-    void shouldRaiseTheAlarmWhenItHasToCreateTheRow() {
-        ListAppender<ILoggingEvent> captured = captureFallbackLog();
-        runTheTransaction();
-
-        when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.empty());
-        when(playerRepository.save(any(Player.class))).thenReturn(new Player());
-        when(playerMapper.toResponse(any(Player.class))).thenReturn(aPlayerResponse());
-
-        playerService.getOrCreatePlayer("z1");
-
-        assertThat(captured.list)
-                .singleElement()
-                .satisfies(event -> {
-                    assertThat(event.getLevel()).isEqualTo(Level.ERROR);
-                    assertThat(event.getFormattedMessage()).contains("provisioning event never arrived");
-                    // The subject is masked, never logged whole.
-                    assertThat(event.getFormattedMessage()).doesNotContain("z1");
-                });
-    }
-
-    /**
-     * The same write through the event path says nothing: there it is the design
-     * working, not a misconfiguration.
-     */
-    @Test
-    void shouldProvisionSilentlyForTheEventPath() {
-        ListAppender<ILoggingEvent> captured = captureFallbackLog();
-        runTheTransaction();
-
-        when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.empty());
-        when(playerRepository.save(any(Player.class))).thenReturn(new Player());
-
-        playerService.provisionPlayer("z1");
-
-        assertThat(captured.list).isEmpty();
-        verify(playerRepository).save(any(Player.class));
-        verify(zitadelClient).grantPlayerRole("z1");
-    }
-
-    /**
-     * A repeated event writes no second row, but still asks for the grant. The
-     * row and the role live in different systems, so "row exists" does not mean
-     * "role granted" — and the grant call is a no-op when it already is.
-     */
-    @Test
-    void shouldNotWriteWhenTheEventArrivesTwice() {
-        when(playerRepository.findByZitadelUserIdWithCharacters("z1"))
-                .thenReturn(Optional.of(new Player()));
-
-        playerService.provisionPlayer("z1");
-
-        verify(playerRepository, never()).save(any());
-        verify(zitadelClient).grantPlayerRole("z1");
-    }
-
-    /**
-     * The grant failing must fail the whole call. Zitadel retries it, and a user
-     * left with a profile and no role cannot log in at all.
-     */
-    @Test
-    void shouldFailProvisioningWhenTheRoleCannotBeGranted() {
-        when(playerRepository.findByZitadelUserIdWithCharacters("z1"))
-                .thenReturn(Optional.of(new Player()));
-        org.mockito.Mockito.doThrow(new IllegalStateException("zitadel down"))
-                .when(zitadelClient).grantPlayerRole("z1");
-
-        assertThatThrownBy(() -> playerService.provisionPlayer("z1"))
-                .isInstanceOf(IllegalStateException.class);
-    }
-
-    /**
-     * Attaches a captor to the alarm category, raising its level for the length
-     * of one test. {@code logback-test.xml} keeps it OFF everywhere else.
-     *
-     * <p>Restored in {@link #restoreFallbackLogger()}: Surefire runs every class
-     * in one JVM, so a logger left switched on here would follow the suite into
-     * the next class. JUnit builds a fresh instance per test, so the field starts
-     * null again on its own.
-     */
-    private ListAppender<ILoggingEvent> captureFallbackLog() {
-        fallbackLogger = ((LoggerContext) LoggerFactory.getILoggerFactory())
-                .getLogger("com.tombtale.provisioning.fallback");
-        originalLevel = fallbackLogger.getLevel();
-        fallbackLogger.setLevel(Level.ERROR);
-
-        attachedAppender = new ListAppender<>();
-        attachedAppender.start();
-        fallbackLogger.addAppender(attachedAppender);
-        return attachedAppender;
-    }
-
-    @AfterEach
-    void restoreFallbackLogger() {
-        if (fallbackLogger != null) {
-            fallbackLogger.detachAppender(attachedAppender);
-            fallbackLogger.setLevel(originalLevel);
-        }
-    }
-
     @Test
     void shouldRecoverFromConcurrentCreationConflict() {
         runTheTransaction();
         Player winner = new Player();
 
-        when(playerRepository.findByZitadelUserIdWithCharacters("z1"))
+        when(playerRepository.findByPublicIdWithCharacters(PUBLIC_ID))
                 .thenReturn(Optional.empty()) // First check: not found
                 .thenReturn(Optional.of(winner)); // Second check after exception: found
 
@@ -316,26 +191,25 @@ class PlayerServiceTest {
                 .thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
         when(playerMapper.toResponse(winner)).thenReturn(aPlayerResponse());
 
-        PlayerResponse result = playerService.getOrCreatePlayer("z1");
+        PlayerResponse result = playerService.getOrCreatePlayer(PUBLIC_ID, KEYCLOAK_ID);
 
         assertThat(result).isNotNull();
-        // It should call find twice
-        verify(playerRepository, org.mockito.Mockito.times(2)).findByZitadelUserIdWithCharacters("z1");
-        // The losing thread writes once and never again: the winner's row is returned as it stands.
-        verify(playerRepository, org.mockito.Mockito.times(1)).save(any(Player.class));
+        verify(playerRepository, times(2)).findByPublicIdWithCharacters(PUBLIC_ID);
+        // The losing call writes once and never again: the winner's row is returned as it stands.
+        verify(playerRepository, times(1)).save(any(Player.class));
     }
 
     @Test
     void shouldThrowIfRecoverFromConcurrentCreationFails() {
         runTheTransaction();
-        when(playerRepository.findByZitadelUserIdWithCharacters("z1"))
+        when(playerRepository.findByPublicIdWithCharacters(PUBLIC_ID))
                 .thenReturn(Optional.empty()) // First check: not found
                 .thenReturn(Optional.empty()); // Second check after exception: still not found!
 
         when(playerRepository.save(any(Player.class)))
                 .thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
 
-        assertThatThrownBy(() -> playerService.getOrCreatePlayer("z1"))
+        assertThatThrownBy(() -> playerService.getOrCreatePlayer(PUBLIC_ID, KEYCLOAK_ID))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Failed to find player after creation collision");
     }
@@ -351,12 +225,12 @@ class PlayerServiceTest {
         PlayerResponse response = new PlayerResponse(
                 UUID.randomUUID(), "NewName", "pi-user", new ArrayList<>(), Instant.now());
 
-        when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.of(existing));
+        when(playerRepository.findByPublicIdWithCharacters(PUBLIC_ID)).thenReturn(Optional.of(existing));
         when(playerRepository.existsByDisplayNameIgnoreCase("NewName")).thenReturn(false);
         when(playerRepository.save(existing)).thenReturn(existing);
         when(playerMapper.toResponse(existing)).thenReturn(response);
 
-        PlayerResponse result = playerService.updateMyProfile("z1", request);
+        PlayerResponse result = playerService.updateMyProfile(PUBLIC_ID, request);
 
         assertThat(result).isEqualTo(response);
         assertThat(existing.getDisplayName()).isEqualTo("NewName");
@@ -365,9 +239,9 @@ class PlayerServiceTest {
     @Test
     void shouldThrowNotFoundWhenUpdatingProfile() {
         UpdateMyProfileRequest request = new UpdateMyProfileRequest();
-        when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.empty());
+        when(playerRepository.findByPublicIdWithCharacters(PUBLIC_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> playerService.updateMyProfile("z1", request))
+        assertThatThrownBy(() -> playerService.updateMyProfile(PUBLIC_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Player not found");
     }
@@ -380,10 +254,10 @@ class PlayerServiceTest {
         UpdateMyProfileRequest request = new UpdateMyProfileRequest();
         request.setDisplayName("TakenName");
 
-        when(playerRepository.findByZitadelUserIdWithCharacters("z1")).thenReturn(Optional.of(existing));
+        when(playerRepository.findByPublicIdWithCharacters(PUBLIC_ID)).thenReturn(Optional.of(existing));
         when(playerRepository.existsByDisplayNameIgnoreCase("TakenName")).thenReturn(true);
 
-        assertThatThrownBy(() -> playerService.updateMyProfile("z1", request))
+        assertThatThrownBy(() -> playerService.updateMyProfile(PUBLIC_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Display name is already taken");
     }

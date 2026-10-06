@@ -1,0 +1,5 @@
+{
+  "issuerUri": "http://localhost:8080/realms/tombtale",
+  "clientId": "tombtale-portal",
+  "apiBaseUrl": "http://localhost:8080"
+}

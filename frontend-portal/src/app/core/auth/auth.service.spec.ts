@@ -6,12 +6,10 @@ import { AuthService } from './auth.service';
 import { PlatformRole } from './auth.models';
 
 const CONFIG: RuntimeConfig = {
-  zitadelIssuerUri: 'http://localhost:8080',
-  zitadelClientId: 'test-client',
+  issuerUri: 'http://localhost:8080/realms/tombtale',
+  clientId: 'test-client',
   apiBaseUrl: 'http://localhost:8081',
 };
-
-const ZITADEL_ROLES = 'urn:zitadel:iam:org:project:roles';
 
 describe('AuthService', () => {
   let oauth: jasmine.SpyObj<OAuthService>;
@@ -38,17 +36,8 @@ describe('AuthService', () => {
   }
 
   describe('getUserProfile', () => {
-    it('reads the role names out of the Zitadel role map', () => {
-      idTokenHolds({
-        sub: 'u-1',
-        [ZITADEL_ROLES]: { platform_admin: { orgId: 'tombtale' } },
-      });
-
-      expect(service.getUserProfile()?.roles).toEqual([PlatformRole.PLATFORM_ADMIN]);
-    });
-
-    it('reads a roles claim that arrived as an array', () => {
-      idTokenHolds({ sub: 'u-1', [ZITADEL_ROLES]: ['player', 'game_master'] });
+    it('reads the role names out of the roles list', () => {
+      idTokenHolds({ sub: 'u-1', roles: ['player', 'game_master'] });
 
       expect(service.getUserProfile()?.roles).toEqual([
         PlatformRole.PLAYER,
@@ -56,20 +45,19 @@ describe('AuthService', () => {
       ]);
     });
 
-    it('falls back to the plain roles claim', () => {
-      idTokenHolds({ sub: 'u-1', roles: ['player'] });
+    it("drops Keycloak's own default roles", () => {
+      idTokenHolds({
+        sub: 'u-1',
+        roles: ['offline_access', 'uma_authorization', 'default-roles-tombtale', 'player'],
+      });
 
       expect(service.getUserProfile()?.roles).toEqual([PlatformRole.PLAYER]);
     });
 
-    it('prefers the Zitadel claim over the plain roles claim', () => {
-      idTokenHolds({
-        sub: 'u-1',
-        [ZITADEL_ROLES]: ['platform_admin'],
-        roles: ['player'],
-      });
+    it('reports no roles when the claim is a map, the shape Zitadel used', () => {
+      idTokenHolds({ sub: 'u-1', roles: { platform_admin: { orgId: 'tombtale' } } });
 
-      expect(service.getUserProfile()?.roles).toEqual([PlatformRole.PLATFORM_ADMIN]);
+      expect(service.getUserProfile()?.roles).toEqual([]);
     });
 
     it('drops a role name the platform does not know', () => {

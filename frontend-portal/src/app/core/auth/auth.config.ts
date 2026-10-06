@@ -3,30 +3,24 @@ import { environment } from '../../../environments/environment';
 import { RuntimeConfig } from '../config';
 
 /**
- * OIDC configuration for Zitadel authentication.
+ * OIDC configuration for Keycloak authentication.
  *
  * Uses Authorization Code flow with PKCE (Proof Key for Code Exchange),
  * which is the recommended flow for public clients like SPAs.
- * The login UI is fully delegated to Zitadel's hosted login page.
+ * The login UI is fully delegated to Keycloak's login pages.
  */
 
-const OIDC_SCOPES = [
-  'openid',
-  'profile',
-  'email',
-  'offline_access',
-  'urn:zitadel:iam:org:project:roles',
-  // Puts the player's publicId in the access token (ADR 0023).
-  'urn:zitadel:iam:user:metadata',
-].join(' ');
+// The roles and public_id claims come from the client's mappers, not from a
+// scope (ADR 0024). Without offline_access, the refresh token ends with the session.
+const OIDC_SCOPES = ['openid', 'profile', 'email'].join(' ');
 
 /** Builds the OIDC config from the settings fetched at startup. */
 export function buildAuthConfig(config: RuntimeConfig): AuthConfig {
   return {
-    issuer: config.zitadelIssuerUri,
+    issuer: config.issuerUri,
     redirectUri: `${globalThis.location.origin}/callback`,
     postLogoutRedirectUri: `${globalThis.location.origin}/`,
-    clientId: config.zitadelClientId,
+    clientId: config.clientId,
     responseType: 'code',
     scope: OIDC_SCOPES,
     showDebugInformation: !environment.production,

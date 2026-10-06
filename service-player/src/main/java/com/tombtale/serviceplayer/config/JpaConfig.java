@@ -1,6 +1,5 @@
 package com.tombtale.serviceplayer.config;
 
-import com.tombtale.serviceplayer.repository.PlayerRepository;
 import com.tombtale.serviceplayer.security.PlayerAuditorAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,7 +19,7 @@ import java.util.UUID;
 public class JpaConfig {
 
     @Bean
-    AuditorAware<UUID> playerAuditorAware(PlayerRepository playerRepository) {
-        return new PlayerAuditorAware(playerRepository);
+    AuditorAware<UUID> playerAuditorAware() {
+        return new PlayerAuditorAware();
     }
 }
