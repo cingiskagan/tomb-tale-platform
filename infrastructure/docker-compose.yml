@@ -41,6 +41,53 @@ services:
         condition: service_healthy
       zitadel-login:
         condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+  # The identity provider. It imports keycloak/import/*.json at start and skips
+  # a realm that already exists, so a realm change needs a fresh database
+  # (README.md). The proxy routes /realms and /resources only. The admin
+  # console answers on a localhost port.
+  keycloak:
+    build: ./keycloak
+    restart: unless-stopped
+    logging: *default-logging
+    command: start-dev --import-realm
+    # The heap is 70% of this. Without a limit the JVM sizes itself from the host.
+    mem_limit: 1536m
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL}
+      KC_HOSTNAME_ADMIN: http://localhost:${KEYCLOAK_ADMIN_PORT}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      KC_DB_USERNAME: ${POSTGRES_KEYCLOAK_USER}
+      KC_DB_PASSWORD: ${POSTGRES_KEYCLOAK_PASSWORD}
+      KC_DB_SCHEMA: keycloak
+      # The realm file reads these through its ${...} placeholders.
+      PORTAL_REDIRECT_URI: ${PORTAL_REDIRECT_URI}
+      PORTAL_POST_LOGOUT_URI: ${PORTAL_POST_LOGOUT_URI}
+      PORTAL_ORIGIN: ${PORTAL_ORIGIN}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_AUTH: ${SMTP_AUTH}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_STARTTLS: ${SMTP_STARTTLS}
+      SMTP_SENDER_ADDRESS: ${SMTP_SENDER_ADDRESS}
+      SMTP_SENDER_NAME: ${SMTP_SENDER_NAME}
+    ports:
+      - "127.0.0.1:${KEYCLOAK_ADMIN_PORT}:8080"
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import:ro
+    networks:
+      - tombtale
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   zitadel-api:
     image: ghcr.io/zitadel/zitadel:${ZITADEL_VERSION}
@@ -211,6 +258,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_ZITADEL_USER: ${POSTGRES_ZITADEL_USER}
       POSTGRES_ZITADEL_PASSWORD: ${POSTGRES_ZITADEL_PASSWORD}
+      POSTGRES_KEYCLOAK_USER: ${POSTGRES_KEYCLOAK_USER}
+      POSTGRES_KEYCLOAK_PASSWORD: ${POSTGRES_KEYCLOAK_PASSWORD}
       POSTGRES_PLAYER_USER: ${POSTGRES_PLAYER_USER}
       POSTGRES_PLAYER_PASSWORD: ${POSTGRES_PLAYER_PASSWORD}
       POSTGRES_COMMERCE_USER: ${POSTGRES_COMMERCE_USER}

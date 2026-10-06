@@ -11,6 +11,7 @@ Traefik sends a request to the matching router with the highest priority.
 | `/` | `zitadel-root-web` (400) | Zitadel login UI |
 | `/api/v1/players` | `service-player-local` (300) | service-player on host port 8081 |
 | `/api/v1/purchases` | `service-commerce-local` (300) | service-commerce on host port 8082 |
+| `/realms`, `/resources` | `keycloak` (300) | Keycloak login pages and OIDC endpoints |
 | `/ui/v2/login` | `zitadel-login-web` (250) | Zitadel login UI |
 | any other `/api` path | none | 404 from Traefik |
 | everything else | `zitadel-canonical-web` (100) | Zitadel API, OIDC and console |
@@ -18,6 +19,30 @@ Traefik sends a request to the matching router with the highest priority.
 `/api` belongs to the platform services, and no Zitadel router matches it. If
 you add a controller under a new prefix, add its router to `traefik-dynamic.yml`.
 [ADR 0021](../docs/adr/0021-api-belongs-to-the-platform-not-zitadel.md) records why.
+
+## Keycloak
+
+Keycloak reads `keycloak/import/tombtale-realm.json` when it starts. The file
+holds the three roles, `player` as the default role, the portal client, the
+`roles` and `public_id` claims, and the login flow: the password, then a code
+sent by email. Secrets stay in `.env`, because the file reads `${...}`
+placeholders.
+
+Keycloak imports a realm only when the realm does not exist yet. After you
+change the file, delete the `tombtale` realm in the admin console, then restart
+Keycloak:
+
+```bash
+docker compose restart keycloak
+```
+
+The admin console is at <http://localhost:8180>. Sign in with
+`KEYCLOAK_ADMIN_USER` from `.env`. To become a platform admin, register in the
+portal, then give your user the `platform_admin` role in the `tombtale` realm.
+
+Postgres runs `init-db.sh` only on an empty volume. If your volume predates
+Keycloak, it has no `keycloak` user, and Keycloak cannot start. Run
+`docker compose down -v` to start from empty volumes. This deletes all local data.
 
 ## RabbitMQ definitions
 
@@ -50,6 +75,7 @@ name keeps the event with its routing key. Both services declare
 | Port | Service |
 | --- | --- |
 | 8080 | Traefik |
+| 8180 | Keycloak admin console, on localhost only |
 | 8081 | service-player (`run-local.sh`) |
 | 8082 | service-commerce (`run-local.sh`) |
 | 4200 | frontend-portal (`npm start`) |

@@ -20,6 +20,15 @@ http:
       service: service-commerce-local
       priority: 300
 
+    # Keycloak's pages and endpoints for players. /admin is not routed: the
+    # admin console has its own localhost port (KEYCLOAK_ADMIN_PORT).
+    keycloak:
+      rule: "PathPrefix(`/realms`) || PathPrefix(`/resources`)"
+      entryPoints:
+        - web
+      service: keycloak
+      priority: 300
+
   services:
     service-player-local:
       loadBalancer:
@@ -30,3 +39,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://host.docker.internal:8082"
+
+    keycloak:
+      loadBalancer:
+        servers:
+          - url: "http://keycloak:8080"
