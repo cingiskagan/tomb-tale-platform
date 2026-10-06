@@ -3,6 +3,7 @@
 # =========================
 .env
 infrastructure/.env
+# Zitadel's local secrets. Kept ignored until every checkout has deleted them.
 infrastructure/.zitadel-masterkey
 
 # =========================

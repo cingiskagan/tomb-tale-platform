@@ -35,7 +35,7 @@ when the fact happened, not when the publisher reached the broker.
   together
   ([ADR 0012](../adr/0012-a-player-is-created-with-a-character-in-one-transaction.md)).
   A separate `character.created` waits for the second character.
-- Payloads carry `publicId` values, never the Zitadel subject
+- Payloads carry `publicId` values, never Keycloak's user id
   ([ADR 0014](../adr/0014-player-publicid-is-the-cross-service-identifier.md)).
   A published field cannot be withdrawn, so add one when a consumer needs it.
 - Publish the facts another service acts on. Combat hits and page views are

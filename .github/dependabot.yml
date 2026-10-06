@@ -255,8 +255,8 @@ updates:
 
   # ----- Local stack images ---------------------------------------------
   # Only reaches the literal tags in infrastructure/docker-compose.yml, which
-  # today means mongo and rabbitmq. Traefik, Postgres, Redis, Zitadel and the
-  # OTEL collector are written as ${VAR} and read from infrastructure/.env, and
+  # today means mongo and rabbitmq. Traefik, Postgres, Redis and the OTEL
+  # collector are written as ${VAR} and read from infrastructure/.env, and
   # Dependabot does not expand those -- they still need bumping by hand.
   - package-ecosystem: "docker"
     directory: "/infrastructure"
