@@ -4,18 +4,18 @@ Copy `.env.example` to `.env`, then run `docker compose up -d` in this directory
 
 ## Routes on the proxy (port 8080)
 
-Traefik sends a request to the matching router with the highest priority.
+nginx sends a request to the `location` in `nginx.conf` that matches it.
 
-| Path | Router (priority) | Goes to |
-| --- | --- | --- |
-| `/api/v1/players` | `service-player-local` (300) | service-player on host port 8081 |
-| `/api/v1/purchases` | `service-commerce-local` (300) | service-commerce on host port 8082 |
-| `/realms`, `/resources` | `keycloak` (300) | Keycloak login pages and OIDC endpoints |
-| any other path | none | 404 from Traefik |
+| Path | Goes to |
+| --- | --- |
+| `/api/v1/players` | service-player on host port 8081 |
+| `/api/v1/purchases` | service-commerce on host port 8082 |
+| `/realms/`, `/resources/` | Keycloak login pages and OIDC endpoints |
+| any other path | 404 from nginx |
 
 `/api` belongs to the platform services. If you add a controller under a new
-prefix, add its router to `traefik-dynamic.yml`, or the prefix answers 404.
-[ADR 0021](../docs/adr/0021-api-belongs-to-the-platform-not-zitadel.md) records why.
+prefix, add its `location` to `nginx.conf`, or the prefix answers 404.
+[ADR 0025](../docs/adr/0025-nginx-replaces-traefik.md) records why.
 
 ## Keycloak
 
@@ -76,7 +76,7 @@ name keeps the event with its routing key. Both services declare
 
 | Port | Service |
 | --- | --- |
-| 8080 | Traefik |
+| 8080 | nginx |
 | 8180 | Keycloak admin console, on localhost only |
 | 8081 | service-player (`run-local.sh`) |
 | 8082 | service-commerce (`run-local.sh`) |

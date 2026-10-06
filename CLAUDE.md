@@ -11,7 +11,7 @@ Monorepo for the "Tomb Tale Online RPG" platform: two Spring Boot microservices,
 - `service-player/` — Spring Boot service for player accounts and characters (port 8081)
 - `service-commerce/` — Spring Boot service for purchases/economy (port 8082)
 - `infrastructure/keycloak/public-id-mapper/` — the Keycloak extension that gives every user a `public_id` of its own
-- `infrastructure/` — Docker Compose stack: Traefik, Keycloak (auth), Postgres, Redis, MongoDB, RabbitMQ, Mailpit (catches Keycloak's mail in dev, inbox at :8025)
+- `infrastructure/` — Docker Compose stack: nginx, Keycloak (auth), Postgres, Redis, MongoDB, RabbitMQ, Mailpit (catches Keycloak's mail in dev, inbox at :8025)
 - `config/checkstyle/`, `config/pmd/` — static-analysis rulesets shared by both Java services
 - `scripts/pre-pr-tests.sh` — full local pre-PR check pipeline across all three modules
 
@@ -130,7 +130,7 @@ Prettier config is inline in `package.json`: `singleQuote: true`, `printWidth: 1
 
 ### Auth flow end-to-end
 
-Traefik on port 8080 fronts both: `/api` goes to the backend services, `/realms` and `/resources` to Keycloak, and any other path gets a 404. `infrastructure/README.md` lists the routes, and a new controller prefix needs its router in `traefik-dynamic.yml` (ADR 0021). The frontend runs the OIDC code flow against Keycloak, then calls the backend services through Traefik with the resulting JWT. Backends only contact Keycloak via `issuer-uri` for token validation. Adding a protected backend endpoint means a `@PreAuthorize` check with the lowercase realm role names; adding the corresponding frontend route means `roleGuard` with the matching `PlatformRole` values.
+nginx on port 8080 fronts both: `/api` goes to the backend services, `/realms/` and `/resources/` to Keycloak, and any other path gets a 404. `infrastructure/README.md` lists the routes, and a new controller prefix needs its `location` in `infrastructure/nginx.conf` (ADR 0025). The frontend runs the OIDC code flow against Keycloak, then calls the backend services through nginx with the resulting JWT. Backends only contact Keycloak via `issuer-uri` for token validation. Adding a protected backend endpoint means a `@PreAuthorize` check with the lowercase realm role names; adding the corresponding frontend route means `roleGuard` with the matching `PlatformRole` values.
 
 ## Conventions
 

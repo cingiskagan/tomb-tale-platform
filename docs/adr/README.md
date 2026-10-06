@@ -88,7 +88,8 @@ in sequence here — a record written later can describe an earlier choice.
 | [0018](0018-zitadel-provisions-players-and-me-is-the-fallback.md) | Zitadel provisions players, and `/me` is the fallback that complains | 2026-09-17 | superseded by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md) |
 | [0019](0019-zitadel-configuration-is-code.md) | Zitadel configuration is code | 2026-09-18 | superseded by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md) |
 | [0020](0020-the-portal-reads-its-configuration-at-runtime.md) | The portal reads its configuration at runtime | 2026-09-19 | accepted |
-| [0021](0021-api-belongs-to-the-platform-not-zitadel.md) | `/api` belongs to the platform, not to Zitadel | 2026-09-28 | accepted |
+| [0021](0021-api-belongs-to-the-platform-not-zitadel.md) | `/api` belongs to the platform, not to Zitadel | 2026-09-28 | superseded by [0025](0025-nginx-replaces-traefik.md) |
 | [0022](0022-separate-services-not-a-modular-monolith.md) | Separate services, not a modular monolith | 2026-09-28 | accepted |
 | [0023](0023-the-player-publicid-travels-in-the-access-token.md) | The player's `publicId` travels in the access token | 2026-10-01 | superseded by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md) |
 | [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md) | Keycloak replaces Zitadel, and it mints the player's `publicId` | 2026-10-06 | accepted |
+| [0025](0025-nginx-replaces-traefik.md) | nginx replaces Traefik, and `/api` still belongs to the platform | 2026-10-06 | accepted |

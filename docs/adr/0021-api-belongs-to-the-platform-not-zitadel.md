@@ -1,7 +1,7 @@
 # 21. `/api` belongs to the platform, not to Zitadel
 
 - **Date:** 2026-09-28
-- **Status:** accepted
+- **Status:** superseded by [0025](0025-nginx-replaces-traefik.md)
 
 ## Context
 
