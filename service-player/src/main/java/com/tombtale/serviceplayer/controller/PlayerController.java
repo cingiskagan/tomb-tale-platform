@@ -18,6 +18,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,15 +41,16 @@ public class PlayerController {
     private final PlayerService playerService;
 
     /**
-     * GET /api/v1/players/me
+     * POST /api/v1/players/me
      * <p>
      * Returns the current authenticated player's profile. The first call
-     * creates it, with the {@code publicId} Keycloak minted for the account.
+     * creates it, with the {@code publicId} Keycloak minted for the account,
+     * which is why this is a POST: a GET must never write.
      *
      * @param jwt the injected JWT token from the authenticated request
      * @return the player profile DTO
      */
-    @GetMapping("/me")
+    @PostMapping("/me")
     @PreAuthorize(RoleConstants.IS_AUTHENTICATED)
     public ResponseEntity<PlayerResponse> getMyProfile(@AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(playerService.getOrCreatePlayer(callerPublicId(jwt), jwt.getSubject()));

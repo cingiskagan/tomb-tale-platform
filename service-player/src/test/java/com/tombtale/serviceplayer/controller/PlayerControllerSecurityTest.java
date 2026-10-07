@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -153,7 +154,7 @@ class PlayerControllerSecurityTest {
 
     @Test
     void meAsAnonymousReturns401() throws Exception {
-        mockMvc.perform(get(ME_URL))
+        mockMvc.perform(post(ME_URL))
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(playerService);
@@ -163,7 +164,7 @@ class PlayerControllerSecurityTest {
     void meAsPlayerReturns200() throws Exception {
         when(playerService.getOrCreatePlayer(any(), any())).thenReturn(aPlayerResponse());
 
-        mockMvc.perform(get(ME_URL)
+        mockMvc.perform(post(ME_URL)
                 .with(tokenWithRoles(ROLE_PLAYER)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.displayName").value(DISPLAY_NAME));
@@ -174,7 +175,7 @@ class PlayerControllerSecurityTest {
     /** A valid token that names no player cannot reach a profile. */
     @Test
     void meWithoutPublicIdClaimReturns401() throws Exception {
-        mockMvc.perform(get(ME_URL)
+        mockMvc.perform(post(ME_URL)
                 .with(jwt().jwt(token -> token.subject("no-claim"))))
                 .andExpect(status().isUnauthorized());
 

@@ -14,7 +14,7 @@ Zitadel's API. Each fix to that sync opened a new gap.
 We will run Keycloak from `infrastructure/keycloak/import/tombtale-realm.json`,
 with `player` as the default role. Our `public-id-mapper` gives each user a UUID
 of its own on the first token, and the token carries it as `public_id`.
-service-player creates the row from that claim on the first `GET /players/me`
+service-player creates the row from that claim on the first `POST /players/me`
 and never calls Keycloak. Every login takes the password, then an emailed code.
 
 ## Consequences

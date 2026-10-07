@@ -24,7 +24,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -108,7 +108,7 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
      */
     @Test
     void firstProfileCallCreatesThePlayerAndTheSecondReturnsTheSameOne() throws Exception {
-        MvcResult created = mockMvc.perform(get(ME_URL).with(playerToken()))
+        MvcResult created = mockMvc.perform(post(ME_URL).with(playerToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.publicId").value(publicId.toString()))
                 .andExpect(jsonPath("$.displayName").isNotEmpty())
@@ -120,7 +120,7 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
         assertThat(playerRepository.findByPublicIdWithCharacters(publicId).orElseThrow().getIamId())
                 .isEqualTo(iamId);
 
-        mockMvc.perform(get(ME_URL).with(playerToken()))
+        mockMvc.perform(post(ME_URL).with(playerToken()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.displayName").value(displayName));
     }
