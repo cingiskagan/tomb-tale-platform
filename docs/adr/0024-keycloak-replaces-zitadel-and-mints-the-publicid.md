@@ -21,7 +21,7 @@ and never calls Keycloak. Every login takes the password, then an emailed code.
 
 - No provisioning code, no write-back and no reconciliation remain.
 - Supersedes 0002, 0018, 0019 and 0023. ADR 0014 holds: Keycloak's user id
-  stays in service-player's `keycloak_id`, and players cannot edit `public_id`.
+  stays in service-player's `iam_id`, and players cannot edit `public_id`.
 - The emailed code is a third-party extension that trails Keycloak releases.
 - A realm change needs the realm deleted and imported again.
 

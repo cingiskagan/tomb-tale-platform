@@ -91,7 +91,7 @@ class PlayerCreationAtomicityTest extends PostgresTestBase {
         String name = NAME_PREFIX + publicId;
         Player player = Player.builder()
                 .publicId(publicId)
-                .keycloakId(name)
+                .iamId(name)
                 .displayName(name)
                 .build();
 

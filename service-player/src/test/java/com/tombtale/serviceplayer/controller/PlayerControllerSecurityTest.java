@@ -60,7 +60,7 @@ class PlayerControllerSecurityTest {
     private static final String ME_URL = PLAYERS_URL + "/me";
 
     private static final UUID PLAYER_PUBLIC_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
-    private static final String KEYCLOAK_ID = "keycloak-user-314159";
+    private static final String IAM_ID = "keycloak-user-314159";
     private static final UUID CHARACTER_PUBLIC_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
     private static final String DISPLAY_NAME = "TombRaider";
     private static final int PAGE_SIZE = 20;
@@ -103,7 +103,7 @@ class PlayerControllerSecurityTest {
 
     private static JwtRequestPostProcessor tokenWithRoles(String... roles) {
         return jwt()
-                .jwt(token -> token.subject(KEYCLOAK_ID)
+                .jwt(token -> token.subject(IAM_ID)
                         .claim(PublicIdClaim.CLAIM, PLAYER_PUBLIC_ID.toString())
                         .claim(RoleClaimConverter.ROLES_CLAIM, List.of(roles)))
                 .authorities(new RoleClaimConverter());
@@ -168,7 +168,7 @@ class PlayerControllerSecurityTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.displayName").value(DISPLAY_NAME));
 
-        verify(playerService).getOrCreatePlayer(PLAYER_PUBLIC_ID, KEYCLOAK_ID);
+        verify(playerService).getOrCreatePlayer(PLAYER_PUBLIC_ID, IAM_ID);
     }
 
     /** A valid token that names no player cannot reach a profile. */

@@ -14,7 +14,7 @@ import java.util.List;
  * their DTO representations.
  *
  * <p>
- * The {@code keycloakId} and {@code updatedAt} fields are automatically
+ * The {@code iamId} and {@code updatedAt} fields are automatically
  * excluded because they don't exist in {@link PlayerResponse}.
  */
 @Mapper(componentModel = "spring")

@@ -36,9 +36,9 @@ import java.util.List;
 @ToString(exclude = "characters")
 public class Player extends BaseEntity {
 
-    /** Keycloak's own user id, the token's {@code sub}. It never leaves this service (ADR 0014). */
+    /** The identity provider's user id, the token's {@code sub}. It never leaves this service (ADR 0014). */
     @Column(nullable = false, unique = true)
-    private String keycloakId;
+    private String iamId;
 
     /** In-game display name chosen by the player. */
     @Column(nullable = false, unique = true)

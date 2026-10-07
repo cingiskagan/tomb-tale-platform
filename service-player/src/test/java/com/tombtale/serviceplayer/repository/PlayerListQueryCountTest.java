@@ -52,7 +52,7 @@ class PlayerListQueryCountTest extends PostgresTestBase {
     private Player aPlayer(String displayName) {
         return Player.builder()
                 .publicId(UUID.randomUUID())
-                .keycloakId("kc" + displayName)
+                .iamId("kc" + displayName)
                 .displayName(displayName)
                 .build();
     }

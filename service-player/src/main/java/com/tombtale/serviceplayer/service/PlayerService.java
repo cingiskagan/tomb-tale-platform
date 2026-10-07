@@ -73,13 +73,13 @@ public class PlayerService {
      * poisoning an outer one.
      *
      * @param publicId   the {@code public_id} claim of the caller's token
-     * @param keycloakId the {@code sub} claim, kept on a new row
+     * @param iamId the {@code sub} claim, kept on a new row
      * @return the existing or newly created profile
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public PlayerResponse getOrCreatePlayer(UUID publicId, String keycloakId) {
+    public PlayerResponse getOrCreatePlayer(UUID publicId, String iamId) {
         Player player = playerRepository.findByPublicIdWithCharacters(publicId)
-                .orElseGet(() -> createOrRecoverPlayer(publicId, keycloakId));
+                .orElseGet(() -> createOrRecoverPlayer(publicId, iamId));
 
         return playerMapper.toResponse(player);
     }
@@ -88,12 +88,12 @@ public class PlayerService {
      * Creates the player, or returns the row a concurrent first call committed first.
      *
      * @param publicId   the {@code public_id} claim of the caller's token
-     * @param keycloakId the {@code sub} claim of the caller's token
+     * @param iamId the {@code sub} claim of the caller's token
      * @return the created or recovered player
      */
-    private Player createOrRecoverPlayer(UUID publicId, String keycloakId) {
+    private Player createOrRecoverPlayer(UUID publicId, String iamId) {
         try {
-            return createNewPlayerWithCharacter(publicId, keycloakId);
+            return createNewPlayerWithCharacter(publicId, iamId);
         } catch (DataIntegrityViolationException e) {
             log.warn("Concurrent creation detected for player {}. Fetching existing record.", publicId);
             return playerRepository.findByPublicIdWithCharacters(publicId)
@@ -106,16 +106,16 @@ public class PlayerService {
      * and the {@code player.created} outbox row commit together or not at all.
      *
      * @param publicId   the {@code public_id} claim of the caller's token
-     * @param keycloakId the {@code sub} claim of the caller's token
+     * @param iamId the {@code sub} claim of the caller's token
      * @return the newly created player
      */
-    private Player createNewPlayerWithCharacter(UUID publicId, String keycloakId) {
+    private Player createNewPlayerWithCharacter(UUID publicId, String iamId) {
         log.info("Creating player {}", publicId);
         String defaultDisplayName = "Player_" + UUID.randomUUID().toString().substring(0, DISPLAY_NAME_ID_PREFIX_LENGTH);
 
         Player newPlayer = Player.builder()
                 .publicId(publicId)
-                .keycloakId(keycloakId)
+                .iamId(iamId)
                 .displayName(defaultDisplayName)
                 .build();
 

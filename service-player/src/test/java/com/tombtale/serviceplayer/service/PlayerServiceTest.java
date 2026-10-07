@@ -52,7 +52,7 @@ class PlayerServiceTest {
     private static final UUID PUBLIC_ID = UUID.fromString("6f1c2b9e-4d3a-4e8b-9a71-2c5d8e0f3b64");
 
     /** The {@code sub} claim: Keycloak's own user id, a different value on purpose. */
-    private static final String KEYCLOAK_ID = "a81ce38d-9155-4ee1-8f16-5850387e8029";
+    private static final String IAM_ID = "a81ce38d-9155-4ee1-8f16-5850387e8029";
 
     @Mock
     private PlayerRepository playerRepository;
@@ -122,7 +122,7 @@ class PlayerServiceTest {
         when(playerRepository.findByPublicIdWithCharacters(PUBLIC_ID)).thenReturn(Optional.of(existing));
         when(playerMapper.toResponse(existing)).thenReturn(response);
 
-        PlayerResponse result = playerService.getOrCreatePlayer(PUBLIC_ID, KEYCLOAK_ID);
+        PlayerResponse result = playerService.getOrCreatePlayer(PUBLIC_ID, IAM_ID);
 
         assertThat(result).isEqualTo(response);
         verify(playerRepository, never()).save(any());
@@ -140,12 +140,12 @@ class PlayerServiceTest {
         when(playerRepository.save(any(Player.class))).thenReturn(newPlayer);
         when(playerMapper.toResponse(newPlayer)).thenReturn(aPlayerResponse());
 
-        PlayerResponse result = playerService.getOrCreatePlayer(PUBLIC_ID, KEYCLOAK_ID);
+        PlayerResponse result = playerService.getOrCreatePlayer(PUBLIC_ID, IAM_ID);
 
         assertThat(result).isNotNull();
         verify(playerRepository).save(argThat(p ->
                 PUBLIC_ID.equals(p.getPublicId())
-                        && KEYCLOAK_ID.equals(p.getKeycloakId())
+                        && IAM_ID.equals(p.getIamId())
                         && p.getDisplayName() != null && p.getDisplayName().startsWith("Player_")
                         && p.getCharacters().size() == 1));
     }
@@ -164,7 +164,7 @@ class PlayerServiceTest {
         when(playerRepository.save(any(Player.class))).thenReturn(saved);
         when(playerMapper.toResponse(saved)).thenReturn(aPlayerResponse());
 
-        playerService.getOrCreatePlayer(PUBLIC_ID, KEYCLOAK_ID);
+        playerService.getOrCreatePlayer(PUBLIC_ID, IAM_ID);
 
         ArgumentCaptor<PlayerCreatedPayload> payload = ArgumentCaptor.forClass(PlayerCreatedPayload.class);
         verify(outboxService).append(
@@ -191,7 +191,7 @@ class PlayerServiceTest {
                 .thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
         when(playerMapper.toResponse(winner)).thenReturn(aPlayerResponse());
 
-        PlayerResponse result = playerService.getOrCreatePlayer(PUBLIC_ID, KEYCLOAK_ID);
+        PlayerResponse result = playerService.getOrCreatePlayer(PUBLIC_ID, IAM_ID);
 
         assertThat(result).isNotNull();
         verify(playerRepository, times(2)).findByPublicIdWithCharacters(PUBLIC_ID);
@@ -209,7 +209,7 @@ class PlayerServiceTest {
         when(playerRepository.save(any(Player.class)))
                 .thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
 
-        assertThatThrownBy(() -> playerService.getOrCreatePlayer(PUBLIC_ID, KEYCLOAK_ID))
+        assertThatThrownBy(() -> playerService.getOrCreatePlayer(PUBLIC_ID, IAM_ID))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Failed to find player after creation collision");
     }

@@ -67,12 +67,12 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
     private OutboxEventRepository outboxEventRepository;
 
     private UUID publicId;
-    private String keycloakId;
+    private String iamId;
 
     @BeforeEach
     void newPlayer() {
         publicId = UUID.randomUUID();
-        keycloakId = "keycloak-" + UUID.randomUUID();
+        iamId = "keycloak-" + UUID.randomUUID();
     }
 
     /**
@@ -117,8 +117,8 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
 
         String displayName = JsonPath.read(created.getResponse().getContentAsString(), "$.displayName");
         assertThat(displayName).isNotBlank();
-        assertThat(playerRepository.findByPublicIdWithCharacters(publicId).orElseThrow().getKeycloakId())
-                .isEqualTo(keycloakId);
+        assertThat(playerRepository.findByPublicIdWithCharacters(publicId).orElseThrow().getIamId())
+                .isEqualTo(iamId);
 
         mockMvc.perform(get(ME_URL).with(playerToken()))
                 .andExpect(status().isOk())
@@ -132,7 +132,7 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
      */
     private JwtRequestPostProcessor playerToken() {
         return jwt()
-                .jwt(token -> token.subject(keycloakId)
+                .jwt(token -> token.subject(iamId)
                         .claim(PublicIdClaim.CLAIM, publicId.toString())
                         .claim(RoleClaimConverter.ROLES_CLAIM, List.of(ROLE_PLAYER)))
                 .authorities(new RoleClaimConverter());
