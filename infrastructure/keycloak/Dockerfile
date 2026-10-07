@@ -22,7 +22,8 @@ FROM quay.io/keycloak/keycloak:26.8.0
 COPY --from=providers --chown=keycloak:keycloak /providers/email-otp.jar /opt/keycloak/providers/
 COPY --from=public-id-mapper --chown=keycloak:keycloak /build/target/public-id-mapper.jar /opt/keycloak/providers/
 ENV KC_HEALTH_ENABLED=true
-USER keycloak
+# 1000 is the image's keycloak user. A number lets a runtime check that it is not root.
+USER 1000
 # The management port answers on 9000. The image has no curl, so bash opens the socket.
 HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=12 \
     CMD ["/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
