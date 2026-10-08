@@ -49,13 +49,14 @@ read -r AUTH_CODE
 # Smart parsing: handle both raw code and full callback URL
 if [[ "$AUTH_CODE" == *"code="* ]]; then
     # Validate state parameter to prevent code substitution attacks
-    RETURNED_STATE=$(echo "$AUTH_CODE" | sed -n 's/.*state=\([^&]*\).*/\1/p')
+    # [?&] anchors each name, or state= also matches inside session_state=.
+    RETURNED_STATE=$(echo "$AUTH_CODE" | sed -n 's/.*[?&]state=\([^&]*\).*/\1/p')
     if [ "$RETURNED_STATE" != "$STATE" ]; then
         echo "ERROR: OAuth state mismatch! Expected '${STATE}' but got '${RETURNED_STATE}'."
         echo "This could indicate a CSRF or code substitution attack. Aborting."
         exit 1
     fi
-    AUTH_CODE=$(echo "$AUTH_CODE" | sed -n 's/.*code=\([^&]*\).*/\1/p')
+    AUTH_CODE=$(echo "$AUTH_CODE" | sed -n 's/.*[?&]code=\([^&]*\).*/\1/p')
     echo "Extracted and validated code from URL."
 fi
 
