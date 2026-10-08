@@ -1,6 +1,7 @@
 package com.tombtale.serviceplayer.config;
 
 import com.tombtale.commons.security.PlatformCorsPolicy;
+import com.tombtale.commons.security.PublicIdClaimValidator;
 import com.tombtale.commons.security.RoleClaimConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +10,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -65,6 +68,15 @@ public class SecurityConfig {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(new RoleClaimConverter());
         return converter;
+    }
+
+    /**
+     * Boot adds every {@code OAuth2TokenValidator<Jwt>} bean to its decoder, so a malformed
+     * {@code public_id} fails as a 401 before any controller or write.
+     */
+    @Bean
+    public OAuth2TokenValidator<Jwt> publicIdClaimValidator() {
+        return new PublicIdClaimValidator();
     }
 
     /**
