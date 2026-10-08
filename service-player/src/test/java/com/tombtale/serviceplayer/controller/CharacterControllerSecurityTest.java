@@ -15,7 +15,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.tombtale.serviceplayer.config.SecurityConfig;
 import com.tombtale.serviceplayer.dto.CharacterResponse;
 import com.tombtale.serviceplayer.dto.UpdateCharacterStatsRequest;
-import com.tombtale.commons.security.ZitadelRoleConverter;
+import com.tombtale.commons.security.PublicIdClaim;
+import com.tombtale.commons.security.RoleClaimConverter;
 import com.tombtale.serviceplayer.service.CharacterService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,16 +31,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 @WebMvcTest(CharacterController.class)
 @Import(SecurityConfig.class)
 @ActiveProfiles("test")
 @SuppressWarnings({
-        "PMD.TooManyStaticImports",
-        "PMD.UseConcurrentHashMap" })
+        "PMD.TooManyStaticImports" })
 class CharacterControllerSecurityTest {
 
     @Autowired
@@ -51,11 +50,10 @@ class CharacterControllerSecurityTest {
     @MockitoBean
     private JwtDecoder jwtDecoder;
 
-    private static final String ZITADEL_ROLES_CLAIM = "urn:zitadel:iam:org:project:roles";
     private static final String ROLE_PLAYER = "player";
     private static final String ROLE_GAME_MASTER = "game_master";
     private static final String ROLE_PLATFORM_ADMIN = "platform_admin";
-    private static final String SUBJECT = "zitadel-sub-314159";
+    private static final String SUBJECT = "6f1c2b9e-4d3a-4e8b-9a71-2c5d8e0f3b64";
 
     private static final UUID PLAYER_PUBLIC_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID CHARACTER_PUBLIC_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
@@ -90,13 +88,11 @@ class CharacterControllerSecurityTest {
     }
 
     private static JwtRequestPostProcessor tokenWithRoles(String... roles) {
-        Map<String, Object> rolesClaim = new LinkedHashMap<>();
-        for (String role : roles) {
-            rolesClaim.put(role, Map.of());
-        }
         return jwt()
-                .jwt(token -> token.subject(SUBJECT).claim(ZITADEL_ROLES_CLAIM, rolesClaim))
-                .authorities(new ZitadelRoleConverter());
+                .jwt(token -> token.subject(SUBJECT)
+                        .claim(PublicIdClaim.CLAIM, SUBJECT)
+                        .claim(RoleClaimConverter.ROLES_CLAIM, List.of(roles)))
+                .authorities(new RoleClaimConverter());
     }
 
     @Test

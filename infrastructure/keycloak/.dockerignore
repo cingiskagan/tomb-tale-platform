@@ -1,0 +1,2 @@
+# The image builds the mapper from source, so local build output stays out.
+public-id-mapper/target

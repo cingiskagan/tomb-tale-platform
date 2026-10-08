@@ -23,8 +23,9 @@ export class PlayerService {
         return this.http.get<PagedResponse<Player>>(this.baseUrl, { params });
     }
 
+    /** POST, because the first call creates the profile. */
     getMyProfile(): Observable<Player> {
-        return this.http.get<Player>(`${this.baseUrl}/me`);
+        return this.http.post<Player>(`${this.baseUrl}/me`, null);
     }
 
     updateMyProfile(request: UpdateMyProfileRequest): Observable<Player> {

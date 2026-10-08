@@ -1,6 +1,5 @@
 package com.tombtale.serviceplayer.service;
 
-import com.tombtale.serviceplayer.client.ZitadelClient;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.dto.UpdateMyProfileRequest;
@@ -9,10 +8,7 @@ import com.tombtale.serviceplayer.entity.GameCharacter;
 import com.tombtale.serviceplayer.entity.Player;
 import com.tombtale.serviceplayer.mapper.PlayerMapper;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
-import com.tombtale.serviceplayer.util.LogUtils;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -22,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.dao.DataIntegrityViolationException;
+
+import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,26 +36,11 @@ import lombok.extern.slf4j.Slf4j;
 @Transactional(readOnly = true)
 public class PlayerService {
 
-    /**
-     * Number of leading characters from the Zitadel user ID
-     * used to generate a default display name (e.g. "Player_a1b2c3d4").
-     */
+    /** Random characters in a default display name, as in "Player_a1b2c3d4". */
     private static final int DISPLAY_NAME_ID_PREFIX_LENGTH = 8;
-
-    /**
-     * The alarm for {@code GET /players/me} having to create a row.
-     *
-     * <p>Its own category, not this class's logger, so it can be silenced
-     * without silencing anything else. The test profile turns it off: there is
-     * no Zitadel there, so the fallback is the only path tests can take and an
-     * alarm on every run would be noise. See ADR 0018.
-     */
-    private static final Logger PROVISIONING_FALLBACK =
-            LoggerFactory.getLogger("com.tombtale.provisioning.fallback");
 
     private final PlayerRepository playerRepository;
     private final PlayerMapper playerMapper;
-    private final ZitadelClient zitadelClient;
     private final OutboxService outboxService;
     private final TransactionTemplate transactionTemplate;
 
@@ -80,11 +63,8 @@ public class PlayerService {
     }
 
     /**
-     * Retrieves a player profile by their Zitadel user ID, or creates a new one
-     * if it does not exist yet (JIT Provisioning).
-     *
-     * <p>The entity never leaves this method. Mapping happens here so the
-     * controller deals only in DTOs.
+     * Returns the caller's profile, and creates it on their first call with the
+     * {@code publicId} Keycloak minted for the account (ADR 0024).
      *
      * <p>{@code NOT_SUPPORTED} is not decoration. The class declares
      * {@code readOnly = true}, which would make the creation below a write in a
@@ -92,93 +72,50 @@ public class PlayerService {
      * own transaction, so a collision can be caught and retried instead of
      * poisoning an outer one.
      *
-     * <p>Reading never writes. A player is always created together with a
-     * default character, in one transaction, so an existing player is returned
-     * exactly as it was stored.
-     *
-     * @param zitadelUserId the subject claim from the JWT
+     * @param publicId   the {@code public_id} claim of the caller's token
+     * @param iamId the {@code sub} claim, kept on a new row
      * @return the existing or newly created profile
      */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public PlayerResponse getOrCreatePlayer(String zitadelUserId) {
-        Player player = playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
-                .orElseGet(() -> {
-                    PROVISIONING_FALLBACK.error(
-                            "No player row for Zitadel user {} when reading their profile. The "
-                                    + "provisioning event never arrived — check the Zitadel target and "
-                                    + "execution. Creating the row now so the request succeeds.",
-                            LogUtils.maskId(zitadelUserId));
-                    return createOrRecoverPlayer(zitadelUserId);
-                });
+    public PlayerResponse getOrCreatePlayer(UUID publicId, String iamId) {
+        Player player = playerRepository.findByPublicIdWithCharacters(publicId)
+                .orElseGet(() -> createOrRecoverPlayer(publicId, iamId));
 
         return playerMapper.toResponse(player);
     }
 
     /**
-     * Gives a newly self-registered user everything they need to play: the
-     * player row with its {@code publicId} metadata, and the {@code player} role
-     * that lets them get a token at all. The role comes after the row commits, so
-     * no token is issued before the metadata exists.
+     * Creates the player, or returns the row a concurrent first call committed first.
      *
-     * <p>This is the path the Zitadel event drives, so it is silent: creating a
-     * row here is the design working. {@link #getOrCreatePlayer} raises an alarm
-     * for the same write because reaching it there means this never ran.
-     *
-     * <p>The grant is attempted every time, not only when the row is new. The
-     * two live in different systems and nothing makes them atomic, so a user
-     * with a row and no role is a state this can be asked to repair.
-     *
-     * <p>Safe to call twice. Zitadel retries a target it could not reach, a
-     * duplicate row lands on {@code uq_players_zitadel_user_id} rather than on a
-     * second one, and a duplicate grant comes back as a conflict the client
-     * treats as success.
-     *
-     * @param zitadelUserId the subject of the newly registered Zitadel user
-     */
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void provisionPlayer(String zitadelUserId) {
-        if (playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId).isPresent()) {
-            log.debug("Player already exists for Zitadel user: {}", LogUtils.maskId(zitadelUserId));
-        } else {
-            createOrRecoverPlayer(zitadelUserId);
-        }
-
-        zitadelClient.grantPlayerRole(zitadelUserId);
-    }
-
-    /**
-     * Creates the player, or returns the row a concurrent caller committed first.
-     *
-     * @param zitadelUserId the subject claim from the JWT
+     * @param publicId   the {@code public_id} claim of the caller's token
+     * @param iamId the {@code sub} claim of the caller's token
      * @return the created or recovered player
      */
-    private Player createOrRecoverPlayer(String zitadelUserId) {
+    private Player createOrRecoverPlayer(UUID publicId, String iamId) {
         try {
-            return createNewPlayerWithCharacter(zitadelUserId);
+            return createNewPlayerWithCharacter(publicId, iamId);
         } catch (DataIntegrityViolationException e) {
-            log.warn("Concurrent creation detected for zitadel user: {}. Fetching existing record.",
-                    LogUtils.maskId(zitadelUserId));
-            return playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
+            log.warn("Concurrent creation detected for player {}. Fetching existing record.", publicId);
+            return playerRepository.findByPublicIdWithCharacters(publicId)
                     .orElseThrow(() -> new IllegalStateException("Failed to find player after creation collision"));
         }
     }
 
     /**
-     * Creates a brand-new player with a default character (JIT provisioning).
+     * Creates the player with a default character. The player, the character
+     * and the {@code player.created} outbox row commit together or not at all.
      *
-     * <p>The template is the transaction the outbox needs: the player, the
-     * character and the {@code player.created} row commit together or not at all.
-     * The {@code publicId} metadata write runs inside it too, so no player commits without it (ADR 0023).
-     *
-     * @param zitadelUserId the subject claim from the JWT
+     * @param publicId   the {@code public_id} claim of the caller's token
+     * @param iamId the {@code sub} claim of the caller's token
      * @return the newly created player
      */
-    private Player createNewPlayerWithCharacter(String zitadelUserId) {
-        log.info("Creating new player profile for Zitadel user");
-        String defaultDisplayName = "Player_" + java.util.UUID.randomUUID().toString().substring(0, DISPLAY_NAME_ID_PREFIX_LENGTH);
+    private Player createNewPlayerWithCharacter(UUID publicId, String iamId) {
+        log.info("Creating player {}", publicId);
+        String defaultDisplayName = "Player_" + UUID.randomUUID().toString().substring(0, DISPLAY_NAME_ID_PREFIX_LENGTH);
 
         Player newPlayer = Player.builder()
-                .zitadelUserId(zitadelUserId)
+                .publicId(publicId)
+                .iamId(iamId)
                 .displayName(defaultDisplayName)
                 .build();
 
@@ -199,9 +136,6 @@ public class PlayerService {
                             saved.getPublicId(),
                             saved.getDisplayName(),
                             initialCharacter.getPublicId()));
-            // After the inserts: a concurrent duplicate fails on uq_players_zitadel_user_id
-            // before it can overwrite the winner's metadata.
-            zitadelClient.writePublicId(zitadelUserId, saved.getPublicId());
             return saved;
         });
     }
@@ -209,13 +143,13 @@ public class PlayerService {
     /**
      * Updates the player's profile information.
      *
-     * @param zitadelUserId the subject claim from the JWT
-     * @param request       the profile update request
+     * @param publicId the {@code public_id} claim of the caller's token
+     * @param request  the profile update request
      * @return the updated player response
      */
     @Transactional
-    public PlayerResponse updateMyProfile(String zitadelUserId, UpdateMyProfileRequest request) {
-        Player player = playerRepository.findByZitadelUserIdWithCharacters(zitadelUserId)
+    public PlayerResponse updateMyProfile(UUID publicId, UpdateMyProfileRequest request) {
+        Player player = playerRepository.findByPublicIdWithCharacters(publicId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found"));
 
         if (!player.getDisplayName().equalsIgnoreCase(request.getDisplayName()) &&

@@ -1,9 +1,9 @@
 package com.tombtale.commons.security;
 
 /**
- * The platform's three Zitadel project roles, and the {@code @PreAuthorize}
- * rules built from them. Lowercase, as Zitadel issues them; kept in sync with
- * the frontend's {@code PlatformRole}.
+ * The platform's three realm roles, and the {@code @PreAuthorize} rules built
+ * from them. Lowercase, as Keycloak issues them; kept in sync with the
+ * frontend's {@code PlatformRole}.
  *
  * <p>Strings rather than an enum because an annotation value must be a
  * compile-time constant, and concatenated literals are the only form the

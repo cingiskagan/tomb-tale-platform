@@ -255,8 +255,8 @@ updates:
 
   # ----- Local stack images ---------------------------------------------
   # Only reaches the literal tags in infrastructure/docker-compose.yml, which
-  # today means mongo and rabbitmq. Traefik, Postgres, Redis, Zitadel and the
-  # OTEL collector are written as ${VAR} and read from infrastructure/.env, and
+  # today means nginx, mongo and rabbitmq. Postgres, Redis and the OTEL
+  # collector are written as ${VAR} and read from infrastructure/.env, and
   # Dependabot does not expand those -- they still need bumping by hand.
   - package-ecosystem: "docker"
     directory: "/infrastructure"
@@ -274,3 +274,19 @@ updates:
       images:
         patterns:
           - "*"
+
+  # Keycloak's base image. The email-code extension's jar in the same
+  # Dockerfile names the Keycloak release it was built for, so a bump here
+  # needs the jar version and its checksum moved by hand in the same PR.
+  - package-ecosystem: "docker"
+    directory: "/infrastructure/keycloak"
+    schedule:
+      interval: "monthly"
+      time: "06:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 0  # paused -- see "Paused" note in the header
+    labels:
+      - "dependencies"
+      - "infrastructure"
+    commit-message:
+      prefix: "chore(docker)"

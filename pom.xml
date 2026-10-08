@@ -24,6 +24,7 @@
 		<module>platform-commons</module>
 		<module>service-player</module>
 		<module>service-commerce</module>
+		<module>infrastructure/keycloak/public-id-mapper</module>
 	</modules>
 
 </project>

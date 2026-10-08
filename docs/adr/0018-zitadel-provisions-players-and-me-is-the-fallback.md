@@ -1,7 +1,7 @@
 # 18. Zitadel provisions players, and `/me` is the fallback that complains
 
 - **Date:** 2026-09-17
-- **Status:** accepted
+- **Status:** superseded by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md)
 
 ## Context
 

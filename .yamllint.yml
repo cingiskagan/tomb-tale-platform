@@ -12,7 +12,7 @@
 extends: default
 
 rules:
-  # Compose commands, Traefik router labels and workflow `run:` steps are
+  # Compose commands, realm placeholders and workflow `run:` steps are
   # single unwrappable values. Breaking them at 80 columns costs readability
   # and buys nothing.
   line-length: disable

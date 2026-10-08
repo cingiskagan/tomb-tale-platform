@@ -1,10 +1,10 @@
 package com.tombtale.serviceplayer;
 
 import com.jayway.jsonpath.JsonPath;
-import com.tombtale.serviceplayer.client.ZitadelClient;
 import com.tombtale.serviceplayer.repository.OutboxEventRepository;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
-import com.tombtale.commons.security.ZitadelRoleConverter;
+import com.tombtale.commons.security.PublicIdClaim;
+import com.tombtale.commons.security.RoleClaimConverter;
 import com.tombtale.serviceplayer.support.PostgresTestBase;
 
 import org.junit.jupiter.api.AfterEach;
@@ -15,17 +15,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -40,9 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * application wired together at all — and they are the slowest tests we own.
  *
  * <p>The token is built with the {@code jwt()} post-processor instead of a real
- * signed one, and {@code ZitadelClient} is a mock because no Zitadel runs here.
- * Those two are the production wiring these tests do not exercise. Signature and
- * issuer checks are Spring's code.
+ * signed one, which is the production wiring these tests do not exercise.
+ * Signature and issuer checks are Spring's code.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -54,7 +52,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ServicePlayerApplicationTests extends PostgresTestBase {
 
     private static final String ME_URL = "/api/v1/players/me";
-    private static final String ZITADEL_ROLES_CLAIM = "urn:zitadel:iam:org:project:roles";
     private static final String ROLE_PLAYER = "player";
 
     /** JIT provisioning gives every new player exactly one default character. */
@@ -69,15 +66,13 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
     @Autowired
     private OutboxEventRepository outboxEventRepository;
 
-    /** Creating a player writes its metadata to Zitadel, and no Zitadel runs here. */
-    @MockitoBean
-    private ZitadelClient zitadelClient;
-
-    private String subject;
+    private UUID publicId;
+    private String iamId;
 
     @BeforeEach
-    void newSubject() {
-        subject = "smoke-" + UUID.randomUUID();
+    void newPlayer() {
+        publicId = UUID.randomUUID();
+        iamId = "keycloak-" + UUID.randomUUID();
     }
 
     /**
@@ -92,7 +87,7 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
      */
     @AfterEach
     void removeCommittedPlayer() {
-        playerRepository.findByZitadelUserIdWithCharacters(subject).ifPresent(player -> {
+        playerRepository.findByPublicIdWithCharacters(publicId).ifPresent(player -> {
             outboxEventRepository.deleteAll(outboxEventRepository.findAll().stream()
                     .filter(event -> event.getAggregateId().equals(player.getPublicId()))
                     .toList());
@@ -107,43 +102,39 @@ class ServicePlayerApplicationTests extends PostgresTestBase {
     }
 
     /**
-     * The JIT-provisioning happy path. A subject that has never been seen gets a
-     * profile and a default character on the first call, and the second call
-     * returns that same profile rather than making another one.
-     *
-     * <p>Comparing publicId across the two calls is the part that matters. A
-     * single 200 would also pass if nothing were ever committed; only the second
-     * call proves the row survived the first request.
+     * The first call creates the profile and a default character under the
+     * token's {@code publicId}, keeping its {@code sub}, and the second returns
+     * that same row. Only the second call proves the row survived the first request.
      */
     @Test
     void firstProfileCallCreatesThePlayerAndTheSecondReturnsTheSameOne() throws Exception {
-        MvcResult created = mockMvc.perform(get(ME_URL).with(playerToken()))
+        MvcResult created = mockMvc.perform(post(ME_URL).with(playerToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.publicId").isNotEmpty())
+                .andExpect(jsonPath("$.publicId").value(publicId.toString()))
                 .andExpect(jsonPath("$.displayName").isNotEmpty())
                 .andExpect(jsonPath("$.characters", hasSize(DEFAULT_CHARACTER_COUNT)))
                 .andReturn();
 
-        String publicId = JsonPath.read(created.getResponse().getContentAsString(), "$.publicId");
-        assertThat(publicId).isNotBlank();
+        String displayName = JsonPath.read(created.getResponse().getContentAsString(), "$.displayName");
+        assertThat(displayName).isNotBlank();
+        assertThat(playerRepository.findByPublicIdWithCharacters(publicId).orElseThrow().getIamId())
+                .isEqualTo(iamId);
 
-        mockMvc.perform(get(ME_URL).with(playerToken()))
+        mockMvc.perform(post(ME_URL).with(playerToken()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.publicId").value(publicId));
+                .andExpect(jsonPath("$.displayName").value(displayName));
     }
 
     /**
-     * Builds a token carrying the Zitadel roles claim, converted by the same
-     * {@link ZitadelRoleConverter} the application uses — so the claim shape is
-     * the single source of truth here as well as in production.
-     *
-     * <p>The subject is fresh per test. The shared container is not wiped between
-     * test classes, and both zitadelUserId and displayName are unique columns, so
-     * a fixed subject would fail on the second run.
+     * A token shaped like Keycloak's, converted by the application's own
+     * {@link RoleClaimConverter}. The {@code publicId} is fresh per test, because
+     * the shared container keeps committed rows between classes.
      */
     private JwtRequestPostProcessor playerToken() {
         return jwt()
-                .jwt(token -> token.subject(subject).claim(ZITADEL_ROLES_CLAIM, Map.of(ROLE_PLAYER, Map.of())))
-                .authorities(new ZitadelRoleConverter());
+                .jwt(token -> token.subject(iamId)
+                        .claim(PublicIdClaim.CLAIM, publicId.toString())
+                        .claim(RoleClaimConverter.ROLES_CLAIM, List.of(ROLE_PLAYER)))
+                .authorities(new RoleClaimConverter());
     }
 }

@@ -1,7 +1,7 @@
 # 23. The player's `publicId` travels in the access token
 
 - **Date:** 2026-10-01
-- **Status:** accepted
+- **Status:** superseded by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md)
 
 ## Context
 

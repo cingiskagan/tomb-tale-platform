@@ -23,10 +23,9 @@ spring:
         jwt:
           issuer-uri: https://issuer.test.example.com
 
-# A fixed key so a test can sign a body the way Zitadel would.
 app:
-  # Both scheduled jobs call out, to Zitadel and to RabbitMQ. A @SpringBootTest
-  # would start them against nothing, so they stay off and their tests call them.
+  # The outbox publisher calls out to RabbitMQ. A @SpringBootTest would start
+  # it against nothing, so it stays off and its tests call it.
   scheduling:
     enabled: false
 
@@ -35,11 +34,3 @@ app:
     batch-size: 100
     confirm-timeout: PT5S
     retention: P30D
-
-  zitadel:
-    webhook:
-      signing-key: test-signing-key
-    # The BODY the controller tests post carries userID = this, so the payload
-    # reads as a self-registration. One test overrides it to prove the opposite.
-    registration:
-      login-client-id: "336392597046755331"

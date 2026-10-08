@@ -65,7 +65,7 @@ const TombTalePreset = definePreset(Aura, {
  * - Routing with lazy-loaded guards
  * - HTTP client with Bearer token interceptor
  * - Browser animations for PrimeNG transitions
- * - OAuth2/OIDC client for Zitadel authentication
+ * - OAuth2/OIDC client for Keycloak authentication
  * - PrimeNG component library with Tomb Tale dark theme
  */
 export const appConfig: ApplicationConfig = {

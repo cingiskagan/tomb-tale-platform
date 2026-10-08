@@ -1,15 +1,16 @@
 package com.tombtale.serviceplayer.controller;
 
+import com.tombtale.commons.security.PublicIdClaim;
 import com.tombtale.commons.security.RoleConstants;
 import com.tombtale.commons.web.PagedResponse;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.service.PlayerService;
-import com.tombtale.serviceplayer.util.LogUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,15 +18,19 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.UUID;
 
 /**
  * REST controller for player profile operations.
  * <p>
- * All endpoints require a valid Zitadel JWT.
- * The authenticated user is identified via the "sub" claim in the token.
+ * All endpoints require a valid Keycloak JWT. The caller is the player whose
+ * {@code publicId} the token's {@code public_id} claim carries (ADR 0024).
  */
 @Slf4j
 @RestController
@@ -36,25 +41,19 @@ public class PlayerController {
     private final PlayerService playerService;
 
     /**
-     * GET /api/v1/players/me
+     * POST /api/v1/players/me
      * <p>
-     * Returns the current authenticated player's profile.
-     * <p>
-     * It still creates the row when it finds none, but that is now the fallback
-     * rather than the design. Zitadel provisions players on user creation
-     * (ADR 0018); reaching the creation path here means that event never
-     * arrived, so it logs an error while still answering the request.
+     * Returns the current authenticated player's profile. The first call
+     * creates it, with the {@code publicId} Keycloak minted for the account,
+     * which is why this is a POST: a GET must never write.
      *
      * @param jwt the injected JWT token from the authenticated request
      * @return the player profile DTO
      */
-    @GetMapping("/me")
+    @PostMapping("/me")
     @PreAuthorize(RoleConstants.IS_AUTHENTICATED)
     public ResponseEntity<PlayerResponse> getMyProfile(@AuthenticationPrincipal Jwt jwt) {
-        String zitadelUserId = jwt.getSubject();
-        log.debug("Fetching profile for Zitadel user: {}", LogUtils.maskId(zitadelUserId));
-
-        return ResponseEntity.ok(playerService.getOrCreatePlayer(zitadelUserId));
+        return ResponseEntity.ok(playerService.getOrCreatePlayer(callerPublicId(jwt), jwt.getSubject()));
     }
 
     /**
@@ -71,10 +70,7 @@ public class PlayerController {
     public ResponseEntity<PlayerResponse> updateMyProfile(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody com.tombtale.serviceplayer.dto.UpdateMyProfileRequest request) {
-        String zitadelUserId = jwt.getSubject();
-        log.debug("Updating profile for Zitadel user: {}", LogUtils.maskId(zitadelUserId));
-
-        PlayerResponse updated = playerService.updateMyProfile(zitadelUserId, request);
+        PlayerResponse updated = playerService.updateMyProfile(callerPublicId(jwt), request);
         return ResponseEntity.ok(updated);
     }
 
@@ -94,5 +90,11 @@ public class PlayerController {
             @ModelAttribute PlayerFilterRequest filter,
             Pageable pageable) {
         return ResponseEntity.ok(PagedResponse.from(playerService.listPlayers(filter, pageable)));
+    }
+
+    /** The caller's {@code publicId}. A token without the claim names no player, so it gets 401. */
+    private static UUID callerPublicId(Jwt jwt) {
+        return PublicIdClaim.read(jwt).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.UNAUTHORIZED, "The token carries no public_id claim"));
     }
 }

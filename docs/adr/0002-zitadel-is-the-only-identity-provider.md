@@ -1,7 +1,7 @@
 # 2. Zitadel is the only identity provider
 
 - **Date:** 2026-03-12
-- **Status:** accepted
+- **Status:** superseded by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md)
 
 ## Context
 

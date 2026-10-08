@@ -8,7 +8,7 @@ import java.util.UUID;
  * Read-only DTO returned to API consumers for player data.
  *
  * <p>
- * Intentionally omits the internal {@code id} and {@code zitadelUserId} to keep
+ * Intentionally omits the internal {@code id} and {@code iamId} to keep
  * the public contract clean and avoid leaking internal/auth identifiers.
  *
  * @param publicId         unique player public identifier

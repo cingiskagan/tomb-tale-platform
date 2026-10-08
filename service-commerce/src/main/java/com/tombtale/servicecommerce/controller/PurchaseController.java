@@ -37,8 +37,8 @@ import java.util.UUID;
  * Endpoints are documented with bearer JWT security in OpenAPI. Runtime
  * access control is enforced per method by {@code @PreAuthorize}: mutations
  * require {@code platform_admin}, reads also accept {@code game_master}, and
- * {@code player} has no access. Authorities come from Zitadel project roles
- * (see {@code ZitadelRoleConverter}).
+ * {@code player} has no access. Authorities come from the token's realm roles
+ * (see {@code RoleClaimConverter}).
  */
 @RestController
 @RequestMapping("/api/v1/purchases")

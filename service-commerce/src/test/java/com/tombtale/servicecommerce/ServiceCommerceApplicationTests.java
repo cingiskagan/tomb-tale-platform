@@ -3,7 +3,8 @@ package com.tombtale.servicecommerce;
 import com.jayway.jsonpath.JsonPath;
 import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import com.tombtale.servicecommerce.repository.PurchaseRepository;
-import com.tombtale.commons.security.ZitadelRoleConverter;
+import com.tombtale.commons.security.PublicIdClaim;
+import com.tombtale.commons.security.RoleClaimConverter;
 import com.tombtale.servicecommerce.support.PostgresTestBase;
 
 import org.junit.jupiter.api.AfterEach;
@@ -18,7 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 import java.math.BigDecimal;
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,9 +53,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ServiceCommerceApplicationTests extends PostgresTestBase {
 
     private static final String PURCHASES_URL = "/api/v1/purchases";
-    private static final String ZITADEL_ROLES_CLAIM = "urn:zitadel:iam:org:project:roles";
     private static final String ROLE_PLATFORM_ADMIN = "platform_admin";
-    private static final String ADMIN_SUBJECT = "smoke-admin";
+    private static final String ADMIN_SUBJECT = "0b9b7c2e-5f4d-4c3a-8e1f-7a6b5c4d3e2f";
 
     private static final String ITEM_CODE = "SWORD_IRON";
     private static final String PLAYER_ID = "aaaaaaaa-0000-4000-8000-00000000beef";
@@ -150,14 +150,15 @@ class ServiceCommerceApplicationTests extends PostgresTestBase {
     }
 
     /**
-     * Builds a platform_admin token carrying the Zitadel roles claim, converted by
-     * the same {@link ZitadelRoleConverter} the application uses — so the claim
-     * shape is the single source of truth here as well as in production.
+     * Builds a platform_admin token shaped like Keycloak's, converted by the same
+     * {@link RoleClaimConverter} the application uses — so the claim shape is the
+     * single source of truth here as well as in production.
      */
     private static JwtRequestPostProcessor adminToken() {
         return jwt()
                 .jwt(token -> token.subject(ADMIN_SUBJECT)
-                        .claim(ZITADEL_ROLES_CLAIM, Map.of(ROLE_PLATFORM_ADMIN, Map.of())))
-                .authorities(new ZitadelRoleConverter());
+                        .claim(PublicIdClaim.CLAIM, ADMIN_SUBJECT)
+                        .claim(RoleClaimConverter.ROLES_CLAIM, List.of(ROLE_PLATFORM_ADMIN)))
+                .authorities(new RoleClaimConverter());
     }
 }

@@ -3,12 +3,12 @@ import { InjectionToken } from '@angular/core';
 /**
  * Settings the portal reads at startup rather than compiling in.
  *
- * Zitadel generates the client id when the OIDC app is created, so it cannot
- * live in a source file without a rebuild rewriting that file. See ADR 0019.
+ * One build serves every environment, and each one replaces this file with
+ * its own values. See ADR 0020 and ADR 0024.
  */
 export interface RuntimeConfig {
-  readonly zitadelIssuerUri: string;
-  readonly zitadelClientId: string;
+  readonly issuerUri: string;
+  readonly clientId: string;
   readonly apiBaseUrl: string;
 }
 
@@ -17,13 +17,13 @@ export const RUNTIME_CONFIG = new InjectionToken<RuntimeConfig>('RUNTIME_CONFIG'
 
 const CONFIG_URL = 'config.json';
 
-const REQUIRED_KEYS = ['zitadelIssuerUri', 'zitadelClientId', 'apiBaseUrl'] as const;
+const REQUIRED_KEYS = ['issuerUri', 'clientId', 'apiBaseUrl'] as const;
 
-/** Points at the one command that writes the file, whatever went wrong. */
+/** Points at the file to check, whatever went wrong. */
 function configError(reason: string): Error {
   return new Error(
     `Cannot read ${CONFIG_URL}: ${reason}. ` +
-      'Run infrastructure/zitadel-setup.sh to write it.',
+      'Check frontend-portal/public/config.json.',
   );
 }
 
@@ -72,8 +72,8 @@ function validate(parsed: unknown): RuntimeConfig {
   }
 
   return {
-    zitadelIssuerUri: values['zitadelIssuerUri'] as string,
-    zitadelClientId: values['zitadelClientId'] as string,
+    issuerUri: values['issuerUri'] as string,
+    clientId: values['clientId'] as string,
     apiBaseUrl: values['apiBaseUrl'] as string,
   };
 }

@@ -11,195 +11,73 @@ x-logging: &default-logging
     max-file: "3"
 
 services:
+  # The single entry point. nginx.conf routes the service prefixes and
+  # Keycloak's pages, and answers 404 for anything else (ADR 0025).
   proxy:
-    image: ${TRAEFIK_IMAGE}
+    image: nginx:1.30.5-alpine
     restart: unless-stopped
     logging: *default-logging
-    command:
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --providers.docker.network=tombtale
-      - --entrypoints.web.address=:80
-      - --api.dashboard=${TRAEFIK_DASHBOARD_ENABLED}
-      - --api.insecure=false
-      - --ping=true
-      - --ping.entrypoint=web
-      - --log.level=${TRAEFIK_LOG_LEVEL}
-      - --accesslog=${TRAEFIK_ACCESSLOG_ENABLED}
-      - --providers.file.filename=/etc/traefik/dynamic.yml
     ports:
       - ${PROXY_HTTP_PUBLISHED_PORT}:80
     networks:
       - tombtale
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik-dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8099/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     depends_on:
-      zitadel-api:
-        condition: service_healthy
-      zitadel-login:
+      keycloak:
         condition: service_healthy
 
-  zitadel-api:
-    image: ghcr.io/zitadel/zitadel:${ZITADEL_VERSION}
+  # The identity provider. It imports keycloak/import/*.json at start and skips
+  # a realm that already exists, so a realm change needs a fresh database
+  # (README.md). The proxy routes /realms and /resources only. The admin
+  # console answers on a localhost port.
+  keycloak:
+    build: ./keycloak
     restart: unless-stopped
     logging: *default-logging
-    user: "0"
-    command: start-from-init --masterkeyFile /run/secrets/zitadel-masterkey
-    # The services run on the host (run-local.sh), not in this stack, so the
-    # provisioning target has to reach back out. On Linux host.docker.internal
-    # only resolves if it is mapped here (ADR 0018).
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    command: start-dev --import-realm
+    # The heap is 70% of this. Without a limit the JVM sizes itself from the host.
+    mem_limit: 1536m
     environment:
-      ZITADEL_PORT: 8080
-      ZITADEL_EXTERNALDOMAIN: ${ZITADEL_DOMAIN}
-      ZITADEL_EXTERNALPORT: ${ZITADEL_EXTERNALPORT}
-      ZITADEL_EXTERNALSECURE: ${ZITADEL_EXTERNALSECURE}
-      ZITADEL_TLS_ENABLED: false
-
-      ZITADEL_DATABASE_POSTGRES_HOST: postgres
-      ZITADEL_DATABASE_POSTGRES_PORT: 5432
-      ZITADEL_DATABASE_POSTGRES_DATABASE: ${POSTGRES_DB}
-      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: ${POSTGRES_ADMIN_USER}
-      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: ${POSTGRES_ADMIN_PASSWORD}
-      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
-      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: ${POSTGRES_ZITADEL_USER}
-      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: ${POSTGRES_ZITADEL_PASSWORD}
-      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
-
-      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED: false
-      ZITADEL_FIRSTINSTANCE_LOGINCLIENTPATPATH: /zitadel/bootstrap/login-client.pat
-
-      # Service account for zitadel-setup.sh. Defining Org.Machine makes Zitadel
-      # create it with IAM_OWNER at init, and write its PAT to PATPATH inside the
-      # bootstrap volume. This is what lets the project, roles, OIDC client and
-      # the provisioning target be created by script instead of by hand.
-      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME: ${ZITADEL_ADMIN_SA_USERNAME}
-      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: ${ZITADEL_ADMIN_SA_NAME}
-      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_PAT_EXPIRATIONDATE: ${ZITADEL_ADMIN_PAT_EXPIRATION}
-      ZITADEL_FIRSTINSTANCE_PATPATH: /zitadel/bootstrap/admin.pat
-      ZITADEL_FIRSTINSTANCE_ORG_LOGINCLIENT_MACHINE_USERNAME: login-client
-      ZITADEL_FIRSTINSTANCE_ORG_LOGINCLIENT_MACHINE_NAME: Automatically Initialized IAM_LOGIN_CLIENT
-      ZITADEL_FIRSTINSTANCE_ORG_LOGINCLIENT_PAT_EXPIRATIONDATE: ${LOGIN_CLIENT_PAT_EXPIRATION}
-
-      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_REQUIRED: true
-      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_BASEURI: ${ZITADEL_PUBLIC_SCHEME}://${ZITADEL_DOMAIN}:${ZITADEL_EXTERNALPORT}/ui/v2/login/
-      ZITADEL_OIDC_DEFAULTLOGINURLV2: ${ZITADEL_PUBLIC_SCHEME}://${ZITADEL_DOMAIN}:${ZITADEL_EXTERNALPORT}/ui/v2/login/login?authRequest=
-      ZITADEL_OIDC_DEFAULTLOGOUTURLV2: ${ZITADEL_PUBLIC_SCHEME}://${ZITADEL_DOMAIN}:${ZITADEL_EXTERNALPORT}/ui/v2/login/logout?post_logout_redirect=
-      ZITADEL_SAML_DEFAULTLOGINURLV2: ${ZITADEL_PUBLIC_SCHEME}://${ZITADEL_DOMAIN}:${ZITADEL_EXTERNALPORT}/ui/v2/login/login?samlRequest=
-
-      ZITADEL_LOGSTORE_ACCESS_STDOUT_ENABLED: ${ZITADEL_ACCESS_LOG_STDOUT_ENABLED}
-
-      ZITADEL_INSTRUMENTATION_TRACE_EXPORTER_TYPE: ${ZITADEL_INSTRUMENTATION_TRACE_EXPORTER_TYPE}
-      ZITADEL_INSTRUMENTATION_TRACE_EXPORTER_ENDPOINT: ${ZITADEL_INSTRUMENTATION_TRACE_EXPORTER_ENDPOINT}
-      ZITADEL_INSTRUMENTATION_TRACE_EXPORTER_INSECURE: ${ZITADEL_INSTRUMENTATION_TRACE_EXPORTER_INSECURE}
-      ZITADEL_INSTRUMENTATION_SERVICENAME: ${ZITADEL_INSTRUMENTATION_SERVICENAME}
-
-      ZITADEL_CACHES_CONNECTORS_REDIS_ENABLED: ${ZITADEL_CACHES_CONNECTORS_REDIS_ENABLED}
-      ZITADEL_CACHES_CONNECTORS_REDIS_ADDR: ${ZITADEL_CACHES_CONNECTORS_REDIS_ADDR}
-      ZITADEL_CACHES_CONNECTORS_REDIS_USERNAME: ${ZITADEL_CACHES_CONNECTORS_REDIS_USERNAME}
-      ZITADEL_CACHES_CONNECTORS_REDIS_PASSWORD: ${ZITADEL_CACHES_CONNECTORS_REDIS_PASSWORD}
-      ZITADEL_CACHES_INSTANCE_CONNECTOR: ${ZITADEL_CACHES_INSTANCE_CONNECTOR}
-      ZITADEL_CACHES_MILESTONES_CONNECTOR: ${ZITADEL_CACHES_MILESTONES_CONNECTOR}
-      ZITADEL_CACHES_ORGANIZATION_CONNECTOR: ${ZITADEL_CACHES_ORGANIZATION_CONNECTOR}
-
-    healthcheck:
-      test:
-        - CMD
-        - /app/zitadel
-        - ready
-      interval: 10s
-      timeout: 30s
-      retries: 12
-      start_period: 20s
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL}
+      KC_HOSTNAME_ADMIN: http://localhost:${KEYCLOAK_ADMIN_PORT}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      KC_DB_USERNAME: ${POSTGRES_KEYCLOAK_USER}
+      KC_DB_PASSWORD: ${POSTGRES_KEYCLOAK_PASSWORD}
+      KC_DB_SCHEMA: keycloak
+      # The realm file reads these through its ${...} placeholders.
+      PORTAL_REDIRECT_URI: ${PORTAL_REDIRECT_URI}
+      PORTAL_POST_LOGOUT_URI: ${PORTAL_POST_LOGOUT_URI}
+      PORTAL_ORIGIN: ${PORTAL_ORIGIN}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_AUTH: ${SMTP_AUTH}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_STARTTLS: ${SMTP_STARTTLS}
+      SMTP_SENDER_ADDRESS: ${SMTP_SENDER_ADDRESS}
+      SMTP_SENDER_NAME: ${SMTP_SENDER_NAME}
+    ports:
+      - "127.0.0.1:${KEYCLOAK_ADMIN_PORT}:8080"
     volumes:
-      - ./.zitadel-masterkey:/run/secrets/zitadel-masterkey:ro
-      - zitadel-bootstrap:/zitadel/bootstrap:rw
+      - ./keycloak/import:/opt/keycloak/data/import:ro
     networks:
       - tombtale
     depends_on:
       postgres:
         condition: service_healthy
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=tombtale
-
-      - traefik.http.services.zitadel-api.loadbalancer.server.port=8080
-      - traefik.http.services.zitadel-api.loadbalancer.server.scheme=h2c
-
-      # Note: no dedicated gRPC router needed. All gRPC and Connect-RPC traffic
-      # is handled by the catch-all router below since the backend already uses h2c.
-
-      # /api belongs to the platform services (traefik-dynamic.yml). An /api
-      # path with no service router must get Traefik's 404, never Zitadel.
-      - traefik.http.routers.zitadel-canonical-web.rule=Host(`${ZITADEL_DOMAIN}`) && !PathPrefix(`/ui/v2/login`) && !PathPrefix(`/api`) && !Path(`/`)
-      - traefik.http.routers.zitadel-canonical-web.entrypoints=web
-      - traefik.http.routers.zitadel-canonical-web.service=zitadel-api
-      - traefik.http.routers.zitadel-canonical-web.priority=100
-
-
-  zitadel-login:
-    image: ghcr.io/zitadel/zitadel-login:${ZITADEL_VERSION}
-    restart: unless-stopped
-    logging: *default-logging
-    user: "0"
-    environment:
-      ZITADEL_API_URL: http://zitadel-api:8080
-      NEXT_PUBLIC_BASE_PATH: /ui/v2/login
-      ZITADEL_SERVICE_USER_TOKEN_FILE: /zitadel/bootstrap/login-client.pat
-      CUSTOM_REQUEST_HEADERS: Host:${ZITADEL_DOMAIN},X-Forwarded-Proto:${ZITADEL_PUBLIC_SCHEME}
-
-      # Self-registration creates the user with the address unverified and
-      # sends nothing. This makes the login UI send the code and hold the user
-      # at /verify until they enter it, instead of letting them straight in.
-      # The login policy allows only the emailed code as a second factor, and
-      # Zitadel refuses that factor on an unverified address, so without this
-      # every new player reaches an empty "Set up 2-Factor" screen and stops.
-      EMAIL_VERIFICATION: "true"
-
-      # Future-ready placeholders for upcoming Login OTEL support.
-      OTEL_SERVICE_NAME: ${LOGIN_OTEL_SERVICE_NAME}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${LOGIN_OTEL_EXPORTER_OTLP_ENDPOINT}
-      OTEL_EXPORTER_OTLP_PROTOCOL: ${LOGIN_OTEL_EXPORTER_OTLP_PROTOCOL}
-    healthcheck:
-      test:
-        - CMD
-        - /bin/sh
-        - -c
-        - node /app/healthcheck.js http://localhost:3000/ui/v2/login/healthy
-      interval: 10s
-      timeout: 30s
-      retries: 12
-      start_period: 20s
-    volumes:
-      - zitadel-bootstrap:/zitadel/bootstrap:ro
-    networks:
-      - tombtale
-    depends_on:
-      zitadel-api:
-        condition: service_healthy
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=tombtale
-      - traefik.http.services.zitadel-login.loadbalancer.server.port=3000
-
-      - traefik.http.middlewares.zitadel-root-rewrite.replacepath.path=/ui/v2/login/
-
-      - traefik.http.routers.zitadel-root-web.rule=Host(`${ZITADEL_DOMAIN}`) && Path(`/`)
-      - traefik.http.routers.zitadel-root-web.entrypoints=web
-      - traefik.http.routers.zitadel-root-web.middlewares=zitadel-root-rewrite
-      - traefik.http.routers.zitadel-root-web.service=zitadel-login
-      - traefik.http.routers.zitadel-root-web.priority=400
-
-
-      - traefik.http.routers.zitadel-login-web.rule=Host(`${ZITADEL_DOMAIN}`) && PathPrefix(`/ui/v2/login`)
-      - traefik.http.routers.zitadel-login-web.entrypoints=web
-      - traefik.http.routers.zitadel-login-web.service=zitadel-login
-      - traefik.http.routers.zitadel-login-web.priority=250
-
 
   postgres:
     image: ${POSTGRES_IMAGE}
@@ -209,8 +87,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD}
       POSTGRES_USER: ${POSTGRES_ADMIN_USER}
       POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_ZITADEL_USER: ${POSTGRES_ZITADEL_USER}
-      POSTGRES_ZITADEL_PASSWORD: ${POSTGRES_ZITADEL_PASSWORD}
+      POSTGRES_KEYCLOAK_USER: ${POSTGRES_KEYCLOAK_USER}
+      POSTGRES_KEYCLOAK_PASSWORD: ${POSTGRES_KEYCLOAK_PASSWORD}
       POSTGRES_PLAYER_USER: ${POSTGRES_PLAYER_USER}
       POSTGRES_PLAYER_PASSWORD: ${POSTGRES_PLAYER_PASSWORD}
       POSTGRES_COMMERCE_USER: ${POSTGRES_COMMERCE_USER}
@@ -242,10 +120,10 @@ services:
     networks:
       - tombtale
 
-  # Dev-only mail catcher. Zitadel reaches it at mailpit:1025 inside the
+  # Dev-only mail catcher. Keycloak reaches it at mailpit:1025 inside the
   # network; the inbox is at http://localhost:8025 on the host. It accepts
   # every message and delivers none, and keeps no volume, so a restart
-  # empties it. Prod points the same ZITADEL_SMTP_* values at a real provider.
+  # empties it. Prod points the same SMTP_* values at a real provider.
   mailpit:
     # Defaulted like redis, so a .env written before this service existed
     # still brings the stack up.
@@ -254,12 +132,12 @@ services:
     logging: *default-logging
     environment:
       # Accept any credentials, including none, over an unencrypted
-      # connection. Zitadel sends none today. This keeps the handshake working
-      # if ZITADEL_SMTP_USER is filled in to rehearse a real provider.
+      # connection. Keycloak sends none today. This keeps the handshake working
+      # if SMTP_USER is filled in to rehearse a real provider.
       MP_SMTP_AUTH_ACCEPT_ANY: 1
       MP_SMTP_AUTH_ALLOW_INSECURE: 1
     ports:
-      - "1025:1025"   # SMTP, for Zitadel
+      - "1025:1025"   # SMTP, for Keycloak
       - "8025:8025"   # Web UI, for you
     networks:
       - tombtale
@@ -324,7 +202,6 @@ networks:
 
 volumes:
   postgres-data:
-  zitadel-bootstrap:
   redis-data:
   mongo-data:
   rabbitmq-data:

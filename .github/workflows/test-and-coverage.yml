@@ -18,7 +18,7 @@ jobs:
         # platform-commons is built and measured like the services. It is a
         # reactor module, so each job builds its target with `-am` and gets the
         # dependency from the same build rather than from a previous one.
-        service: [platform-commons, service-player, service-commerce]
+        service: [platform-commons, service-player, service-commerce, infrastructure/keycloak/public-id-mapper]
 
     steps:
       - name: Checkout repository

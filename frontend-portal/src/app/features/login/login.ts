@@ -7,7 +7,7 @@ import { AuthService } from '../../core/auth';
  * Login page component for Tomb Tale Online RPG.
  *
  * This component does NOT render a username/password form.
- * Instead, it delegates authentication to Zitadel's hosted login page
+ * Instead, it delegates authentication to Keycloak's login page
  * via the OIDC Authorization Code + PKCE flow.
  *
  * If the user is already authenticated, they are redirected to the dashboard.
@@ -33,7 +33,7 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  /** Initiates the OIDC PKCE login flow, redirecting to Zitadel. */
+  /** Initiates the OIDC PKCE login flow, redirecting to Keycloak. */
   onEnterTomb(): void {
     this.authService.login();
   }

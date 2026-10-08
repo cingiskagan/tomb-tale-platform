@@ -3,7 +3,6 @@
 # =========================
 .env
 infrastructure/.env
-infrastructure/.zitadel-masterkey
 
 # =========================
 # IDE / Editor
@@ -44,16 +43,11 @@ out/
 .angular/
 dist/
 coverage/
-# Written by infrastructure/zitadel-setup.sh — belongs to one Zitadel instance.
-frontend-portal/public/config.json
 
 # =========================
 # Docker
 # =========================
 docker-compose.override.yml
-infrastructure/.client-id
-infrastructure/.personal_access_token
-infrastructure/*.json
 docs/reviews
 
 # =========================

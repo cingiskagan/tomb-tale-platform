@@ -69,7 +69,7 @@ in sequence here — a record written later can describe an earlier choice.
 | # | Decision | Date | Status |
 | --- | --- | --- | --- |
 | [0001](0001-one-repository-for-the-whole-platform.md) | One repository for the whole platform | 2026-03-12 | accepted |
-| [0002](0002-zitadel-is-the-only-identity-provider.md) | Zitadel is the only identity provider | 2026-03-12 | accepted |
+| [0002](0002-zitadel-is-the-only-identity-provider.md) | Zitadel is the only identity provider | 2026-03-12 | superseded by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md) |
 | [0003](0003-public-uuid-separate-from-the-database-key.md) | A public UUID separate from the database key | 2026-06-30 | accepted |
 | [0010](0010-integration-tests-are-the-default.md) | Integration tests are the default | 2026-07-10 | accepted |
 | [0011](0011-purchases-are-an-admin-tool-for-now.md) | Purchases are an admin tool, so `playerId` stays in the body | 2026-08-12 | accepted |
@@ -85,9 +85,11 @@ in sequence here — a record written later can describe an earlier choice.
 | [0015](0015-one-error-envelope-rfc-9457.md) | One error envelope, and it is RFC 9457 | 2026-09-14 | accepted |
 | [0016](0016-lists-answer-with-a-paged-envelope.md) | Lists answer with a paged envelope of our own | 2026-09-17 | accepted |
 | [0017](0017-an-api-field-is-named-after-the-field-behind-it.md) | An API field is named after the field behind it | 2026-09-17 | accepted |
-| [0018](0018-zitadel-provisions-players-and-me-is-the-fallback.md) | Zitadel provisions players, and `/me` is the fallback that complains | 2026-09-17 | accepted |
-| [0019](0019-zitadel-configuration-is-code.md) | Zitadel configuration is code | 2026-09-18 | accepted |
+| [0018](0018-zitadel-provisions-players-and-me-is-the-fallback.md) | Zitadel provisions players, and `/me` is the fallback that complains | 2026-09-17 | superseded by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md) |
+| [0019](0019-zitadel-configuration-is-code.md) | Zitadel configuration is code | 2026-09-18 | superseded by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md) |
 | [0020](0020-the-portal-reads-its-configuration-at-runtime.md) | The portal reads its configuration at runtime | 2026-09-19 | accepted |
-| [0021](0021-api-belongs-to-the-platform-not-zitadel.md) | `/api` belongs to the platform, not to Zitadel | 2026-09-28 | accepted |
+| [0021](0021-api-belongs-to-the-platform-not-zitadel.md) | `/api` belongs to the platform, not to Zitadel | 2026-09-28 | superseded by [0025](0025-nginx-replaces-traefik.md) |
 | [0022](0022-separate-services-not-a-modular-monolith.md) | Separate services, not a modular monolith | 2026-09-28 | accepted |
-| [0023](0023-the-player-publicid-travels-in-the-access-token.md) | The player's `publicId` travels in the access token | 2026-10-01 | accepted |
+| [0023](0023-the-player-publicid-travels-in-the-access-token.md) | The player's `publicId` travels in the access token | 2026-10-01 | superseded by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md) |
+| [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md) | Keycloak replaces Zitadel, and it mints the player's `publicId` | 2026-10-06 | accepted |
+| [0025](0025-nginx-replaces-traefik.md) | nginx replaces Traefik, and `/api` still belongs to the platform | 2026-10-06 | accepted |

@@ -5,7 +5,7 @@ import { AuthService } from '../../core/auth';
 
 /**
  * Handles the OIDC redirect callback after the user authenticates
- * with Zitadel. Displays a loading spinner while the authorization
+ * with Keycloak. Displays a loading spinner while the authorization
  * code is exchanged for tokens, then redirects to the dashboard.
  */
 @Component({

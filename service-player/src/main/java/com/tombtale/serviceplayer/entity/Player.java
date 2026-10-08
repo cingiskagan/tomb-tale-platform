@@ -23,11 +23,9 @@ import java.util.List;
 /**
  * Core Player entity stored in PostgreSQL.
  * <p>
- * The {@code zitadelUserId} links this game profile to the authenticated
- * identity managed by Zitadel (the "sub" claim in the JWT). It is the only
- * place on the platform that claim is stored: everything else, including
- * service-commerce, refers to a player by the {@code publicId} this entity
- * inherits from {@link BaseEntity}.
+ * The {@code publicId} it inherits from {@link BaseEntity} is the token's
+ * {@code public_id} claim, a UUID Keycloak made for this user (ADR 0024).
+ * Every service refers to a player by it.
  */
 @Getter
 @Setter
@@ -38,9 +36,9 @@ import java.util.List;
 @ToString(exclude = "characters")
 public class Player extends BaseEntity {
 
-    /** Zitadel user ID — the "sub" claim from the JWT. Unique per player. */
+    /** The identity provider's user id, the token's {@code sub}. It never leaves this service (ADR 0014). */
     @Column(nullable = false, unique = true)
-    private String zitadelUserId;
+    private String iamId;
 
     /** In-game display name chosen by the player. */
     @Column(nullable = false, unique = true)
@@ -56,7 +54,7 @@ public class Player extends BaseEntity {
      * Characters owned by this player.
      *
      * <p>Fetched lazily. Every read path that needs the characters says so:
-     * {@code PlayerRepository.findByZitadelUserIdWithCharacters} for the single
+     * {@code PlayerRepository.findByPublicIdWithCharacters} for the single
      * player, and the second query in {@code PlayerQueryRepositoryImpl} for a
      * page of them. An EAGER mapping here fetched them for every query whether
      * they were wanted or not, one extra select per player.

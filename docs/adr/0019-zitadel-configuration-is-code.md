@@ -1,7 +1,7 @@
 # 19. Zitadel configuration is code
 
 - **Date:** 2026-09-18
-- **Status:** accepted
+- **Status:** superseded by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md)
 
 ## Context
 

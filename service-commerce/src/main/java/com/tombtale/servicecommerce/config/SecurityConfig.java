@@ -1,7 +1,8 @@
 package com.tombtale.servicecommerce.config;
 
 import com.tombtale.commons.security.PlatformCorsPolicy;
-import com.tombtale.commons.security.ZitadelRoleConverter;
+import com.tombtale.commons.security.PublicIdClaimValidator;
+import com.tombtale.commons.security.RoleClaimConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -9,6 +10,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -34,10 +37,10 @@ import org.springframework.beans.factory.annotation.Value;
  * <li><b>CSRF disabled</b> — this API is stateless and uses
  * {@code Authorization: Bearer} headers, not cookies.</li>
  * <li><b>Stateless sessions</b> — no server-side session is created.</li>
- * <li><b>Zitadel roles as authorities</b> — {@link ZitadelRoleConverter}
- * reads the project-roles claim so endpoints can guard with
+ * <li><b>Realm roles as authorities</b> — {@link RoleClaimConverter}
+ * reads the {@code roles} claim so endpoints can guard with
  * {@code hasAuthority('platform_admin')} rather than {@code hasRole(…)},
- * which would expect a {@code ROLE_} prefix Zitadel never issues.</li>
+ * which would expect a {@code ROLE_} prefix Keycloak never issues.</li>
  * </ul>
  */
 @Configuration
@@ -52,7 +55,7 @@ public class SecurityConfig {
      * Configures the main security filter chain for HTTP requests.
      *
      * <p>
-     * Requests to {@code /api/**} must carry a valid Zitadel JWT; anything
+     * Requests to {@code /api/**} must carry a valid Keycloak JWT; anything
      * else (Swagger UI, actuator) is public. Rejected requests fail here with
      * 401 — a 403 comes from the method-security layer instead, once the
      * caller is known but lacks the required role.
@@ -82,7 +85,7 @@ public class SecurityConfig {
      *
      * <p>
      * Replaces Spring's default scope-based authority mapping with
-     * {@link ZitadelRoleConverter}, which merges Zitadel project roles into
+     * {@link RoleClaimConverter}, which merges the token's realm roles into
      * the authorities the default converter already derives from {@code scope}.
      *
      * @return The converter used to turn JWT claims into granted authorities.
@@ -90,8 +93,17 @@ public class SecurityConfig {
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(new ZitadelRoleConverter());
+        converter.setJwtGrantedAuthoritiesConverter(new RoleClaimConverter());
         return converter;
+    }
+
+    /**
+     * Boot adds every {@code OAuth2TokenValidator<Jwt>} bean to its decoder, so a malformed
+     * {@code public_id} fails as a 401 before any controller or write.
+     */
+    @Bean
+    public OAuth2TokenValidator<Jwt> publicIdClaimValidator() {
+        return new PublicIdClaimValidator();
     }
 
     /**

@@ -8,7 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
-import com.tombtale.commons.security.ZitadelRoleConverter;
+import com.tombtale.commons.security.PublicIdClaim;
+import com.tombtale.commons.security.RoleClaimConverter;
 import com.tombtale.commons.web.InvalidSortFieldException;
 import com.tombtale.serviceplayer.config.SecurityConfig;
 import com.tombtale.serviceplayer.controller.PlayerController;
@@ -26,8 +27,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
+
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
@@ -40,8 +41,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
  * {@code GlobalExceptionHandler} and these two fail while the rest of the
  * suite stays green.
  */
-@SuppressWarnings({ "PMD.TooManyStaticImports", "PMD.UnitTestShouldIncludeAssert",
-        "PMD.UseConcurrentHashMap" })
+@SuppressWarnings({ "PMD.TooManyStaticImports", "PMD.UnitTestShouldIncludeAssert" })
 @WebMvcTest(PlayerController.class)
 @Import(SecurityConfig.class)
 @ActiveProfiles("test")
@@ -49,9 +49,8 @@ class GlobalExceptionHandlerTest {
 
     private static final String PLAYERS_URL = "/api/v1/players";
     private static final String ME_URL = PLAYERS_URL + "/me";
-    private static final String ZITADEL_ROLES_CLAIM = "urn:zitadel:iam:org:project:roles";
     private static final String ROLE_PLATFORM_ADMIN = "platform_admin";
-    private static final String SUBJECT = "zitadel-sub-314159";
+    private static final String SUBJECT = "6f1c2b9e-4d3a-4e8b-9a71-2c5d8e0f3b64";
 
     private static final String VALID_PROFILE_BODY = "{\"displayName\":\"Legolas\"}";
     private static final String NOT_FOUND_REASON = "Player not found";
@@ -68,13 +67,11 @@ class GlobalExceptionHandlerTest {
     private JwtDecoder jwtDecoder;
 
     private static JwtRequestPostProcessor tokenWithRoles(String... roles) {
-        Map<String, Object> rolesClaim = new LinkedHashMap<>();
-        for (String role : roles) {
-            rolesClaim.put(role, Map.of());
-        }
         return jwt()
-                .jwt(token -> token.subject(SUBJECT).claim(ZITADEL_ROLES_CLAIM, rolesClaim))
-                .authorities(new ZitadelRoleConverter());
+                .jwt(token -> token.subject(SUBJECT)
+                        .claim(PublicIdClaim.CLAIM, SUBJECT)
+                        .claim(RoleClaimConverter.ROLES_CLAIM, List.of(roles)))
+                .authorities(new RoleClaimConverter());
     }
 
     /**
