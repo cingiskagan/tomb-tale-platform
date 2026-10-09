@@ -1,6 +1,6 @@
 package com.tombtale.servicecommerce.config;
 
-import com.tombtale.servicecommerce.security.CommerceAuditorAware;
+import com.tombtale.commons.security.PlatformAuditorAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.auditing.DateTimeProvider;
@@ -15,11 +15,7 @@ import java.util.UUID;
  * Enables JPA auditing so the audit fields on entities extending
  * {@code BaseEntity} are filled: the two timestamps from
  * {@link #auditingDateTimeProvider()}, and the two actor columns from
- * {@link CommerceAuditorAware}.
- *
- * <p>No entity in this service extends {@code BaseEntity} yet — {@code Purchase}
- * does so in the commit that makes its identity a {@code publicId}. The wiring
- * lands first so that change is only about the entity.
+ * {@link PlatformAuditorAware}.
  *
  * <p>The clock is a named bean rather than a call to {@code Instant.now()}
  * buried in the framework, so a test can replace it and decide what
@@ -34,7 +30,7 @@ public class JpaConfig {
 
     @Bean
     AuditorAware<UUID> commerceAuditorAware() {
-        return new CommerceAuditorAware();
+        return new PlatformAuditorAware();
     }
 
     @Bean

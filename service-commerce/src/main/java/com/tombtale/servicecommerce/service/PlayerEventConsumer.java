@@ -1,5 +1,6 @@
 package com.tombtale.servicecommerce.service;
 
+import com.tombtale.commons.audit.SystemActor;
 import com.tombtale.servicecommerce.config.RabbitMQConfig;
 import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import com.tombtale.servicecommerce.dto.event.EventEnvelope;
@@ -29,8 +30,8 @@ public class PlayerEventConsumer {
     private final PurchaseRepository purchaseRepository;
 
     /**
-     * Saves one completed, zero-price {@code BEGINNER_SET} purchase for the player
-     * in the event.
+     * Saves one completed, zero-price {@code BEGINNER_SET} purchase for the player in the event.
+     * No person is behind the write, so it runs as {@link SystemActor#COMMERCE_PLAYER_EVENT_CONSUMER}.
      *
      * @param event the delivered {@code player.created}
      */
@@ -41,7 +42,7 @@ public class PlayerEventConsumer {
             return;
         }
 
-        purchaseRepository.save(Purchase.builder()
+        SystemActor.COMMERCE_PLAYER_EVENT_CONSUMER.run(() -> purchaseRepository.save(Purchase.builder()
                 .playerId(event.data().playerPublicId())
                 .itemCode(BEGINNER_SET_ITEM_CODE)
                 .quantity(1)
@@ -49,6 +50,6 @@ public class PlayerEventConsumer {
                 .totalPrice(BigDecimal.ZERO)
                 .status(PurchaseStatus.COMPLETED)
                 .idempotencyKey(BEGINNER_SET_KEY)
-                .build());
+                .build()));
     }
 }

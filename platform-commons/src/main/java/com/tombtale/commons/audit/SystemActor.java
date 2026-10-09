@@ -1,6 +1,12 @@
 package com.tombtale.commons.audit;
 
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
+
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 /**
  * Identities for writers that are not people.
@@ -32,5 +38,26 @@ public enum SystemActor {
      */
     public UUID actorId() {
         return id;
+    }
+
+    /**
+     * Runs the work as this actor, so every row it writes names this actor, then restores the caller's context.
+     * Start the work's transaction inside it: Hibernate asks for the author when the transaction commits.
+     *
+     * @param work the writes to run
+     * @param <T>  what the work returns
+     * @return what the work returned
+     */
+    public <T> T run(Supplier<T> work) {
+        SecurityContext previous = SecurityContextHolder.getContext();
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(new PreAuthenticatedAuthenticationToken(this, null, List.of()));
+        SecurityContextHolder.setContext(context);
+
+        try {
+            return work.get();
+        } finally {
+            SecurityContextHolder.setContext(previous);
+        }
     }
 }
