@@ -41,7 +41,7 @@ import com.tombtale.serviceplayer.config.RabbitMQConfig;
 import com.tombtale.serviceplayer.dto.event.PlayerCreatedPayload;
 import com.tombtale.serviceplayer.entity.OutboxEvent;
 import com.tombtale.serviceplayer.repository.OutboxEventRepository;
-import com.tombtale.serviceplayer.support.PostgresTestBase;
+import com.tombtale.serviceplayer.support.FixedAuthorTestBase;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -55,7 +55,7 @@ import tools.jackson.databind.ObjectMapper;
 @Import({ QueryDslConfig.class, JpaConfig.class, OutboxPublisher.class })
 @ImportAutoConfiguration(JacksonAutoConfiguration.class)
 @SuppressWarnings("PMD.TooManyStaticImports")
-class OutboxPublisherTest extends PostgresTestBase {
+class OutboxPublisherTest extends FixedAuthorTestBase {
 
     private static final String EXCHANGE = RabbitMQConfig.PLAYER_EVENTS_EXCHANGE;
     private static final String EVENT_TYPE = PlayerCreatedPayload.EVENT_TYPE;

@@ -30,7 +30,7 @@ import com.tombtale.serviceplayer.dto.event.PlayerCreatedPayload;
 import com.tombtale.serviceplayer.entity.OutboxEvent;
 import com.tombtale.serviceplayer.repository.OutboxEventRepository;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
-import com.tombtale.serviceplayer.support.PostgresTestBase;
+import com.tombtale.serviceplayer.support.FixedAuthorTestBase;
 
 /**
  * The failure the outbox exists for: RabbitMQ is down when the event goes out.
@@ -38,7 +38,7 @@ import com.tombtale.serviceplayer.support.PostgresTestBase;
  */
 @SpringBootTest
 @ActiveProfiles("test")
-class OutboxPublisherRetryTest extends PostgresTestBase {
+class OutboxPublisherRetryTest extends FixedAuthorTestBase {
 
     @Autowired
     private PlayerService playerService;

@@ -23,7 +23,10 @@ import java.util.function.Supplier;
 public enum SystemActor {
 
     /** service-commerce applying a player event it consumed from the broker. */
-    COMMERCE_PLAYER_EVENT_CONSUMER("00000000-0000-0000-0000-0000000000c1");
+    COMMERCE_PLAYER_EVENT_CONSUMER("00000000-0000-0000-0000-0000000000c1"),
+
+    /** service-player marking its outbox rows published once the broker confirms them. */
+    PLAYER_OUTBOX_PUBLISHER("00000000-0000-0000-0000-0000000000b1");
 
     private final UUID id;
 

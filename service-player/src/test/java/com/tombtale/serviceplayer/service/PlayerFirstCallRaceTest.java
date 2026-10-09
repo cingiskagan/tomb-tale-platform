@@ -23,7 +23,7 @@ import com.tombtale.serviceplayer.entity.Player;
 import com.tombtale.serviceplayer.repository.CharacterRepository;
 import com.tombtale.serviceplayer.repository.OutboxEventRepository;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
-import com.tombtale.serviceplayer.support.PostgresTestBase;
+import com.tombtale.serviceplayer.support.FixedAuthorTestBase;
 
 /**
  * Two first calls for one new player at the same moment, as a double click or two
@@ -33,7 +33,7 @@ import com.tombtale.serviceplayer.support.PostgresTestBase;
 @ActiveProfiles("test")
 // The race needs two threads. Each call opens its own transaction, as two requests would.
 @SuppressWarnings("PMD.DoNotUseThreads")
-class PlayerFirstCallRaceTest extends PostgresTestBase {
+class PlayerFirstCallRaceTest extends FixedAuthorTestBase {
 
     private static final int CALLERS = 2;
     private static final long CALL_TIMEOUT_SECONDS = 30;

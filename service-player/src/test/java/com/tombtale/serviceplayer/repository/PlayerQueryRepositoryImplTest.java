@@ -5,7 +5,7 @@ import com.tombtale.serviceplayer.config.QueryDslConfig;
 import com.tombtale.commons.web.InvalidSortFieldException;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.entity.Player;
-import com.tombtale.serviceplayer.support.PostgresTestBase;
+import com.tombtale.serviceplayer.support.FixedAuthorTestBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest(showSql = false)
 @ActiveProfiles("test")
 @Import({ QueryDslConfig.class, JpaConfig.class })
-class PlayerQueryRepositoryImplTest extends PostgresTestBase {
+class PlayerQueryRepositoryImplTest extends FixedAuthorTestBase {
     private static final int PAGE_SIZE = 10;
     private static final long THREE_PLAYERS = 3L;
 

@@ -20,7 +20,7 @@ import com.tombtale.serviceplayer.config.JpaConfig;
 import com.tombtale.serviceplayer.config.QueryDslConfig;
 import com.tombtale.serviceplayer.entity.GameCharacter;
 import com.tombtale.serviceplayer.entity.Player;
-import com.tombtale.serviceplayer.support.PostgresTestBase;
+import com.tombtale.serviceplayer.support.FixedAuthorTestBase;
 
 /**
  * Proves that a player and their first character are written all or nothing.
@@ -51,7 +51,7 @@ import com.tombtale.serviceplayer.support.PostgresTestBase;
 @ActiveProfiles("test")
 @Import({ QueryDslConfig.class, JpaConfig.class })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-class PlayerCreationAtomicityTest extends PostgresTestBase {
+class PlayerCreationAtomicityTest extends FixedAuthorTestBase {
 
     private static final String NAME_PREFIX = "atomicity-";
     private static final int ONE_ROW = 1;

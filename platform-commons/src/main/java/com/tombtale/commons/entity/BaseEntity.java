@@ -75,18 +75,15 @@ public abstract class BaseEntity {
 
     /**
      * The principal that created this row: a player's {@code publicId}, or a
-     * {@link com.tombtale.commons.audit.SystemActor} id for a writer that is
-     * not a person.
-     *
-     * <p>Nullable only until every service can resolve its caller. Once that
-     * lands, a write nobody can be credited with is rejected instead.
+     * {@link com.tombtale.commons.audit.SystemActor} id for a writer that is not a person.
      */
     @CreatedBy
-    @Column(updatable = false)
+    @Column(nullable = false, updatable = false)
     private UUID createdBy;
 
     /** The principal that last modified this row. See {@link #createdBy}. */
     @LastModifiedBy
+    @Column(nullable = false)
     private UUID updatedBy;
 
     /**

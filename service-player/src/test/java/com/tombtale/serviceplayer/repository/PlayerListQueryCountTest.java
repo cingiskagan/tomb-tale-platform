@@ -21,13 +21,13 @@ import com.tombtale.serviceplayer.config.QueryDslConfig;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.entity.GameCharacter;
 import com.tombtale.serviceplayer.entity.Player;
-import com.tombtale.serviceplayer.support.PostgresTestBase;
+import com.tombtale.serviceplayer.support.FixedAuthorTestBase;
 
 @DataJpaTest(showSql = false)
 @ActiveProfiles("test")
 @TestPropertySource(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
 @Import({ QueryDslConfig.class, JpaConfig.class })
-class PlayerListQueryCountTest extends PostgresTestBase {
+class PlayerListQueryCountTest extends FixedAuthorTestBase {
 
     private static final int PAGE_SIZE = 10;
     private static final long THREE_QUERIES = 3L;
