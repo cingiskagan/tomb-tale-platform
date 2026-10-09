@@ -2,6 +2,7 @@ package com.tombtale.servicecommerce.service;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +29,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.rabbitmq.RabbitMQContainer;
 
+import com.tombtale.commons.audit.SystemActor;
 import com.tombtale.servicecommerce.config.RabbitMQConfig;
 import com.tombtale.servicecommerce.entity.Purchase;
 import com.tombtale.servicecommerce.repository.PurchaseRepository;
@@ -131,6 +133,25 @@ class PlayerEventConsumerTest extends PostgresTestBase {
                 .filter(purchase -> PLAYER_ID.equals(purchase.getPlayerId().toString())).toList();
 
         assertThat(receivedPurchases).hasSize(1);
+    }
+
+    @Test
+    void consumedEventIsWrittenByTheConsumer() throws InterruptedException {
+        rabbitTemplate.send(RabbitMQConfig.PLAYER_EVENTS_EXCHANGE, ROUTING_KEY, messageValid);
+
+        InvocationData data = harness
+                .getNextInvocationDataFor(PlayerEventConsumer.LISTENER_ID, DELIVERY_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        assertThat(data).isNotNull();
+        assertThat(data.getThrowable()).isNull();
+
+        Purchase purchase = purchaseRepository.findAll().stream()
+                .filter(candidate -> PLAYER_ID.equals(candidate.getPlayerId().toString()))
+                .findFirst().orElseThrow();
+        UUID consumer = SystemActor.COMMERCE_PLAYER_EVENT_CONSUMER.actorId();
+
+        assertThat(purchase.getCreatedBy()).isEqualTo(consumer);
+        assertThat(purchase.getUpdatedBy()).isEqualTo(consumer);
     }
 
     @Test

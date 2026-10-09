@@ -1,5 +1,6 @@
 package com.tombtale.serviceplayer.service;
 
+import com.tombtale.commons.audit.SystemActor;
 import com.tombtale.serviceplayer.config.RabbitMQConfig;
 import com.tombtale.serviceplayer.dto.event.EventEnvelope;
 import com.tombtale.serviceplayer.entity.OutboxEvent;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Limit;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
@@ -34,6 +36,7 @@ public class OutboxPublisher {
     private final OutboxEventRepository outboxEventRepository;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
+    private final TransactionTemplate transactionTemplate;
     private final int batchSize;
     private final Duration confirmTimeout;
     private final Duration retention;
@@ -43,12 +46,14 @@ public class OutboxPublisher {
             OutboxEventRepository outboxEventRepository,
             RabbitTemplate rabbitTemplate,
             ObjectMapper objectMapper,
+            TransactionTemplate transactionTemplate,
             @Value("${app.outbox.batch-size}") int batchSize,
             @Value("${app.outbox.confirm-timeout}") Duration confirmTimeout,
             @Value("${app.outbox.retention}") Duration retention) {
         this.outboxEventRepository = outboxEventRepository;
         this.rabbitTemplate = rabbitTemplate;
         this.objectMapper = objectMapper;
+        this.transactionTemplate = transactionTemplate;
         this.batchSize = batchSize;
         this.confirmTimeout = confirmTimeout;
         this.retention = retention;
@@ -56,13 +61,16 @@ public class OutboxPublisher {
 
     /**
      * Publishes the oldest pending rows in id order and stops at the first failure.
-     * The rows sent before it still commit as published.
+     * The rows sent before it still commit as published, by {@link SystemActor#PLAYER_OUTBOX_PUBLISHER}.
      *
      * @return how many rows were published
      */
     @Scheduled(fixedDelayString = "${app.outbox.publish-interval}")
-    @Transactional
     public int publishPending() {
+        return SystemActor.PLAYER_OUTBOX_PUBLISHER.run(() -> transactionTemplate.execute(status -> publishBatch()));
+    }
+
+    private int publishBatch() {
         List<OutboxEvent> pending = outboxEventRepository.findPendingForUpdate(Limit.of(batchSize));
         int published = 0;
         for (OutboxEvent event : pending) {

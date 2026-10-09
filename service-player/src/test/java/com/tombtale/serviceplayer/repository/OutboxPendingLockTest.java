@@ -23,7 +23,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.tombtale.serviceplayer.config.JpaConfig;
 import com.tombtale.serviceplayer.config.QueryDslConfig;
 import com.tombtale.serviceplayer.entity.OutboxEvent;
-import com.tombtale.serviceplayer.support.PostgresTestBase;
+import com.tombtale.serviceplayer.support.FixedAuthorTestBase;
 
 /**
  * Two publishers never send the same row: the pending query skips rows another
@@ -33,7 +33,7 @@ import com.tombtale.serviceplayer.support.PostgresTestBase;
 @ActiveProfiles("test")
 @Import({ QueryDslConfig.class, JpaConfig.class })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
-class OutboxPendingLockTest extends PostgresTestBase {
+class OutboxPendingLockTest extends FixedAuthorTestBase {
 
     private static final Limit ALL_PENDING = Limit.of(100);
     private static final long WAIT_SECONDS = 5;

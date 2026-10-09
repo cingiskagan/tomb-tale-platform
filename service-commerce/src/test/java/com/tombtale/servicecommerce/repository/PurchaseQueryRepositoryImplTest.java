@@ -6,7 +6,7 @@ import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import com.tombtale.servicecommerce.dto.PurchaseFilterRequest;
 import com.tombtale.servicecommerce.entity.Purchase;
 import com.tombtale.commons.web.InvalidSortFieldException;
-import com.tombtale.servicecommerce.support.PostgresTestBase;
+import com.tombtale.servicecommerce.support.FixedAuthorTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 // Test-data builders push the method count past PMD's default of 10; splitting a
 // cohesive test class to satisfy a counter would not improve it.
 @SuppressWarnings("PMD.TooManyMethods")
-class PurchaseQueryRepositoryImplTest extends PostgresTestBase {
+class PurchaseQueryRepositoryImplTest extends FixedAuthorTestBase {
 
     private static final int PAGE_SIZE = 10;
     private static final int DAYS_AGO = 10;

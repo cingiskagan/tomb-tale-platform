@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Monorepo for the "Tomb Tale Online RPG" platform: two Spring Boot microservices, an Angular web portal, and Docker Compose infrastructure to run everything locally.
 
 - `frontend-portal/` — Angular 20 portal (standalone components, PrimeNG, OIDC auth via Keycloak)
-- `platform-commons/` — the Java library both services depend on: `BaseEntity`, `SystemActor`
+- `platform-commons/` — the Java library both services depend on: `BaseEntity`, `SystemActor`, `PlatformAuditorAware`
 - `service-player/` — Spring Boot service for player accounts and characters (port 8081)
 - `service-commerce/` — Spring Boot service for purchases/economy (port 8082)
 - `infrastructure/keycloak/public-id-mapper/` — the Keycloak extension that gives every user a `public_id` of its own
@@ -90,7 +90,6 @@ domain/      → plain domain logic with no JPA (service-commerce: PurchaseStatu
 dto/         → request/response DTOs with jakarta validation
 mapper/      → MapStruct compile-time mappers between entities and DTOs
 exception/   → domain exceptions; service-commerce has a GlobalExceptionHandler
-security/    → the AuditorAware and other token reading, kept out of config/ on purpose
 config/      → SecurityConfig, QueryDslConfig, RabbitMQConfig — wiring only, no logic
 ```
 
@@ -98,7 +97,7 @@ Every entity extends `BaseEntity` from `platform-commons`, which carries the sam
 
 `publicId` is assigned where the field is declared, not in a `@PrePersist`, so it exists before the first save and equality can depend on it — `BaseEntity` defines `equals`/`hashCode` on it, and entities must not generate their own. Lombok follows from that: `@SuperBuilder` instead of `@Builder`, explicit `@Getter`/`@Setter` instead of `@Data`.
 
-The actor columns come from Spring Data auditing. Each service supplies an `AuditorAware<UUID>` in its `security/` package and wires it in `config/JpaConfig`. service-player reads the caller's `publicId` from the token's `public_id` claim; service-commerce does not yet and leaves both columns null.
+The actor columns come from Spring Data auditing. Both services wire `PlatformAuditorAware` from `platform-commons` in `config/JpaConfig`. It names the token's `public_id` claim, or the `SystemActor` that a consumer or job runs as through `SystemActor.run`, and refuses any other write with a 403. Start a job's transaction inside `run`, because Hibernate asks for the author at the commit.
 
 **Auth model**: both services are stateless OAuth2 resource servers validating Keycloak JWTs (`SecurityConfig`). Keycloak lists realm roles in the flat `roles` claim; `RoleClaimConverter` in `platform-commons` turns those into Spring authorities, so endpoints guard with `@PreAuthorize("hasAuthority('platform_admin') or hasAuthority('game_master')")`. The three roles are `player`, `game_master`, `platform_admin` — kept in sync with the frontend's `PlatformRole` enum.
 

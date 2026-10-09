@@ -4,7 +4,7 @@ import com.tombtale.servicecommerce.config.JpaConfig;
 import com.tombtale.servicecommerce.config.QueryDslConfig;
 import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import com.tombtale.servicecommerce.entity.Purchase;
-import com.tombtale.servicecommerce.support.PostgresTestBase;
+import com.tombtale.servicecommerce.support.FixedAuthorTestBase;
 
 import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest(showSql = false)
 @ActiveProfiles("test")
 @Import({ QueryDslConfig.class, JpaConfig.class })
-class PurchaseRepositoryTest extends PostgresTestBase {
+class PurchaseRepositoryTest extends FixedAuthorTestBase {
 
     private static final UUID PLAYER_ONE = UUID.fromString("aaaaaaaa-0000-4000-8000-000000000001");
     private static final String BEGINNER_SET_KEY = "beginner_set";

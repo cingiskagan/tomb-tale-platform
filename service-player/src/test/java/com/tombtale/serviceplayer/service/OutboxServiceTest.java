@@ -27,7 +27,7 @@ import com.tombtale.serviceplayer.config.QueryDslConfig;
 import com.tombtale.serviceplayer.dto.event.PlayerCreatedPayload;
 import com.tombtale.serviceplayer.entity.OutboxEvent;
 import com.tombtale.serviceplayer.repository.OutboxEventRepository;
-import com.tombtale.serviceplayer.support.PostgresTestBase;
+import com.tombtale.serviceplayer.support.FixedAuthorTestBase;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -39,7 +39,7 @@ import tools.jackson.databind.ObjectMapper;
 @DataJpaTest(showSql = false)
 @ActiveProfiles("test")
 @Import({ QueryDslConfig.class, JpaConfig.class, OutboxService.class })
-class OutboxServiceTest extends PostgresTestBase {
+class OutboxServiceTest extends FixedAuthorTestBase {
 
     private static final String DISPLAY_NAME = "Player_abc12345";
 
