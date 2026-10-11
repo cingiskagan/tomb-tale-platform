@@ -1,0 +1,14 @@
+---
+server:
+  port: 0
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: "https://issuer.test.example.com"
+
+logging:
+  level:
+    com.tombtale: DEBUG

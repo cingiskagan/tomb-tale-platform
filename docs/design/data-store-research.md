@@ -33,7 +33,8 @@ Revisit when a behavior query takes longer than you accept. The event schema is
 the asset, not the engine, and append-only data replays into another store in
 an afternoon.
 
-No ADR records this yet. Write the ADR when the first service starts.
+[ADR 0026](../adr/0026-game-state-stays-in-postgres-and-mongodb-keeps-only-events.md)
+records this position.
 
 ## What shipped games do
 

@@ -12,9 +12,9 @@ This document categorizes both the standard game design systems and the necessar
 | **service-inventory** | PostgreSQL | Item catalog templates, player-owned item instances (template + rolled stats pattern). `jsonb` holds the stat pools that vary per item type. |
 | **service-dungeon** | PostgreSQL | Procedural dungeon generation, room/corridor templates, seed management. `jsonb` holds the generated floor layouts. Multithreaded floor generation. |
 | **service-commerce** | PostgreSQL | Shop storefront, virtual currency wallets, purchase transactions. *(Already exists)* |
-| **service-audit** | MongoDB | Domain events consumed from RabbitMQ and shipped application logs. The only writer to MongoDB, and the read API behind the player timeline. |
+| **service-audit** | MongoDB | Domain events consumed from RabbitMQ. The only writer to MongoDB, and the read API behind the player timeline. |
 
-MongoDB holds domain events and application logs, never game state, and
+MongoDB holds domain events, never game state or logs, and
 `service-audit` is the only service that connects to it.
 Read [data store research](data-store-research.md) before either service starts.
 

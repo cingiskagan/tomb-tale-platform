@@ -1,0 +1,58 @@
+---
+spring:
+  application:
+    name: service-inventory
+
+  # --- PostgreSQL ---
+  datasource:
+    url: ${POSTGRES_URL:jdbc:postgresql://localhost:5432/tombtale}
+    username: ${POSTGRES_INVENTORY_USER}
+    password: ${POSTGRES_INVENTORY_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  # --- JPA / Hibernate ---
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: inventory
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+
+  # --- Flyway (owns the schema; Hibernate only validates it) ---
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    schemas: inventory
+
+  # --- OAuth2 Resource Server (Keycloak JWT) ---
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI}
+
+server:
+  port: ${SERVER_PORT}
+
+# --- Actuator ---
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.tombtale: INFO
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}

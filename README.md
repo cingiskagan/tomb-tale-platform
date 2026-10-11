@@ -8,6 +8,7 @@ Tomb Tale Platform is the monorepo for the "Tomb Tale Online RPG" services. This
 
 - `frontend-portal/`: The Angular-based web portal for users.
 - `service-commerce/`: Spring Boot Java microservice handling purchases, payments, and economy.
+- `service-inventory/`: Spring Boot Java microservice for the item catalog and the items players hold.
 - `service-player/`: Spring Boot Java microservice handling player account management.
 - `infrastructure/`: Docker Compose configurations and initialization scripts for local databases and auth providers.
 - `scripts/`: Shared platform automation and CI/CD scripts.
@@ -24,13 +25,12 @@ below runs locally against the Docker Compose stack.
 | `service-commerce` | Working | Create, read, list, update and cancel purchases, with a purchase status state machine. Mutations are admin-only, reads are open to game masters too. Flyway-managed schema, 64 tests. |
 | `frontend-portal` | Working | Keycloak login and callback, dashboard, own-profile page, and role-gated player and purchase lists. |
 | `infrastructure` | Working | nginx, Keycloak, Postgres, Redis, MongoDB, RabbitMQ and Mailpit, started with one `docker compose up`. |
-| `service-inventory` | Planned | See the [development pathway](docs/design/pathway.md). |
+| `service-inventory` | Partial | The item catalog table, in a Flyway-managed schema. No endpoint yet, and the catalog stays empty until item sets exist. 4 tests. |
 | `service-dungeon` | Planned | See the [development pathway](docs/design/pathway.md). |
 | Unity game client | Planned | Deliberately last. |
 
-Some of the stack is wired but not yet earning its place. RabbitMQ is configured
-in both services, and neither publishes or consumes a message. Redis and MongoDB
-run in the Compose stack for services that will need them; no service connects to
+Some of the stack is wired but not yet earning its place. Redis and MongoDB run in
+the Compose stack for services that will need them, and no service connects to
 either today.
 
 Characters are read and stat updates only — there is no endpoint yet to create or
@@ -64,6 +64,13 @@ cd service-commerce
 
 ```bash
 cd service-player
+./run-local.sh
+```
+
+**Service Inventory:**
+
+```bash
+cd service-inventory
 ./run-local.sh
 ```
 

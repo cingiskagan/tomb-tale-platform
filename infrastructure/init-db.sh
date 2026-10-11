@@ -10,6 +10,7 @@
 #   POSTGRES_KEYCLOAK_USER  / POSTGRES_KEYCLOAK_PASSWORD
 #   POSTGRES_PLAYER_USER    / POSTGRES_PLAYER_PASSWORD
 #   POSTGRES_COMMERCE_USER  / POSTGRES_COMMERCE_PASSWORD
+#   POSTGRES_INVENTORY_USER / POSTGRES_INVENTORY_PASSWORD
 #   POSTGRES_DB
 # ---------------------------------------------------------------------------
 set -euo pipefail
@@ -29,26 +30,34 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     CREATE USER ${POSTGRES_COMMERCE_USER}
         WITH PASSWORD '${POSTGRES_COMMERCE_PASSWORD}';
 
-    -- Each service owns its own schema and has no rights in the other's.
+    -- service-inventory dedicated user
+    CREATE USER ${POSTGRES_INVENTORY_USER}
+        WITH PASSWORD '${POSTGRES_INVENTORY_PASSWORD}';
+
+    -- Each service owns its own schema and has no rights in the others.
     -- Ownership covers CREATE/ALTER/DROP inside the schema, so no per-table
     -- grants or ALTER DEFAULT PRIVILEGES are needed.
-    CREATE SCHEMA player   AUTHORIZATION ${POSTGRES_PLAYER_USER};
-    CREATE SCHEMA commerce AUTHORIZATION ${POSTGRES_COMMERCE_USER};
-    CREATE SCHEMA keycloak AUTHORIZATION ${POSTGRES_KEYCLOAK_USER};
+    CREATE SCHEMA player    AUTHORIZATION ${POSTGRES_PLAYER_USER};
+    CREATE SCHEMA commerce  AUTHORIZATION ${POSTGRES_COMMERCE_USER};
+    CREATE SCHEMA inventory AUTHORIZATION ${POSTGRES_INVENTORY_USER};
+    CREATE SCHEMA keycloak  AUTHORIZATION ${POSTGRES_KEYCLOAK_USER};
 
     REVOKE ALL ON SCHEMA public FROM ${POSTGRES_PLAYER_USER};
     REVOKE ALL ON SCHEMA public FROM ${POSTGRES_COMMERCE_USER};
+    REVOKE ALL ON SCHEMA public FROM ${POSTGRES_INVENTORY_USER};
     REVOKE ALL ON SCHEMA public FROM ${POSTGRES_KEYCLOAK_USER};
 
     -- Belt and braces for psql sessions and any unqualified SQL.
     -- The authoritative setting is spring.jpa.properties.hibernate.default_schema
     -- in each service's application.yml, where a reviewer can see it.
-    ALTER ROLE ${POSTGRES_PLAYER_USER}   SET search_path = player;
-    ALTER ROLE ${POSTGRES_COMMERCE_USER} SET search_path = commerce;
-    ALTER ROLE ${POSTGRES_KEYCLOAK_USER} SET search_path = keycloak;
+    ALTER ROLE ${POSTGRES_PLAYER_USER}    SET search_path = player;
+    ALTER ROLE ${POSTGRES_COMMERCE_USER}  SET search_path = commerce;
+    ALTER ROLE ${POSTGRES_INVENTORY_USER} SET search_path = inventory;
+    ALTER ROLE ${POSTGRES_KEYCLOAK_USER}  SET search_path = keycloak;
 
     GRANT CONNECT ON DATABASE ${POSTGRES_DB} TO ${POSTGRES_PLAYER_USER};
     GRANT CONNECT ON DATABASE ${POSTGRES_DB} TO ${POSTGRES_COMMERCE_USER};
+    GRANT CONNECT ON DATABASE ${POSTGRES_DB} TO ${POSTGRES_INVENTORY_USER};
     GRANT CONNECT ON DATABASE ${POSTGRES_DB} TO ${POSTGRES_KEYCLOAK_USER};
 EOSQL
 
