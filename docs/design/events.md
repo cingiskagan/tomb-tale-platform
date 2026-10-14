@@ -20,11 +20,12 @@ Read this before Commit E1. It fixes the shape of every published event.
 ```
 
 Five envelope fields, plus a `data` object owned by the event type. The
-producer creates `eventId` once, in the transaction that writes the outbox
-row, and a retry reuses it. `service-audit` stores it as `_id`, so a redelivery
+producer creates `eventId` once, in the transaction that records the fact,
+and a retry reuses it. `service-audit` stores it as `_id`, so a redelivery
 overwrites its own document ([data store research](data-store-research.md)).
-`eventType` is the routing key on the `player.events` exchange. `occurredAt` is
-when the fact happened, not when the publisher reached the broker.
+`eventType` is the routing key on the producer's exchange, such as
+`player.events`. `occurredAt` is when the fact happened, not when the
+publisher reached the broker.
 
 ## Rules
 

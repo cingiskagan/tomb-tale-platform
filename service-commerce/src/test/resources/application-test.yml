@@ -27,3 +27,14 @@ spring:
 logging:
   level:
     com.tombtale: DEBUG
+
+app:
+  # The outbox publisher calls out to RabbitMQ, so it stays off and its tests call it.
+  scheduling:
+    enabled: false
+
+  # Scheduling is off, so the interval and the cron are not needed.
+  outbox:
+    batch-size: 100
+    confirm-timeout: PT5S
+    retention: P30D

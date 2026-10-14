@@ -5,6 +5,7 @@ import com.tombtale.servicecommerce.dto.CreatePurchaseRequest;
 import com.tombtale.servicecommerce.dto.PurchaseFilterRequest;
 import com.tombtale.servicecommerce.dto.PurchaseResponse;
 import com.tombtale.servicecommerce.dto.UpdatePurchaseRequest;
+import com.tombtale.servicecommerce.dto.event.PurchaseCreatedPayload;
 import com.tombtale.servicecommerce.entity.Purchase;
 import com.tombtale.servicecommerce.exception.InvalidStatusTransitionException;
 import com.tombtale.servicecommerce.exception.PurchaseNotFoundException;
@@ -29,6 +30,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -57,6 +59,9 @@ class PurchaseServiceTest {
 
     @Mock
     private PurchaseMapper purchaseMapper;
+
+    @Mock
+    private OutboxService outboxService;
 
     @InjectMocks
     private PurchaseService purchaseService;
@@ -101,6 +106,8 @@ class PurchaseServiceTest {
         assertThat(result.publicId()).isEqualTo(PURCHASE_ID);
         assertThat(result.totalPrice()).isEqualByComparingTo(EXPECTED_TOTAL);
         verify(purchaseRepository).save(any(Purchase.class));
+        verify(outboxService).append(eq(PurchaseCreatedPayload.EVENT_TYPE), eq(PurchaseCreatedPayload.EVENT_VERSION),
+                eq(PURCHASE_ID), eq(new PurchaseCreatedPayload(PURCHASE_ID, PLAYER_ID, ITEM_CODE, QUANTITY)));
     }
 
     @Test

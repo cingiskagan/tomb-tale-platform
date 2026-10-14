@@ -29,6 +29,26 @@ spring:
     locations: classpath:db/migration
     schemas: inventory
 
+  # --- RabbitMQ ---
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+    # A purchase is acknowledged only after the broker confirms its item grant.
+    publisher-confirm-type: simple
+    # A failed message is retried after 1s, 2s and 4s, then goes to its DLQ.
+    # A rejected message never returns to its queue, so nothing loops.
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-retries: 3
+          initial-interval: 1s
+          multiplier: 2
+          max-interval: 10s
+
   # --- OAuth2 Resource Server (Keycloak JWT) ---
   security:
     oauth2:
@@ -56,3 +76,8 @@ logging:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+
+  # How long sending one item grant waits for the broker's confirm. The outbox
+  # publishers wait the same time, so this reads their key in infrastructure/.env.
+  publish:
+    confirm-timeout: ${OUTBOX_CONFIRM_TIMEOUT}

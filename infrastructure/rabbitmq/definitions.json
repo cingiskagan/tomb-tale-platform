@@ -8,11 +8,43 @@
       "auto_delete": false,
       "internal": false,
       "arguments": {}
+    },
+    {
+      "name": "purchase.events.unrouted",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "item.events.unrouted",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
     }
   ],
   "queues": [
     {
       "name": "player.events.unrouted",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "purchase.events.unrouted",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "item.events.unrouted",
       "vhost": "/",
       "durable": true,
       "auto_delete": false,
@@ -27,6 +59,22 @@
       "destination_type": "queue",
       "routing_key": "",
       "arguments": {}
+    },
+    {
+      "source": "purchase.events.unrouted",
+      "vhost": "/",
+      "destination": "purchase.events.unrouted",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "item.events.unrouted",
+      "vhost": "/",
+      "destination": "item.events.unrouted",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
     }
   ],
   "policies": [
@@ -38,6 +86,26 @@
       "priority": 0,
       "definition": {
         "alternate-exchange": "player.events.unrouted"
+      }
+    },
+    {
+      "name": "purchase-events-unrouted",
+      "vhost": "/",
+      "pattern": "^purchase\\.events$",
+      "apply-to": "exchanges",
+      "priority": 0,
+      "definition": {
+        "alternate-exchange": "purchase.events.unrouted"
+      }
+    },
+    {
+      "name": "item-events-unrouted",
+      "vhost": "/",
+      "pattern": "^item\\.events$",
+      "apply-to": "exchanges",
+      "priority": 0,
+      "definition": {
+        "alternate-exchange": "item.events.unrouted"
       }
     }
   ]

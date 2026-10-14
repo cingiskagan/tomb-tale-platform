@@ -94,3 +94,4 @@ in sequence here — a record written later can describe an earlier choice.
 | [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md) | Keycloak replaces Zitadel, and it mints the player's `publicId` | 2026-10-06 | accepted |
 | [0025](0025-nginx-replaces-traefik.md) | nginx replaces Traefik, and `/api` still belongs to the platform | 2026-10-06 | accepted |
 | [0026](0026-game-state-stays-in-postgres-and-mongodb-keeps-only-events.md) | Game state stays in Postgres, and MongoDB keeps only `events` | 2026-10-11 | accepted |
+| [0027](0027-a-purchase-is-a-choreographed-saga-that-waits-in-pending.md) | A purchase is a choreographed saga that waits in `PENDING` | 2026-10-13 | accepted |

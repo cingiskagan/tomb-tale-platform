@@ -22,10 +22,10 @@ below runs locally against the Docker Compose stack.
 | Component | State | What works today |
 | --- | --- | --- |
 | `service-player` | Partial | Read and update your own profile; list players with filtering, sorting and paging (admin and game master); update a character's stats with an ownership check. Flyway-managed schema, 58 tests. |
-| `service-commerce` | Working | Create, read, list, update and cancel purchases, with a purchase status state machine. Mutations are admin-only, reads are open to game masters too. Flyway-managed schema, 64 tests. |
+| `service-commerce` | Working | Create, read, list, update and cancel purchases, with a purchase status state machine. A new purchase waits in `PENDING` until inventory grants its items or rejects it. Mutations are admin-only, reads are open to game masters too. Flyway-managed schema, 83 tests. |
 | `frontend-portal` | Working | Keycloak login and callback, dashboard, own-profile page, and role-gated player and purchase lists. |
 | `infrastructure` | Working | nginx, Keycloak, Postgres, Redis, MongoDB, RabbitMQ and Mailpit, started with one `docker compose up`. |
-| `service-inventory` | Partial | The item catalog table, in a Flyway-managed schema. No endpoint yet, and the catalog stays empty until item sets exist. 4 tests. |
+| `service-inventory` | Partial | Grants the items of each purchase into the player's stacks, rejects an unknown item code, and sends each item grant to commerce through RabbitMQ. No endpoint yet, and the catalog stays empty until item sets exist. Flyway-managed schema, 11 tests. |
 | `service-dungeon` | Planned | See the [development pathway](docs/design/pathway.md). |
 | Unity game client | Planned | Deliberately last. |
 

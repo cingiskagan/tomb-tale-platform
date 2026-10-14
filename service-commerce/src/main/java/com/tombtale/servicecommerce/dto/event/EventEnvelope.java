@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * An event as it arrives from the broker. docs/design/events.md fixes the shape.
+ * An event on the wire, as commerce receives and sends it. docs/design/events.md fixes the shape.
  *
  * @param eventId      the same on every redelivery of one event
  * @param eventType    also the routing key

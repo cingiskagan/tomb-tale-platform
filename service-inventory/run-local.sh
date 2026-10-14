@@ -3,7 +3,7 @@
 # run-local.sh — Start service-inventory against the local Docker environment.
 #
 # Usage:
-#   ./run-local.sh          # Postgres via Docker
+#   ./run-local.sh          # Postgres and RabbitMQ via Docker
 # ---------------------------------------------------------------------------
 set -euo pipefail
 
@@ -29,7 +29,7 @@ if [[ -z "${SERVICE_INVENTORY_PORT:-}" ]]; then
 fi
 SERVER_PORT="${SERVICE_INVENTORY_PORT}"
 
-echo "🚀  Starting service-inventory (Postgres, port ${SERVER_PORT})…"
+echo "🚀  Starting service-inventory (Postgres and RabbitMQ, port ${SERVER_PORT})…"
 # Installs platform-commons first, as service-commerce/run-local.sh explains.
 "${SCRIPT_DIR}/../mvnw" -q -f "${SCRIPT_DIR}/../pom.xml" -pl platform-commons install -DskipTests
 

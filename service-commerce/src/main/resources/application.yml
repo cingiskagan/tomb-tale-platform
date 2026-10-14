@@ -35,8 +35,8 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER}
     password: ${RABBITMQ_PASSWORD}
-    publisher-confirm-type: correlated
-    publisher-returns: true
+    # The outbox marks a row sent only after the broker confirms the message.
+    publisher-confirm-type: simple
     # A failed message is retried after 1s, 2s and 4s, then goes to its DLQ.
     # A rejected message never returns to its queue, so nothing loops.
     listener:
@@ -76,3 +76,15 @@ logging:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+
+  # The outbox publisher. The test profile turns it off.
+  scheduling:
+    enabled: true
+
+  # From infrastructure/.env. .env.example says what each value does.
+  outbox:
+    publish-interval: ${OUTBOX_PUBLISH_INTERVAL}
+    batch-size: ${OUTBOX_BATCH_SIZE}
+    confirm-timeout: ${OUTBOX_CONFIRM_TIMEOUT}
+    retention: ${OUTBOX_RETENTION}
+    purge-cron: ${OUTBOX_PURGE_CRON}

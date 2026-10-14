@@ -5,6 +5,7 @@ import com.tombtale.servicecommerce.dto.CreatePurchaseRequest;
 import com.tombtale.servicecommerce.dto.PurchaseFilterRequest;
 import com.tombtale.servicecommerce.dto.PurchaseResponse;
 import com.tombtale.servicecommerce.dto.UpdatePurchaseRequest;
+import com.tombtale.servicecommerce.dto.event.PurchaseCreatedPayload;
 import com.tombtale.servicecommerce.entity.Purchase;
 import com.tombtale.servicecommerce.exception.InvalidStatusTransitionException;
 import com.tombtale.servicecommerce.exception.PurchaseNotFoundException;
@@ -37,13 +38,11 @@ public class PurchaseService {
 
     private final PurchaseRepository purchaseRepository;
     private final PurchaseMapper purchaseMapper;
+    private final OutboxService outboxService;
 
     /**
-     * Creates a new purchase with status {@code PENDING}.
-     *
-     * <p>
-     * The {@code totalPrice} is computed as {@code quantity × unitPrice}
-     * to guarantee ledger consistency regardless of client-supplied values.
+     * Creates a new purchase with status {@code PENDING}, and writes {@code purchase.created} for inventory to turn into an item grant.
+     * The total is {@code quantity × unitPrice}, computed here and never taken from the client.
      *
      * @param request the validated creation request
      * @return the persisted purchase as a response DTO
@@ -55,8 +54,37 @@ public class PurchaseService {
         purchase.setStatus(PurchaseStatus.PENDING);
 
         Purchase saved = purchaseRepository.save(purchase);
+        outboxService.append(PurchaseCreatedPayload.EVENT_TYPE, PurchaseCreatedPayload.EVENT_VERSION, saved.getPublicId(),
+                new PurchaseCreatedPayload(saved.getPublicId(), saved.getPlayerId(), saved.getItemCode(), saved.getQuantity()));
         LOG.info("Created purchase id={} for player={}", saved.getPublicId(), saved.getPlayerId());
         return purchaseMapper.toResponse(saved);
+    }
+
+    /**
+     * Completes a purchase once inventory granted its items. A repeated item grant finds it completed and changes nothing.
+     *
+     * @param publicId the purchase that inventory names in {@code item.granted}
+     * @throws InvalidStatusTransitionException if the purchase is no longer pending
+     */
+    @Transactional
+    public void completeGrantedPurchase(UUID publicId) {
+        Purchase purchase = findEntityByPublicId(publicId);
+        changeStatus(purchase, PurchaseStatus.COMPLETED);
+        LOG.info("Completed purchase id={} after its grant", publicId);
+    }
+
+    /**
+     * Cancels a purchase that inventory refused. A repeated rejection finds it cancelled and changes nothing.
+     *
+     * @param publicId the purchase that inventory names in {@code item.grant-rejected}
+     * @param reason   why inventory refused, which only the log keeps for now
+     * @throws InvalidStatusTransitionException if the purchase is no longer pending
+     */
+    @Transactional
+    public void cancelRejectedPurchase(UUID publicId, String reason) {
+        Purchase purchase = findEntityByPublicId(publicId);
+        changeStatus(purchase, PurchaseStatus.CANCELLED);
+        LOG.info("Cancelled purchase id={} after its failure: {}", publicId, reason);
     }
 
     /**

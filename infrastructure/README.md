@@ -70,11 +70,12 @@ object from the file, also delete it in the management UI. Make every change in
 the file first. A change made only in the UI stays in your volume and reaches
 no one else.
 
-Today the file holds one policy. `player.events` sends an event that no queue
-binds to the alternate exchange `player.events.unrouted`. The queue of the same
-name keeps the event with its routing key. Both services declare
-`player.events`, so the policy sets this, and neither declaration changes.
-`PlayerEventsAlternateExchangeTest` in service-player loads the same file.
+The file holds one policy for each exchange: `player.events`, `purchase.events`
+and `item.events`. Each policy sends an event that no queue binds to an
+alternate exchange named after the exchange, such as `player.events.unrouted`.
+The queue of the same name keeps the event with its routing key. Two services
+declare each exchange, so a policy sets this, and no declaration changes. The
+service that publishes on an exchange has a test that loads the same file.
 
 ## Ports on the host
 
