@@ -16,7 +16,11 @@ of MongoDB. `service-audit` is the only MongoDB writer
 - Personal data in `events`. The collection never expires and its writer can
   only insert, so an erasure request finds nothing it can delete. Name a person
   by `publicId` only. Account deletion then removes the only link between that
-  `publicId` and a person.
+  `publicId` and a person. A name that a player picks is personal data too,
+  because it can identify the player with no table. `player.created` still
+  carries `displayName`, so Commit I1 removes it from the event.
+  `service-audit` also keeps only the data fields on an allow-list for each
+  event type, so a field that a producer adds later stays out of `events`.
 
 ## Before Phase F
 
