@@ -85,7 +85,7 @@ class PurchaseControllerSecurityTest {
 
         private static final String VALID_UPDATE_BODY = """
                         {
-                        "quantity": 2
+                        "status": "REFUNDED"
                         }
                         """;
 

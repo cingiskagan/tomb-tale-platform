@@ -32,6 +32,5 @@ export interface CreatePurchaseRequest {
 }
 
 export interface UpdatePurchaseRequest {
-  quantity?: number | null;
   status?: PurchaseStatus | null;
 }

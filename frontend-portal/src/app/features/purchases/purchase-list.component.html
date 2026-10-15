@@ -74,6 +74,7 @@
             [rounded]="true"
             [text]="true"
             severity="success"
+            [disabled]="isPending(purchase.status)"
             (onClick)="openEditPurchase(purchase.publicId)"
           />
           <p-button
@@ -82,6 +83,7 @@
             [rounded]="true"
             [text]="true"
             severity="danger"
+            [disabled]="isPending(purchase.status)"
             (onClick)="confirmDelete(purchase.publicId)"
           />
         </td>

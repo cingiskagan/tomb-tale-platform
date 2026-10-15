@@ -6,17 +6,18 @@ package com.tombtale.servicecommerce.domain;
  * <p>
  * Transitions:
  * <ul>
- * <li>{@code PENDING → COMPLETED} — payment confirmed and items delivered</li>
+ * <li>{@code PENDING → COMPLETED} or {@code CANCELLED}: only inventory's item grant moves a purchase out of
+ * {@code PENDING} (ADR 0027)</li>
  * <li>{@code COMPLETED → REFUNDED} — purchase reversed, currency returned</li>
- * <li>{@code PENDING, COMPLETED, REFUNDED → CANCELLED} — soft-deleted, hidden from default queries</li>
+ * <li>{@code COMPLETED, REFUNDED → CANCELLED} — soft-deleted, hidden from default queries</li>
  * </ul>
  */
 public enum PurchaseStatus {
 
-    /** Purchase created but not yet finalised. */
+    /** Waits for inventory's item grant. */
     PENDING,
 
-    /** Payment confirmed and items delivered to the player. */
+    /** Inventory added the items to the player's stacks. */
     COMPLETED,
 
     /** Purchase reversed; currency returned to the player. */

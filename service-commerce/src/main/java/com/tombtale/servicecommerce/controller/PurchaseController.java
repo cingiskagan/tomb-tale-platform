@@ -113,7 +113,7 @@ public class PurchaseController {
     }
 
     /**
-     * Partially updates an existing purchase.
+     * Changes the status of a purchase that is not pending, for example to {@code REFUNDED}.
      *
      * <p>
      * PATCH, not PUT: the request body carries only the fields to change and
@@ -128,7 +128,7 @@ public class PurchaseController {
      */
     @PatchMapping("/{publicId}")
     @PreAuthorize(RoleConstants.IS_ADMIN)
-    @Operation(summary = "Update a purchase", description = "Partial update — only non-null fields are applied.")
+    @Operation(summary = "Update a purchase", description = "Changes the status. A pending purchase is refused.")
     public PurchaseResponse updatePurchase(
             @Parameter(description = "Purchase UUID") @PathVariable UUID publicId,
             @Valid @RequestBody UpdatePurchaseRequest request) {
@@ -136,7 +136,7 @@ public class PurchaseController {
     }
 
     /**
-     * Soft-deletes a purchase by setting its status to {@code CANCELLED}.
+     * Soft-deletes a purchase by setting its status to {@code CANCELLED}. A pending purchase is refused.
      *
      * <p>
      * Requires {@code platform_admin}.
@@ -146,7 +146,7 @@ public class PurchaseController {
     @DeleteMapping("/{publicId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize(RoleConstants.IS_ADMIN)
-    @Operation(summary = "Soft-delete a purchase", description = "Sets status to CANCELLED — row is preserved for audit.")
+    @Operation(summary = "Soft-delete a purchase", description = "Sets status to CANCELLED and keeps the row. A pending purchase is refused.")
     public void deletePurchase(
             @Parameter(description = "Purchase UUID") @PathVariable UUID publicId) {
         purchaseService.deletePurchase(publicId);

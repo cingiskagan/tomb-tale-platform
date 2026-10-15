@@ -123,6 +123,11 @@ export class PurchaseListComponent implements OnInit {
     });
   }
 
+  /** A pending purchase waits for inventory's item grant, and the backend refuses to edit or delete it. */
+  isPending(status: PurchaseStatus): boolean {
+    return status === PurchaseStatus.PENDING;
+  }
+
   getStatusSeverity(status: PurchaseStatus): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' {
     switch (status) {
       case PurchaseStatus.COMPLETED:

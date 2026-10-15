@@ -29,16 +29,18 @@
       />
     </div>
 
-    <div class="field">
-      <label for="quantity">Quantity</label>
-      <p-inputNumber
-        id="quantity"
-        formControlName="quantity"
-        class="w-full"
-        styleClass="w-full"
-        [min]="1"
-      ></p-inputNumber>
-    </div>
+    @if (!isEditMode) {
+      <div class="field">
+        <label for="quantity">Quantity</label>
+        <p-inputNumber
+          id="quantity"
+          formControlName="quantity"
+          class="w-full"
+          styleClass="w-full"
+          [min]="1"
+        ></p-inputNumber>
+      </div>
+    }
 
     <div class="field">
       <label for="unitPrice">Unit Price</label>
@@ -62,6 +64,7 @@
           id="status"
           formControlName="status"
           [options]="statusOptions"
+          placeholder="Choose a new status"
           class="w-full"
           styleClass="w-full"
           appendTo="body"

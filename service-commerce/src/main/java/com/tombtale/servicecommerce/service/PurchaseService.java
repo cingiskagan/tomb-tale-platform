@@ -50,7 +50,7 @@ public class PurchaseService {
     @Transactional
     public PurchaseResponse createPurchase(CreatePurchaseRequest request) {
         Purchase purchase = purchaseMapper.toEntity(request);
-        purchase.setTotalPrice(calculateTotalPrice(request.unitPrice(), request.quantity()));
+        purchase.setTotalPrice(request.unitPrice().multiply(BigDecimal.valueOf(request.quantity())));
         purchase.setStatus(PurchaseStatus.PENDING);
 
         Purchase saved = purchaseRepository.save(purchase);
@@ -116,21 +116,19 @@ public class PurchaseService {
     }
 
     /**
-     * Applies a partial update to an existing purchase.
-     *
-     * <p>
-     * Only non-null fields in the request are written. When
-     * {@code quantity} changes, {@code totalPrice} is recalculated
-     * from the existing {@code unitPrice}.
+     * Changes the status of a purchase, for example from {@code COMPLETED} to {@code REFUNDED}.
+     * Only inventory's item grant completes a purchase, because a pending purchase is refused here.
      *
      * @param publicId the purchase's public UUID
-     * @param request  the partial-update payload
+     * @param request  the new status, or null to change nothing
      * @return the updated purchase DTO
      * @throws PurchaseNotFoundException if the purchase does not exist
+     * @throws InvalidStatusTransitionException if the purchase is pending or the move is not allowed
      */
     @Transactional
     public PurchaseResponse updatePurchase(UUID publicId, UpdatePurchaseRequest request) {
         Purchase purchase = findEntityByPublicId(publicId);
+        refusePending(purchase);
 
         if (request.status() != null
                 && purchase.getStatus() != request.status()) {
@@ -140,10 +138,6 @@ public class PurchaseService {
                         "Use DELETE endpoint to cancel a purchase");
             }
             changeStatus(purchase, request.status());
-        }
-        if (request.quantity() != null) {
-            purchase.setQuantity(request.quantity());
-            purchase.setTotalPrice(calculateTotalPrice(purchase.getUnitPrice(), request.quantity()));
         }
 
         Purchase saved = purchaseRepository.save(purchase);
@@ -162,6 +156,14 @@ public class PurchaseService {
         purchase.setStatus(target);
     }
 
+    /** Only inventory's item grant moves a purchase out of {@code PENDING} (ADR 0027), so an admin waits for it. */
+    private static void refusePending(Purchase purchase) {
+        if (purchase.getStatus() == PurchaseStatus.PENDING) {
+            throw new InvalidStatusTransitionException(
+                    "Purchase %s stays PENDING until inventory sends its item grant".formatted(purchase.getPublicId()));
+        }
+    }
+
     /**
      * Soft-deletes a purchase by setting its status to {@code CANCELLED}.
      *
@@ -171,10 +173,12 @@ public class PurchaseService {
      *
      * @param publicId the purchase's public UUID
      * @throws PurchaseNotFoundException if the purchase does not exist
+     * @throws InvalidStatusTransitionException if the purchase is pending
      */
     @Transactional
     public void deletePurchase(UUID publicId) {
         Purchase purchase = findEntityByPublicId(publicId);
+        refusePending(purchase);
         changeStatus(purchase, PurchaseStatus.CANCELLED);
         purchaseRepository.save(purchase);
         LOG.info("Soft-deleted (cancelled) purchase id={}", publicId);
@@ -189,16 +193,5 @@ public class PurchaseService {
     private Purchase findEntityByPublicId(UUID publicId) {
         return purchaseRepository.findByPublicId(publicId)
                 .orElseThrow(() -> new PurchaseNotFoundException(publicId));
-    }
-
-    /**
-     * Computes total price as {@code unitPrice × quantity}.
-     *
-     * @param unitPrice the price per item
-     * @param quantity  the number of items
-     * @return the total price
-     */
-    private static BigDecimal calculateTotalPrice(BigDecimal unitPrice, Integer quantity) {
-        return unitPrice.multiply(BigDecimal.valueOf(quantity));
     }
 }
