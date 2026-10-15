@@ -43,7 +43,8 @@ publisher reached the broker.
   telemetry for the log pipeline.
 - Inside a version, only add optional fields. A field that disappears or
   changes meaning needs `player.created.v2`, published beside v1 until the last
-  consumer moves.
+  consumer moves. Until the first deployment, a version changes in place,
+  because no running consumer depends on it.
 - The outbox delivers at least once. Deduplicate on a natural key with a unique
   constraint, not on a table of seen event ids.
 
