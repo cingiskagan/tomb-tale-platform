@@ -77,13 +77,14 @@ public class PurchaseService {
      * Cancels a purchase that inventory refused. A repeated rejection finds it cancelled and changes nothing.
      *
      * @param publicId the purchase that inventory names in {@code item.grant-rejected}
-     * @param reason   why inventory refused, which only the log keeps for now
+     * @param reason   why inventory refused, kept on the purchase as it arrived
      * @throws InvalidStatusTransitionException if the purchase is no longer pending
      */
     @Transactional
     public void cancelRejectedPurchase(UUID publicId, String reason) {
         Purchase purchase = findEntityByPublicId(publicId);
         changeStatus(purchase, PurchaseStatus.CANCELLED);
+        purchase.setCancellationReason(reason);
         LOG.info("Cancelled purchase id={} after its failure: {}", publicId, reason);
     }
 

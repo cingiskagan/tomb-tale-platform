@@ -58,6 +58,7 @@ public interface PurchaseMapper {
     @Mapping(target = "totalPrice", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "idempotencyKey", ignore = true)
+    @Mapping(target = "cancellationReason", ignore = true)
     @Mapping(target = "version", ignore = true)
     Purchase toEntity(CreatePurchaseRequest request);
 }

@@ -86,7 +86,7 @@ class PurchaseServiceTest {
     private static PurchaseResponse buildPurchaseResponse() {
         return new PurchaseResponse(
                 PURCHASE_ID, PLAYER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE, EXPECTED_TOTAL,
-                PurchaseStatus.PENDING, Instant.now());
+                PurchaseStatus.PENDING, Instant.now(), null);
     }
 
     @Test
@@ -156,7 +156,7 @@ class PurchaseServiceTest {
         UpdatePurchaseRequest request = new UpdatePurchaseRequest(PurchaseStatus.REFUNDED);
         PurchaseResponse expectedResponse = new PurchaseResponse(
                 PURCHASE_ID, PLAYER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE, EXPECTED_TOTAL,
-                PurchaseStatus.REFUNDED, Instant.now());
+                PurchaseStatus.REFUNDED, Instant.now(), null);
 
         when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));
         when(purchaseRepository.save(entity)).thenReturn(entity);
@@ -266,7 +266,7 @@ class PurchaseServiceTest {
 
         PurchaseResponse expectedResponse = new PurchaseResponse(
                 PURCHASE_ID, PLAYER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE, EXPECTED_TOTAL,
-                PurchaseStatus.COMPLETED, Instant.now());
+                PurchaseStatus.COMPLETED, Instant.now(), null);
 
         when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));
         when(purchaseRepository.save(entity)).thenReturn(entity);

@@ -65,6 +65,9 @@
             [value]="purchase.status"
             [severity]="getStatusSeverity(purchase.status)"
           />
+          @if (purchase.cancellationReason) {
+            <div class="text-xs text-gray-500 mt-1">{{ purchase.cancellationReason }}</div>
+          }
         </td>
         <td>{{ purchase.createdAt | date:'short' }}</td>
         <td>

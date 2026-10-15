@@ -111,6 +111,7 @@ class ItemEventConsumerTest extends PostgresTestBase {
         assertThat(nextRejectedInvocation().getThrowable()).isNull();
         Purchase cancelled = purchaseRepository.findByPublicId(purchase.getPublicId()).orElseThrow();
         assertThat(cancelled.getStatus()).isEqualTo(PurchaseStatus.CANCELLED);
+        assertThat(cancelled.getCancellationReason()).isEqualTo("UNKNOWN_ITEM_CODE");
         assertThat(cancelled.getCreatedBy()).isEqualTo(ADMIN);
         assertThat(cancelled.getUpdatedBy()).isEqualTo(SystemActor.COMMERCE_ITEM_EVENT_CONSUMER.actorId());
     }
