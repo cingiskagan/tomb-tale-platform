@@ -120,8 +120,7 @@ updates:
           - "@primeuix/*"
 
   # ----- Java services --------------------------------------------------
-  # There is no aggregator pom at the root -- each service builds on its own,
-  # so each needs its own entry here.
+  # One entry per service, so each PR carries its service's label.
   - package-ecosystem: "maven"
     directory: "/service-player"
     schedule:
@@ -219,6 +218,55 @@ updates:
       # PR, which is how springdoc and the wrapper's Maven slipped through the
       # first version of this file. The exclusions repeat the patterns above so
       # the grouping never depends on which group Dependabot tries first.
+      libraries:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "org.springframework*:*"
+          - "org.springdoc:*"
+          - "org.junit*:*"
+          - "org.mockito:*"
+          - "org.assertj:*"
+          - "org.testcontainers:*"
+          - "org.apache.maven*:*"
+          - "org.jacoco:*"
+          - "com.puppycrawl.tools:*"
+          - "net.sourceforge.pmd:*"
+
+  # The same groups as service-commerce, for the same reasons.
+  - package-ecosystem: "maven"
+    directory: "/service-inventory"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Istanbul"
+    open-pull-requests-limit: 0  # paused -- see "Paused" note in the header
+    labels:
+      - "dependencies"
+      - "service-inventory"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+          - "org.springframework:*"
+          - "org.springframework.security:*"
+          - "org.springframework.amqp:*"
+          - "org.springdoc:*"
+      test-tooling:
+        patterns:
+          - "org.junit*:*"
+          - "org.mockito:*"
+          - "org.assertj:*"
+          - "org.testcontainers:*"
+      build-plugins:
+        patterns:
+          - "org.apache.maven*:*"
+          - "org.jacoco:*"
+          - "com.puppycrawl.tools:*"
+          - "net.sourceforge.pmd:*"
       libraries:
         patterns:
           - "*"

@@ -14,6 +14,7 @@ export interface PurchaseResponse {
   totalPrice: number;
   status: PurchaseStatus;
   createdAt: string;
+  cancellationReason: string | null;
 }
 
 export interface PurchaseFilterRequest {
@@ -32,6 +33,5 @@ export interface CreatePurchaseRequest {
 }
 
 export interface UpdatePurchaseRequest {
-  quantity?: number | null;
   status?: PurchaseStatus | null;
 }

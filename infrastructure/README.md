@@ -17,6 +17,14 @@ nginx sends a request to the `location` in `nginx.conf` that matches it.
 prefix, add its `location` to `nginx.conf`, or the prefix answers 404.
 [ADR 0025](../docs/adr/0025-nginx-replaces-traefik.md) records why.
 
+## Postgres
+
+`init-db.sh` gives Keycloak and each service a user and a schema of its own.
+Postgres runs the script only on an empty volume. If your volume predates a
+user in the script, such as `service_inventory`, the program that needs it
+cannot start. Copy any new keys from `.env.example` to `.env`, then run
+`docker compose down -v` to start from empty volumes. This deletes all local data.
+
 ## Keycloak
 
 Keycloak reads `keycloak/import/tombtale-realm.json` when it starts. The file
@@ -42,10 +50,6 @@ The admin console is at <http://localhost:8180>. Sign in with
 `KEYCLOAK_ADMIN_USER` from `.env`. To become a platform admin, register in the
 portal, then give your user the `platform_admin` role in the `tombtale` realm.
 
-Postgres runs `init-db.sh` only on an empty volume. If your volume predates
-Keycloak, it has no `keycloak` user, and Keycloak cannot start. Run
-`docker compose down -v` to start from empty volumes. This deletes all local data.
-
 ## RabbitMQ definitions
 
 `rabbitmq/definitions.json` holds the broker objects that no service owns. A
@@ -66,11 +70,12 @@ object from the file, also delete it in the management UI. Make every change in
 the file first. A change made only in the UI stays in your volume and reaches
 no one else.
 
-Today the file holds one policy. `player.events` sends an event that no queue
-binds to the alternate exchange `player.events.unrouted`. The queue of the same
-name keeps the event with its routing key. Both services declare
-`player.events`, so the policy sets this, and neither declaration changes.
-`PlayerEventsAlternateExchangeTest` in service-player loads the same file.
+The file holds one policy for each exchange: `player.events`, `purchase.events`
+and `item.events`. Each policy sends an event that no queue binds to an
+alternate exchange named after the exchange, such as `player.events.unrouted`.
+The queue of the same name keeps the event with its routing key. Two services
+declare each exchange, so a policy sets this, and no declaration changes. The
+service that publishes on an exchange has a test that loads the same file.
 
 ## Ports on the host
 
@@ -80,6 +85,7 @@ name keeps the event with its routing key. Both services declare
 | 8180 | Keycloak admin console, on localhost only |
 | 8081 | service-player (`run-local.sh`) |
 | 8082 | service-commerce (`run-local.sh`) |
+| 8083 | service-inventory (`run-local.sh`) |
 | 4200 | frontend-portal (`npm start`) |
 | 5432 | Postgres |
 | 6379 | Redis |

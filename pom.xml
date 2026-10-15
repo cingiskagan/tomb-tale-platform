@@ -13,9 +13,9 @@
 	<!--
 		An aggregator, not a parent. Each module keeps spring-boot-starter-parent
 		as its own parent, so nothing about how a service builds changes. This
-		POM exists for one reason: platform-commons and the two services that
+		POM exists for one reason: platform-commons and the services that
 		depend on it have to resolve each other from the reactor, which only
-		happens when Maven is given all three at once.
+		happens when Maven is given all of them at once.
 
 		Build one service and its dependencies with:
 		    ./mvnw -pl service-player -am clean verify
@@ -24,6 +24,7 @@
 		<module>platform-commons</module>
 		<module>service-player</module>
 		<module>service-commerce</module>
+		<module>service-inventory</module>
 		<module>infrastructure/keycloak/public-id-mapper</module>
 	</modules>
 

@@ -4,44 +4,37 @@ Read this before `service-inventory` or `service-dungeon` starts. It records wha
 shipped games do, so the store choice is made once, against evidence, and then
 written into an ADR.
 
-## Current position (2026-09-23)
+## Current position (2026-10-11)
 
 `service-inventory` and `service-dungeon` both use PostgreSQL.
 
-MongoDB is the one document store, and it holds two collections. `events` keeps
-the domain facts published through the outbox, with the event id as `_id` and no
-expiry. `logs` keeps application output under a TTL index, so log lines expire
-and the record of deeds does not. Fluentd ships the logs through the Docker
-`fluentd` log driver, with `fluentd-async` set, because a synchronous driver
-blocks a container when Fluentd is down. Metabase draws the dashboards, because
-Kibana talks only to Elasticsearch.
+MongoDB is the one document store. Its `events` collection keeps the domain
+facts published through the outbox, with the event id as `_id` and no expiry.
+Container logs stay out of MongoDB, and the [log policy](log-policy.md) names
+the tools that take them.
 
-The two collections have different recovery paths, and neither one holds a full
-second copy. The outbox keeps a published row for 30 days, so a replay rebuilds
-the recent part of `events` and nothing older. Beyond that window `events` is
-the only record of a domain fact, and its loss is permanent, which is why it
-carries no expiry. Logs are weaker still. Fluentd is a sink, not a projection,
-and a lost `logs` collection is gone apart from the rotated container files.
-Losing it costs debugging history and nothing else, which is why the TTL index
-sits there and not on `events`.
+The outbox keeps a published row for 30 days, so a replay rebuilds the recent
+part of `events` and nothing older. Beyond that window `events` is the only
+record of a domain fact, and its loss is permanent, which is why it carries no
+expiry.
 
 One service owns MongoDB. `service-audit` consumes the events from RabbitMQ,
-writes both collections, and serves the timeline endpoint the portal calls. No
+writes `events`, and serves the timeline endpoint the portal calls. No
 other service carries a MongoDB dependency or its credentials, which is the
 single-writer rule [ADR 0006](../adr/0006-one-postgres-schema-and-user-per-service.md)
 applies to Postgres schemas, kept by hand because MongoDB does not enforce it.
 The service starts when the outbox in Commit E1 produces its first event.
 
 The choice is deliberate and it overrides the comparison below. ClickHouse
-answers the analytical questions better, and Loki or Elasticsearch handle logs
-better. Neither one is a document store, and working with a document store is a
-goal of this project.
+answers the analytical questions better. It is not a document store, and
+working with a document store is a goal of this project.
 
-Revisit when a behavior query takes longer than you accept, or when the log
-collection crowds the disk. The event schema is the asset, not the engine, and
-append-only data replays into another store in an afternoon.
+Revisit when a behavior query takes longer than you accept. The event schema is
+the asset, not the engine, and append-only data replays into another store in
+an afternoon.
 
-No ADR records this yet. Write the ADR when the first service starts.
+[ADR 0026](../adr/0026-game-state-stays-in-postgres-and-mongodb-keeps-only-events.md)
+records this position.
 
 ## What shipped games do
 

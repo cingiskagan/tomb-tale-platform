@@ -50,6 +50,7 @@ public class Purchase extends BaseEntity {
     private static final int ITEM_CODE_MAX_LENGTH = 100;
     private static final int STATUS_MAX_LENGTH = 20;
     private static final int IDEMPOTENCY_KEY_MAX_LENGTH = 64;
+    private static final int CANCELLATION_REASON_MAX_LENGTH = 50;
     private static final int CURRENCY_PRECISION = 19;
     private static final int CURRENCY_SCALE = 4;
 
@@ -89,6 +90,10 @@ public class Purchase extends BaseEntity {
     /** Makes a repeated request or event produce one purchase per player, or null for no deduplication. */
     @Column(name = "idempotency_key", length = IDEMPOTENCY_KEY_MAX_LENGTH)
     private String idempotencyKey;
+
+    /** Why the purchase was cancelled, such as {@code UNKNOWN_ITEM_CODE}, kept as inventory sent it. Else null. */
+    @Column(name = "cancellation_reason", length = CANCELLATION_REASON_MAX_LENGTH)
+    private String cancellationReason;
 
     /** JPA optimistic-lock version — incremented on every update. */
     @Version

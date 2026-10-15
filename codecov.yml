@@ -9,24 +9,28 @@ coverage:
       default:
         target: 80%
 
-# Mirrors the Jacoco <excludes> in platform-commons/pom.xml,
-# service-player/pom.xml and service-commerce/pom.xml. Every list must be
-# changed together, or the Codecov percentage stops matching the one the
-# build reports.
+# Mirrors the Jacoco <excludes> in platform-commons/pom.xml and in each
+# service's pom.xml. Every list must be changed together, or the Codecov
+# percentage stops matching the one the build reports.
 ignore:
   # Spring wiring: a bean either builds the context or the context fails.
   - "service-player/src/main/java/com/tombtale/serviceplayer/config/**"
   - "service-commerce/src/main/java/com/tombtale/servicecommerce/config/**"
+  - "service-inventory/src/main/java/com/tombtale/serviceinventory/config/**"
   # Records with validation annotations and no method bodies.
   - "service-player/src/main/java/com/tombtale/serviceplayer/dto/**"
   - "service-commerce/src/main/java/com/tombtale/servicecommerce/dto/**"
+  - "service-inventory/src/main/java/com/tombtale/serviceinventory/dto/**"
   # QueryDSL metamodel, regenerated on every build.
   - "platform-commons/src/main/java/com/tombtale/commons/entity/Q*"
   - "service-player/src/main/java/com/tombtale/serviceplayer/entity/Q*"
   - "service-commerce/src/main/java/com/tombtale/servicecommerce/entity/Q*"
+  - "service-inventory/src/main/java/com/tombtale/serviceinventory/entity/Q*"
   # MapStruct writes the *MapperImpl; covering it measures MapStruct.
   - "service-player/src/main/java/com/tombtale/serviceplayer/mapper/**"
   - "service-commerce/src/main/java/com/tombtale/servicecommerce/mapper/**"
+  - "service-inventory/src/main/java/com/tombtale/serviceinventory/mapper/**"
   # One main() that the smoke tests already run.
   - "service-player/src/main/java/com/tombtale/serviceplayer/ServicePlayerApplication.java"
   - "service-commerce/src/main/java/com/tombtale/servicecommerce/ServiceCommerceApplication.java"
+  - "service-inventory/src/main/java/com/tombtale/serviceinventory/ServiceInventoryApplication.java"

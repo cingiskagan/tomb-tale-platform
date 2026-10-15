@@ -4,20 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Monorepo for the "Tomb Tale Online RPG" platform: two Spring Boot microservices, an Angular web portal, and Docker Compose infrastructure to run everything locally.
+Monorepo for the "Tomb Tale Online RPG" platform: three Spring Boot microservices, an Angular web portal, and Docker Compose infrastructure to run everything locally.
 
 - `frontend-portal/` — Angular 20 portal (standalone components, PrimeNG, OIDC auth via Keycloak)
-- `platform-commons/` — the Java library both services depend on: `BaseEntity`, `SystemActor`, `PlatformAuditorAware`
+- `platform-commons/` — the Java library every service depends on: `BaseEntity`, `SystemActor`, `PlatformAuditorAware`
 - `service-player/` — Spring Boot service for player accounts and characters (port 8081)
 - `service-commerce/` — Spring Boot service for purchases/economy (port 8082)
+- `service-inventory/` — Spring Boot service for the item catalog and the items players hold (port 8083)
 - `infrastructure/keycloak/public-id-mapper/` — the Keycloak extension that gives every user a `public_id` of its own
 - `infrastructure/` — Docker Compose stack: nginx, Keycloak (auth), Postgres, Redis, MongoDB, RabbitMQ, Mailpit (catches Keycloak's mail in dev, inbox at :8025)
 - `config/checkstyle/`, `config/pmd/` — static-analysis rulesets shared by both Java services
-- `scripts/pre-pr-tests.sh` — full local pre-PR check pipeline across all three modules
+- `scripts/pre-pr-tests.sh` — full local pre-PR check pipeline across every module
 
-Both services use Java 21 and Spring Boot 4. The frontend requires the Node version pinned in `frontend-portal/.nvmrc`.
+The services use Java 21 and Spring Boot 4. The frontend requires the Node version pinned in `frontend-portal/.nvmrc`.
 
-The root `pom.xml` is an aggregator over `platform-commons`, the two services and the Keycloak mapper. It is not their parent — the services and `platform-commons` keep `spring-boot-starter-parent`, and the mapper has none — and exists only so Maven resolves `platform-commons` from the reactor. Build Java from the repository root.
+The root `pom.xml` is an aggregator over `platform-commons`, the three services and the Keycloak mapper. It is not their parent — the services and `platform-commons` keep `spring-boot-starter-parent`, and the mapper has none — and exists only so Maven resolves `platform-commons` from the reactor. Build Java from the repository root.
 
 ## Common Commands
 
@@ -30,10 +31,10 @@ docker compose up -d
 
 All service ports, credentials, and Keycloak settings come from `infrastructure/.env` (copy from `.env.example`). Keycloak's realm comes from `infrastructure/keycloak/import/tombtale-realm.json`.
 
-### Backend services (service-player, service-commerce)
+### Backend services (service-player, service-commerce, service-inventory)
 
 ```bash
-cd service-player            # or service-commerce
+cd service-player            # or service-commerce, service-inventory
 ./run-local.sh               # full mode: real Postgres + RabbitMQ from Docker
 ```
 
@@ -50,7 +51,7 @@ Maven, from the repository root. `-pl` picks the module and `-am` builds what it
 
 `cd service-player && ./mvnw clean verify` still works, but only once `platform-commons` is in the local repository — run `./mvnw install -DskipTests` from the root after a fresh clone, or whenever `platform-commons` changes. Dropping `-am` on a clean machine fails with `Could not find artifact com.tombtale:platform-commons`.
 
-Checkstyle/PMD rulesets live in `config/checkstyle/checkstyle.xml` and `config/pmd/pmd-ruleset.xml`, referenced relatively from each `pom.xml` — one copy governs all three modules.
+Checkstyle/PMD rulesets live in `config/checkstyle/checkstyle.xml` and `config/pmd/pmd-ruleset.xml`, referenced relatively from each `pom.xml` — one copy governs every module.
 
 Both `check` goals are bound to the `verify` phase, so `./mvnw clean verify` is the single gate: the same engine at the same pinned version runs locally and in CI. MegaLinter does not lint Java — it ships its own PMD build, and when that drifted from `${pmd.version}` the two disagreed about the same ruleset. Style failures surface after the tests as a result; `./mvnw -pl <module> -am verify -DskipTests` is still the fast path while you are working. Naming the two goals directly — `checkstyle:check pmd:check` — no longer works from a clean tree: a goal invoked without a lifecycle phase never builds `platform-commons`, so resolving the module's dependencies fails before either check runs. `verify -DskipTests` reaches the same two goals, since both are bound to that phase.
 
@@ -79,7 +80,7 @@ Run this before opening a PR — CI (`test-and-coverage.yml`, `mega-linter.yml`)
 
 ### Backend services
 
-Both services follow an identical layering — copy the sibling service's pattern when adding anything new:
+The services follow an identical layering — copy the sibling service's pattern when adding anything new:
 
 ```text
 controller/  → REST endpoints under /api/v1/..., @PreAuthorize role checks
@@ -97,11 +98,13 @@ Every entity extends `BaseEntity` from `platform-commons`, which carries the sam
 
 `publicId` is assigned where the field is declared, not in a `@PrePersist`, so it exists before the first save and equality can depend on it — `BaseEntity` defines `equals`/`hashCode` on it, and entities must not generate their own. Lombok follows from that: `@SuperBuilder` instead of `@Builder`, explicit `@Getter`/`@Setter` instead of `@Data`.
 
-The actor columns come from Spring Data auditing. Both services wire `PlatformAuditorAware` from `platform-commons` in `config/JpaConfig`. It names the token's `public_id` claim, or the `SystemActor` that a consumer or job runs as through `SystemActor.run`, and refuses any other write with a 403. Start a job's transaction inside `run`, because Hibernate asks for the author at the commit.
+The actor columns come from Spring Data auditing. Every service wires `PlatformAuditorAware` from `platform-commons` in `config/JpaConfig`. It names the token's `public_id` claim, or the `SystemActor` that a consumer or job runs as through `SystemActor.run`, and refuses any other write with a 403. Start a job's transaction inside `run`, because Hibernate asks for the author at the commit.
 
-**Auth model**: both services are stateless OAuth2 resource servers validating Keycloak JWTs (`SecurityConfig`). Keycloak lists realm roles in the flat `roles` claim; `RoleClaimConverter` in `platform-commons` turns those into Spring authorities, so endpoints guard with `@PreAuthorize("hasAuthority('platform_admin') or hasAuthority('game_master')")`. The three roles are `player`, `game_master`, `platform_admin` — kept in sync with the frontend's `PlatformRole` enum.
+**Purchase saga**: a purchase crosses two services with no shared transaction (ADR 0027). Commerce saves it as `PENDING` and writes `purchase.created` through its outbox. Inventory saves one `ItemGrant` per purchase and sends it as `item.granted` or `item.grant-rejected`. Commerce then moves the purchase to `COMPLETED` or `CANCELLED`, keeps the rejection's reason in `cancellation_reason`, and only those two events move a purchase out of `PENDING`.
 
-Both services share one Postgres instance, and each has its own DB user and its own schema (`svc_player`/`player`, `svc_commerce`/`commerce`), provisioned by `infrastructure/init-db.sh`. Each user owns its schema and has no rights in the other's. Flyway owns the schema and Hibernate only validates it (`ddl-auto: validate`, hardcoded); the schema each service targets is set by `spring.jpa.properties.hibernate.default_schema` and `spring.flyway.schemas`.
+**Auth model**: every service is a stateless OAuth2 resource server validating Keycloak JWTs (`SecurityConfig`). Keycloak lists realm roles in the flat `roles` claim; `RoleClaimConverter` in `platform-commons` turns those into Spring authorities, so endpoints guard with `@PreAuthorize("hasAuthority('platform_admin') or hasAuthority('game_master')")`. The three roles are `player`, `game_master`, `platform_admin` — kept in sync with the frontend's `PlatformRole` enum.
+
+The services share one Postgres instance, and each has its own DB user and its own schema (`service_player`/`player`, `service_commerce`/`commerce`, `service_inventory`/`inventory`), provisioned by `infrastructure/init-db.sh`. Each user owns its schema and has no rights in the others. Flyway owns the schema and Hibernate only validates it (`ddl-auto: validate`, hardcoded); the schema each service targets is set by `spring.jpa.properties.hibernate.default_schema` and `spring.flyway.schemas`.
 
 Jacoco excludes `config/`, `dto/`, `mapper/`, `entity/Q*` (the generated QueryDSL metamodel), and `*Application`. Everything else we write is measured, including entities, exception handlers, and `security/`. The list is configured per-module in `pom.xml` and mirrored in `codecov.yml` — change both together, or the Codecov percentage stops matching the one the build reports. `platform-commons` excludes only `entity/Q*`; it holds no wiring, DTOs or mappers.
 

@@ -60,12 +60,9 @@ export class PurchaseFormComponent implements OnInit {
   isSaving = false;
   form!: FormGroup;
 
-  readonly statusOptions = [
-    { label: 'PENDING', value: PurchaseStatus.PENDING },
-    { label: 'COMPLETED', value: PurchaseStatus.COMPLETED },
-    { label: 'REFUNDED', value: PurchaseStatus.REFUNDED },
-    { label: 'CANCELLED', value: PurchaseStatus.CANCELLED },
-  ];
+  // Only inventory's item grant completes a purchase, and the DELETE cancels one, so a refund is the
+  // only status change left to the form.
+  readonly statusOptions = [{ label: 'REFUNDED', value: PurchaseStatus.REFUNDED }];
 
   ngOnInit() {
     this.initForm();
@@ -105,9 +102,8 @@ export class PurchaseFormComponent implements OnInit {
         unitPrice: data.unitPrice,
         status: data.status,
       });
-      // playerId, itemCode, and unitPrice are immutable after creation on the backend.
-      // The backend DTO UpdatePurchaseRequest only has quantity and status.
-      // So we must disable them in the edit form or mark them readonly. The template handles this via [readonly]="isEditMode".
+      // Only the status changes after creation. The template marks playerId, itemCode and unitPrice
+      // readonly and hides the quantity, which inventory already granted.
     } catch (err) {
       console.error('Failed to load purchase data', err);
       this.close();
@@ -130,7 +126,6 @@ export class PurchaseFormComponent implements OnInit {
 
       if (this.isEditMode && this.purchasePublicId) {
         await firstValueFrom(this.purchaseService.updatePurchase(this.purchasePublicId, {
-          quantity: val.quantity,
           status: val.status,
         }));
       } else {

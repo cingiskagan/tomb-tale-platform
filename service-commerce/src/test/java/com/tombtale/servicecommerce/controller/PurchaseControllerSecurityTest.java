@@ -85,7 +85,7 @@ class PurchaseControllerSecurityTest {
 
         private static final String VALID_UPDATE_BODY = """
                         {
-                        "quantity": 2
+                        "status": "REFUNDED"
                         }
                         """;
 
@@ -126,7 +126,8 @@ class PurchaseControllerSecurityTest {
                                 new BigDecimal("150.00"),
                                 new BigDecimal("300.00"),
                                 PurchaseStatus.PENDING,
-                                Instant.now());
+                                Instant.now(),
+                                null);
         }
 
         @Test

@@ -24,6 +24,7 @@ import java.util.UUID;
  * @param totalPrice {@code quantity × unitPrice}
  * @param status     current lifecycle state
  * @param createdAt  UTC timestamp of the purchase
+ * @param cancellationReason why the purchase was cancelled, such as {@code UNKNOWN_ITEM_CODE}, or null
  */
 public record PurchaseResponse(
         UUID publicId,
@@ -33,6 +34,7 @@ public record PurchaseResponse(
         BigDecimal unitPrice,
         BigDecimal totalPrice,
         PurchaseStatus status,
-        Instant createdAt
+        Instant createdAt,
+        String cancellationReason
 ) {
 }
