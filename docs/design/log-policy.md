@@ -17,10 +17,9 @@ of MongoDB. `service-audit` is the only MongoDB writer
   only insert, so an erasure request finds nothing it can delete. Name a person
   by `publicId` only. Account deletion then removes the only link between that
   `publicId` and a person. A name that a player picks is personal data too,
-  because it can identify the player with no table. `player.created` still
-  carries `displayName`, so Commit I1 removes it from the event.
+  because it can identify the player with no table, so no event carries one.
   `service-audit` also keeps only the data fields on an allow-list for each
-  event type, so a field that a producer adds later stays out of `events`.
+  event type. A field that a producer adds later stays out of `events`.
 
 ## Before Phase F
 
@@ -71,7 +70,6 @@ The score rates how reasonable each item is, out of 10.
 | --- | --- | --- |
 | IP address and user agent in Keycloak login events | 8 | An account-takeover case needs them, and the 180-day expiry limits the exposure. |
 | Admin reads of player data | 5 | OWASP lists access to sensitive data as an event to record. But every portal list call is a read, and no reader exists yet. |
-| `displayName` in `player.created` | 4 | A player picks it, can type a real name, and `events` keeps it forever. The timeline can read the current name from `service-player`. |
 | Shipped Postgres ERROR lines | 4 | A unique violation prints the value in its DETAIL line, for example a display name. `log_error_verbosity = terse` drops that line. |
 | Keycloak events in MongoDB now | 4 | Keycloak already stores them. Only a timeline that joins them to domain events needs the copy. |
 | Container WARN and ERROR in MongoDB | 3 | No reader exists on a dev machine, and Loki fits logs better. `events` already gives the document-store practice. |

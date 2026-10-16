@@ -13,7 +13,6 @@ Read this before Commit E1. It fixes the shape of every published event.
   "producer": "service-player",
   "data": {
     "playerPublicId": "3c9a6f10-0b44-4c8e-8f37-1d2a9c7b5e60",
-    "displayName": "Player_a1b2c3d4",
     "characterPublicId": "77d2b381-5e19-4a6d-9c03-2f8ab41d7e55"
   }
 }

@@ -97,7 +97,7 @@ class OutboxPublisherTest extends FixedAuthorTestBase {
                 .eventVersion(PlayerCreatedPayload.EVENT_VERSION)
                 .aggregateId(playerPublicId)
                 .payload(objectMapper.writeValueAsString(
-                        new PlayerCreatedPayload(playerPublicId, "Player_abc12345", UUID.randomUUID())))
+                        new PlayerCreatedPayload(playerPublicId, UUID.randomUUID())))
                 .publishedAt(publishedAt)
                 .build());
     }

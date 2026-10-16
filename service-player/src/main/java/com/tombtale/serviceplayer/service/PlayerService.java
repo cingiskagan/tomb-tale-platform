@@ -132,10 +132,7 @@ public class PlayerService {
                     PlayerCreatedPayload.EVENT_TYPE,
                     PlayerCreatedPayload.EVENT_VERSION,
                     saved.getPublicId(),
-                    new PlayerCreatedPayload(
-                            saved.getPublicId(),
-                            saved.getDisplayName(),
-                            initialCharacter.getPublicId()));
+                    new PlayerCreatedPayload(saved.getPublicId(), initialCharacter.getPublicId()));
             return saved;
         });
     }

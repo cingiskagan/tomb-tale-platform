@@ -44,8 +44,6 @@ import tools.jackson.databind.ObjectMapper;
 @ImportAutoConfiguration(ObservationAutoConfiguration.class)
 class OutboxServiceTest extends FixedAuthorTestBase {
 
-    private static final String DISPLAY_NAME = "Player_abc12345";
-
     @Autowired
     private OutboxService outboxService;
 
@@ -85,7 +83,7 @@ class OutboxServiceTest extends FixedAuthorTestBase {
                 PlayerCreatedPayload.EVENT_TYPE,
                 PlayerCreatedPayload.EVENT_VERSION,
                 aggregateId,
-                new PlayerCreatedPayload(aggregateId, DISPLAY_NAME, UUID.randomUUID()));
+                new PlayerCreatedPayload(aggregateId, UUID.randomUUID()));
     }
 
     private List<OutboxEvent> committedRows() {
@@ -113,8 +111,9 @@ class OutboxServiceTest extends FixedAuthorTestBase {
         assertThat(row.getPublishedAt()).as("a fresh row is pending").isNull();
 
         JsonNode data = objectMapper.readTree(row.getPayload());
+        assertThat(data.propertyNames()).as("no name a player picks")
+                .containsExactlyInAnyOrder("playerPublicId", "characterPublicId");
         assertThat(data.get("playerPublicId").asString()).isEqualTo(aggregateId.toString());
-        assertThat(data.get("displayName").asString()).isEqualTo(DISPLAY_NAME);
         assertThat(data.get("characterPublicId").asString()).isNotBlank();
     }
 
