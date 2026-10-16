@@ -11,6 +11,10 @@
   "resetPasswordAllowed": true,
   "rememberMe": false,
   "bruteForceProtected": true,
+  "eventsEnabled": true,
+  "eventsExpiration": 15552000,
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": false,
   "roles": {
     "realm": [
       { "name": "player", "description": "Player" },

@@ -29,9 +29,9 @@ Phase I builds these after Phase E.
   with the event id as `_id` (Commit I1).
 - Keycloak events. `tombtale-realm.json` sets `eventsEnabled` and
   `adminEventsEnabled`. Keycloak stores both in its own database, and its admin
-  console shows them. Login events expire after 180 days, past the 120-day
-  chargeback window. Make sure that admin events keep no expiry, because a role
-  grant is a security fact.
+  console shows them. User events, such as logins and password resets, expire
+  after 180 days, past the 120-day chargeback window. Make sure that admin
+  events keep no expiry, because a role grant is a security fact.
 - `adminEventsDetailsEnabled` stays off. With it on, each admin event copies
   the whole changed object, with its user attributes and client configuration.
 
