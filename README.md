@@ -9,6 +9,7 @@ Tomb Tale Platform is the monorepo for the "Tomb Tale Online RPG" services. This
 - `frontend-portal/`: The Angular-based web portal for users.
 - `service-commerce/`: Spring Boot Java microservice handling purchases, payments, and economy.
 - `service-inventory/`: Spring Boot Java microservice for the item catalog and the items players hold.
+- `service-audit/`: Spring Boot Java microservice that keeps every domain event in MongoDB.
 - `service-player/`: Spring Boot Java microservice handling player account management.
 - `infrastructure/`: Docker Compose configurations and initialization scripts for local databases and auth providers.
 - `scripts/`: Shared platform automation and CI/CD scripts.
@@ -26,12 +27,13 @@ below runs locally against the Docker Compose stack.
 | `frontend-portal` | Working | Keycloak login and callback, dashboard, own-profile page, and role-gated player and purchase lists. |
 | `infrastructure` | Working | nginx, Keycloak, Postgres, Redis, MongoDB, RabbitMQ and Mailpit, started with one `docker compose up`. |
 | `service-inventory` | Partial | Grants the items of each purchase into the player's stacks, rejects an unknown item code, and sends each item grant to commerce through RabbitMQ. No endpoint yet, and the catalog stays empty until item sets exist. Flyway-managed schema, 11 tests. |
+| `service-audit` | Partial | Keeps every event from player, commerce and inventory in MongoDB, as a user that can only insert. A redelivery writes nothing new, and a field off its event type's allow-list is not stored. A read-only user browses the events, for example in MongoDB Compass. No endpoint yet. 13 tests. |
 | `service-dungeon` | Planned | See the [development pathway](docs/design/pathway.md). |
 | Unity game client | Planned | Deliberately last. |
 
-Some of the stack is wired but not yet earning its place. Redis and MongoDB run in
-the Compose stack for services that will need them, and no service connects to
-either today.
+Some of the stack is wired but not yet earning its place. Redis runs in the
+Compose stack for services that will need it, and no service connects to it
+today.
 
 Characters are read and stat updates only — there is no endpoint yet to create or
 delete one.
@@ -71,6 +73,13 @@ cd service-player
 
 ```bash
 cd service-inventory
+./run-local.sh
+```
+
+**Service Audit:**
+
+```bash
+cd service-audit
 ./run-local.sh
 ```
 

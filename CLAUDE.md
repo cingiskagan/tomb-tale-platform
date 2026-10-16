@@ -4,21 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Monorepo for the "Tomb Tale Online RPG" platform: three Spring Boot microservices, an Angular web portal, and Docker Compose infrastructure to run everything locally.
+Monorepo for the "Tomb Tale Online RPG" platform: four Spring Boot microservices, an Angular web portal, and Docker Compose infrastructure to run everything locally.
 
-- `frontend-portal/` — Angular 20 portal (standalone components, PrimeNG, OIDC auth via Keycloak)
-- `platform-commons/` — the Java library every service depends on: `BaseEntity`, `SystemActor`, `PlatformAuditorAware`
-- `service-player/` — Spring Boot service for player accounts and characters (port 8081)
-- `service-commerce/` — Spring Boot service for purchases/economy (port 8082)
-- `service-inventory/` — Spring Boot service for the item catalog and the items players hold (port 8083)
-- `infrastructure/keycloak/public-id-mapper/` — the Keycloak extension that gives every user a `public_id` of its own
-- `infrastructure/` — Docker Compose stack: nginx, Keycloak (auth), Postgres, Redis, MongoDB, RabbitMQ, Mailpit (catches Keycloak's mail in dev, inbox at :8025)
-- `config/checkstyle/`, `config/pmd/` — static-analysis rulesets shared by both Java services
-- `scripts/pre-pr-tests.sh` — full local pre-PR check pipeline across every module
+- `frontend-portal/`: Angular 20 portal (standalone components, PrimeNG, OIDC auth via Keycloak)
+- `platform-commons/`: the Java library every Postgres service depends on, with `BaseEntity`, `SystemActor` and `PlatformAuditorAware`
+- `service-player/`: Spring Boot service for player accounts and characters (port 8081)
+- `service-commerce/`: Spring Boot service for purchases/economy (port 8082)
+- `service-inventory/`: Spring Boot service for the item catalog and the items players hold (port 8083)
+- `service-audit/`: Spring Boot service that keeps every domain event in MongoDB (port 8084, no API yet)
+- `infrastructure/keycloak/public-id-mapper/`: the Keycloak extension that gives every user a `public_id` of its own
+- `infrastructure/`: Docker Compose stack: nginx, Keycloak (auth), Postgres, Redis, MongoDB, RabbitMQ, Mailpit (catches Keycloak's mail in dev, inbox at :8025)
+- `config/checkstyle/`, `config/pmd/`: static-analysis rulesets shared by every Java module
+- `scripts/pre-pr-tests.sh`: full local pre-PR check pipeline across every module
 
 The services use Java 21 and Spring Boot 4. The frontend requires the Node version pinned in `frontend-portal/.nvmrc`.
 
-The root `pom.xml` is an aggregator over `platform-commons`, the three services and the Keycloak mapper. It is not their parent — the services and `platform-commons` keep `spring-boot-starter-parent`, and the mapper has none — and exists only so Maven resolves `platform-commons` from the reactor. Build Java from the repository root.
+The root `pom.xml` is an aggregator over `platform-commons`, the four services and the Keycloak mapper. It is not their parent — the services and `platform-commons` keep `spring-boot-starter-parent`, and the mapper has none — and exists only so Maven resolves `platform-commons` from the reactor. Build Java from the repository root.
 
 ## Common Commands
 
@@ -31,11 +32,11 @@ docker compose up -d
 
 All service ports, credentials, and Keycloak settings come from `infrastructure/.env` (copy from `.env.example`). Keycloak's realm comes from `infrastructure/keycloak/import/tombtale-realm.json`.
 
-### Backend services (service-player, service-commerce, service-inventory)
+### Backend services (service-player, service-commerce, service-inventory, service-audit)
 
 ```bash
-cd service-player            # or service-commerce, service-inventory
-./run-local.sh               # full mode: real Postgres + RabbitMQ from Docker
+cd service-player            # or service-commerce, service-inventory, service-audit
+./run-local.sh               # full mode: real Postgres (MongoDB for audit) + RabbitMQ from Docker
 ```
 
 Maven, from the repository root. `-pl` picks the module and `-am` builds what it depends on, which is how `platform-commons` gets onto the classpath:
@@ -87,6 +88,7 @@ controller/  → REST endpoints under /api/v1/..., @PreAuthorize role checks
 service/     → business logic, transactional boundaries
 repository/  → Spring Data JPA; dynamic filtering via QueryDSL (…QueryRepository + …QueryRepositoryImpl)
 entity/      → JPA entities; the QueryDSL Q-classes are generated into this package too
+document/    → MongoDB documents (service-audit)
 domain/      → plain domain logic with no JPA (service-commerce: PurchaseStatus + its transition table)
 dto/         → request/response DTOs with jakarta validation
 mapper/      → MapStruct compile-time mappers between entities and DTOs
@@ -98,17 +100,19 @@ Every entity extends `BaseEntity` from `platform-commons`, which carries the sam
 
 `publicId` is assigned where the field is declared, not in a `@PrePersist`, so it exists before the first save and equality can depend on it — `BaseEntity` defines `equals`/`hashCode` on it, and entities must not generate their own. Lombok follows from that: `@SuperBuilder` instead of `@Builder`, explicit `@Getter`/`@Setter` instead of `@Data`.
 
-The actor columns come from Spring Data auditing. Every service wires `PlatformAuditorAware` from `platform-commons` in `config/JpaConfig`. It names the token's `public_id` claim, or the `SystemActor` that a consumer or job runs as through `SystemActor.run`, and refuses any other write with a 403. Start a job's transaction inside `run`, because Hibernate asks for the author at the commit.
+The actor columns come from Spring Data auditing. Every Postgres service wires `PlatformAuditorAware` from `platform-commons` in `config/JpaConfig`. It names the token's `public_id` claim, or the `SystemActor` that a consumer or job runs as through `SystemActor.run`, and refuses any other write with a 403. Start a job's transaction inside `run`, because Hibernate asks for the author at the commit.
 
 **Purchase saga**: a purchase crosses two services with no shared transaction (ADR 0027). Commerce saves it as `PENDING` and writes `purchase.created` through its outbox. Inventory saves one `ItemGrant` per purchase and sends it as `item.granted` or `item.grant-rejected`. Commerce then moves the purchase to `COMPLETED` or `CANCELLED`, keeps the rejection's reason in `cancellation_reason`, and only those two events move a purchase out of `PENDING`.
 
 **Tracing**: Micrometer Tracing over OpenTelemetry. Nothing is exported until Phase G picks a backend (ADR 0028). A log line written inside a request or a message carries the trace id. RabbitMQ messages carry the W3C `traceparent`. The outbox row stores it, so the later send from the publisher continues the same trace. Tests turn trace export off, and that also stops propagation. A test that checks a trace needs `@AutoConfigureTracing`.
 
-**Auth model**: every service is a stateless OAuth2 resource server validating Keycloak JWTs (`SecurityConfig`). Keycloak lists realm roles in the flat `roles` claim; `RoleClaimConverter` in `platform-commons` turns those into Spring authorities, so endpoints guard with `@PreAuthorize("hasAuthority('platform_admin') or hasAuthority('game_master')")`. The three roles are `player`, `game_master`, `platform_admin` — kept in sync with the frontend's `PlatformRole` enum.
+**Auth model**: every service with an API is a stateless OAuth2 resource server validating Keycloak JWTs (`SecurityConfig`). Keycloak lists realm roles in the flat `roles` claim; `RoleClaimConverter` in `platform-commons` turns those into Spring authorities, so endpoints guard with `@PreAuthorize("hasAuthority('platform_admin') or hasAuthority('game_master')")`. The three roles are `player`, `game_master`, `platform_admin` — kept in sync with the frontend's `PlatformRole` enum.
 
 The services share one Postgres instance, and each has its own DB user and its own schema (`service_player`/`player`, `service_commerce`/`commerce`, `service_inventory`/`inventory`), provisioned by `infrastructure/init-db.sh`. Each user owns its schema and has no rights in the others. Flyway owns the schema and Hibernate only validates it (`ddl-auto: validate`, hardcoded); the schema each service targets is set by `spring.jpa.properties.hibernate.default_schema` and `spring.flyway.schemas`.
 
-Jacoco excludes `config/`, `dto/`, `mapper/`, `entity/Q*` (the generated QueryDSL metamodel), and `*Application`. Everything else we write is measured, including entities, exception handlers, and `security/`. The list is configured per-module in `pom.xml` and mirrored in `codecov.yml` — change both together, or the Codecov percentage stops matching the one the build reports. `platform-commons` excludes only `entity/Q*`; it holds no wiring, DTOs or mappers.
+service-audit has no Postgres. It writes MongoDB's `audit.events` as `service_audit`, a user that can only insert, created by `infrastructure/init-mongo.sh` (ADR 0029). `EventAllowList` names the data fields each event type keeps. An event type with no list waits in the DLQ. People read the events as `audit_reader`, which can only read, for example in MongoDB Compass.
+
+Jacoco excludes `config/`, `dto/`, `mapper/`, `entity/Q*` (the generated QueryDSL metamodel), and `*Application`. Everything else we write is measured, including entities, exception handlers, and `security/`. The list is configured per-module in `pom.xml` and mirrored in `codecov.yml` — change both together, or the Codecov percentage stops matching the one the build reports. `platform-commons` excludes only `entity/Q*`; it holds no wiring, DTOs or mappers. `service-audit` excludes `config/`, `dto/` and `*Application`, because it has no QueryDSL or MapStruct.
 
 The package a class lives in decides whether it is measured, so logic does not go in a wiring package. That is why `RoleClaimConverter` sits in `security/` and not `config/`, and `PurchaseStatus` in `domain/` and not `entity/`. Both have unit tests that would otherwise score zero.
 

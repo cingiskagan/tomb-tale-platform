@@ -145,16 +145,23 @@ services:
       - tombtale
 
   # --- CUSTOM PLATFORM SERVICES ---
+  # service-audit's events, and nothing else (ADR 0026). init-mongo.sh gives
+  # service-audit a user that can only insert, and people a read-only one.
   mongodb:
-    image: mongo:6.0
+    image: mongo:8.0
     logging: *default-logging
     ports:
       - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_AUDIT_USER: ${MONGO_AUDIT_USER}
+      MONGO_AUDIT_PASSWORD: ${MONGO_AUDIT_PASSWORD}
+      MONGO_AUDIT_READER_USER: ${MONGO_AUDIT_READER_USER}
+      MONGO_AUDIT_READER_PASSWORD: ${MONGO_AUDIT_READER_PASSWORD}
     volumes:
       - mongo-data:/data/db
+      - ./init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh:ro
     networks:
       - tombtale
 
