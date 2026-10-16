@@ -303,9 +303,9 @@ updates:
 
   # ----- Local stack images ---------------------------------------------
   # Only reaches the literal tags in infrastructure/docker-compose.yml, which
-  # today means nginx, mongo and rabbitmq. Postgres, Redis and the OTEL
-  # collector are written as ${VAR} and read from infrastructure/.env, and
-  # Dependabot does not expand those -- they still need bumping by hand.
+  # today means nginx, mongo and rabbitmq. Postgres, Redis and Mailpit are
+  # written as ${VAR} and read from infrastructure/.env, and Dependabot does
+  # not expand those -- they still need bumping by hand.
   - package-ecosystem: "docker"
     directory: "/infrastructure"
     schedule:

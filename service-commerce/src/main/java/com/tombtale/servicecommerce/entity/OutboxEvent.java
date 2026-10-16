@@ -26,6 +26,9 @@ import java.util.UUID;
 @Table(name = "outbox")
 public class OutboxEvent extends BaseEntity {
 
+    /** The W3C header that {@link #traceparent} holds. */
+    public static final String TRACEPARENT = "traceparent";
+
     /** Also the routing key, for example {@code purchase.created}. */
     @Column(nullable = false, updatable = false, length = 100)
     private String eventType;
@@ -42,6 +45,10 @@ public class OutboxEvent extends BaseEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, updatable = false)
     private String payload;
+
+    /** The trace that wrote the row, which the publisher continues when it sends the row. */
+    @Column(updatable = false, length = 55)
+    private String traceparent;
 
     /** Null until the publisher sends the row. */
     private Instant publishedAt;
