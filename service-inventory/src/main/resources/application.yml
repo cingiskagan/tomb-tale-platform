@@ -37,10 +37,14 @@ spring:
     password: ${RABBITMQ_PASSWORD}
     # A purchase is acknowledged only after the broker confirms its item grant.
     publisher-confirm-type: simple
+    # A message carries the sender's trace, and the listener continues it.
+    template:
+      observation-enabled: true
     # A failed message is retried after 1s, 2s and 4s, then goes to its DLQ.
     # A rejected message never returns to its queue, so nothing loops.
     listener:
       simple:
+        observation-enabled: true
         default-requeue-rejected: false
         retry:
           enabled: true
@@ -68,6 +72,15 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+  # Traces and metrics stay in the service until Phase G picks a backend (ADR 0028).
+  # The trace id still reaches the logs and every RabbitMQ message.
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    metrics:
+      export:
+        enabled: false
 
 logging:
   level:

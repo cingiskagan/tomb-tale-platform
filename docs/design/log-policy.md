@@ -59,9 +59,9 @@ Better tools than MongoDB exist for these, and Phase G picks them.
   Promtail reached end of life on 2026-03-02.
 - The nginx access log. It stays in the container output. A 5xx also appears
   as an ERROR in the service log.
-- Metrics and traces. OpenTelemetry carries both. The `observability` profile
-  names an `otel-collector`, but its configuration file is missing from the
-  repository.
+- Metrics and traces. Micrometer with OpenTelemetry records both, but sends
+  them nowhere yet (ADR 0028). Every service log line carries the trace id,
+  and Phase G gives traces and metrics a backend.
 
 ## Questionable
 

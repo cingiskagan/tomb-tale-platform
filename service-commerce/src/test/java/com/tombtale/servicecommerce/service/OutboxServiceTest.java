@@ -9,7 +9,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.micrometer.observation.autoconfigure.ObservationAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -39,6 +41,7 @@ import tools.jackson.databind.ObjectMapper;
 @DataJpaTest(showSql = false)
 @ActiveProfiles("test")
 @Import({ QueryDslConfig.class, JpaConfig.class, OutboxService.class })
+@ImportAutoConfiguration(ObservationAutoConfiguration.class)
 class OutboxServiceTest extends FixedAuthorTestBase {
 
     private static final String ITEM_CODE = "SWORD_IRON";

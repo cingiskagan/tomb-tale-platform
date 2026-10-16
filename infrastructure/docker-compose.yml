@@ -144,19 +144,6 @@ services:
     networks:
       - tombtale
 
-  otel-collector:
-    image: ${OTEL_COLLECTOR_IMAGE}
-    restart: unless-stopped
-    logging: *default-logging
-    profiles:
-      - observability
-    command:
-      - --config=/etc/otelcol/config.yaml
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
-    networks:
-      - tombtale
-
   # --- CUSTOM PLATFORM SERVICES ---
   mongodb:
     image: mongo:6.0

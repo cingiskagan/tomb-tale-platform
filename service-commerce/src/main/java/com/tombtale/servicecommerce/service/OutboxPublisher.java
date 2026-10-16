@@ -5,6 +5,9 @@ import com.tombtale.servicecommerce.config.RabbitMQConfig;
 import com.tombtale.servicecommerce.dto.event.EventEnvelope;
 import com.tombtale.servicecommerce.entity.OutboxEvent;
 import com.tombtale.servicecommerce.repository.OutboxEventRepository;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.transport.ReceiverContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.Message;
@@ -38,6 +41,7 @@ public class OutboxPublisher {
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
+    private final ObservationRegistry observationRegistry;
     private final int batchSize;
     private final Duration confirmTimeout;
     private final Duration retention;
@@ -48,6 +52,7 @@ public class OutboxPublisher {
             RabbitTemplate rabbitTemplate,
             ObjectMapper objectMapper,
             TransactionTemplate transactionTemplate,
+            ObservationRegistry observationRegistry,
             @Value("${app.outbox.batch-size}") int batchSize,
             @Value("${app.outbox.confirm-timeout}") Duration confirmTimeout,
             @Value("${app.outbox.retention}") Duration retention) {
@@ -55,6 +60,7 @@ public class OutboxPublisher {
         this.rabbitTemplate = rabbitTemplate;
         this.objectMapper = objectMapper;
         this.transactionTemplate = transactionTemplate;
+        this.observationRegistry = observationRegistry;
         this.batchSize = batchSize;
         this.confirmTimeout = confirmTimeout;
         this.retention = retention;
@@ -112,10 +118,17 @@ public class OutboxPublisher {
                 .setMessageId(event.getPublicId().toString())
                 .build();
 
-        rabbitTemplate.invoke(operations -> {
-            operations.send(RabbitMQConfig.PURCHASE_EVENTS_EXCHANGE, event.getEventType(), message);
-            operations.waitForConfirmsOrDie(confirmTimeout.toMillis());
-            return null;
-        });
+        // Micrometer reads a trace only from a carrier, usually a message. Here the row is the carrier,
+        // so this span continues the trace that wrote the row, and the send inside it passes the trace on.
+        ReceiverContext<OutboxEvent> trace = new ReceiverContext<>(
+                (row, key) -> OutboxEvent.TRACEPARENT.equals(key) ? row.getTraceparent() : null);
+        trace.setCarrier(event);
+        Observation.createNotStarted("outbox.publish", () -> trace, observationRegistry)
+                .lowCardinalityKeyValue("event.type", event.getEventType())
+                .observe(() -> rabbitTemplate.invoke(operations -> {
+                    operations.send(RabbitMQConfig.PURCHASE_EVENTS_EXCHANGE, event.getEventType(), message);
+                    operations.waitForConfirmsOrDie(confirmTimeout.toMillis());
+                    return null;
+                }));
     }
 }

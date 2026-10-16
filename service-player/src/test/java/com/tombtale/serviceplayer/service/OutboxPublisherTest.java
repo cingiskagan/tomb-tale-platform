@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
+import org.springframework.boot.micrometer.observation.autoconfigure.ObservationAutoConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -53,7 +54,7 @@ import tools.jackson.databind.ObjectMapper;
 @DataJpaTest(showSql = false)
 @ActiveProfiles("test")
 @Import({ QueryDslConfig.class, JpaConfig.class, OutboxPublisher.class })
-@ImportAutoConfiguration(JacksonAutoConfiguration.class)
+@ImportAutoConfiguration({ JacksonAutoConfiguration.class, ObservationAutoConfiguration.class })
 @SuppressWarnings("PMD.TooManyStaticImports")
 class OutboxPublisherTest extends FixedAuthorTestBase {
 

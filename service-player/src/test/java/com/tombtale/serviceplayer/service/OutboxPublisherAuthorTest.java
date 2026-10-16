@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
+import org.springframework.boot.micrometer.observation.autoconfigure.ObservationAutoConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -40,7 +41,7 @@ import static org.mockito.Mockito.when;
 @DataJpaTest(showSql = false)
 @ActiveProfiles("test")
 @Import({ QueryDslConfig.class, JpaConfig.class, OutboxPublisher.class })
-@ImportAutoConfiguration(JacksonAutoConfiguration.class)
+@ImportAutoConfiguration({ JacksonAutoConfiguration.class, ObservationAutoConfiguration.class })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class OutboxPublisherAuthorTest extends PostgresTestBase {
 

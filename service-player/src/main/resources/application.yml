@@ -37,6 +37,9 @@ spring:
     password: ${RABBITMQ_PASSWORD}
     # The outbox marks a row sent only after the broker confirms the message.
     publisher-confirm-type: simple
+    # A message carries the sender's trace.
+    template:
+      observation-enabled: true
 
   # --- OAuth2 Resource Server (Keycloak JWT) ---
   security:
@@ -57,6 +60,15 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+  # Traces and metrics stay in the service until Phase G picks a backend (ADR 0028).
+  # The trace id still reaches the logs and every RabbitMQ message.
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    metrics:
+      export:
+        enabled: false
 
 # --- Platform settings ---
 app:
