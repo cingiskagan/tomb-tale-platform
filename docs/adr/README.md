@@ -96,3 +96,4 @@ in sequence here — a record written later can describe an earlier choice.
 | [0026](0026-game-state-stays-in-postgres-and-mongodb-keeps-only-events.md) | Game state stays in Postgres, and MongoDB keeps only `events` | 2026-10-11 | accepted |
 | [0027](0027-a-purchase-is-a-choreographed-saga-that-waits-in-pending.md) | A purchase is a choreographed saga that waits in `PENDING` | 2026-10-13 | accepted |
 | [0028](0028-micrometer-with-opentelemetry-traces-the-services-and-exports-nothing-yet.md) | Micrometer with OpenTelemetry traces the services, and exports nothing yet | 2026-10-16 | accepted |
+| [0029](0029-service-audit-inserts-each-event-once-and-keeps-only-listed-fields.md) | service-audit inserts each event once, and keeps only listed fields | 2026-10-16 | accepted |

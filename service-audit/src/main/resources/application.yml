@@ -1,0 +1,63 @@
+---
+spring:
+  application:
+    name: service-audit
+
+  # --- MongoDB ---
+  # The user can insert into audit.events and do nothing more (infrastructure/init-mongo.sh).
+  mongodb:
+    host: ${MONGO_HOST:localhost}
+    port: ${MONGO_PORT:27017}
+    database: audit
+    authentication-database: audit
+    username: ${MONGO_AUDIT_USER}
+    password: ${MONGO_AUDIT_PASSWORD}
+    # The event id is the document's _id, stored as a BSON UUID.
+    representation:
+      uuid: standard
+
+  # --- RabbitMQ ---
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASSWORD}
+    # A failed message is retried after 1s, 2s and 4s, then goes to its DLQ.
+    # A rejected message never returns to its queue, so nothing loops.
+    # The listener continues the trace the message carries.
+    listener:
+      simple:
+        observation-enabled: true
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-retries: 3
+          initial-interval: 1s
+          multiplier: 2
+          max-interval: 10s
+
+server:
+  port: ${SERVER_PORT}
+
+# --- Actuator ---
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+  # Traces and metrics stay in the service until Phase G picks a backend (ADR 0028).
+  # The trace id still reaches the logs.
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    metrics:
+      export:
+        enabled: false
+
+logging:
+  level:
+    com.tombtale: INFO

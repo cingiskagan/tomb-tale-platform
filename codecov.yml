@@ -17,10 +17,12 @@ ignore:
   - "service-player/src/main/java/com/tombtale/serviceplayer/config/**"
   - "service-commerce/src/main/java/com/tombtale/servicecommerce/config/**"
   - "service-inventory/src/main/java/com/tombtale/serviceinventory/config/**"
+  - "service-audit/src/main/java/com/tombtale/serviceaudit/config/**"
   # Records with validation annotations and no method bodies.
   - "service-player/src/main/java/com/tombtale/serviceplayer/dto/**"
   - "service-commerce/src/main/java/com/tombtale/servicecommerce/dto/**"
   - "service-inventory/src/main/java/com/tombtale/serviceinventory/dto/**"
+  - "service-audit/src/main/java/com/tombtale/serviceaudit/dto/**"
   # QueryDSL metamodel, regenerated on every build.
   - "platform-commons/src/main/java/com/tombtale/commons/entity/Q*"
   - "service-player/src/main/java/com/tombtale/serviceplayer/entity/Q*"
@@ -34,3 +36,4 @@ ignore:
   - "service-player/src/main/java/com/tombtale/serviceplayer/ServicePlayerApplication.java"
   - "service-commerce/src/main/java/com/tombtale/servicecommerce/ServiceCommerceApplication.java"
   - "service-inventory/src/main/java/com/tombtale/serviceinventory/ServiceInventoryApplication.java"
+  - "service-audit/src/main/java/com/tombtale/serviceaudit/ServiceAuditApplication.java"

@@ -12,13 +12,13 @@
 #   ./scripts/pre-pr-tests.sh --clean                  # also runs npm ci
 #
 # --scope takes exactly one of: all (default), general, platform-commons,
-# service-commerce, service-inventory, service-player,
+# service-audit, service-commerce, service-inventory, service-player,
 # infrastructure/keycloak/public-id-mapper, frontend-portal. An unrecognised
 # value is an error rather than a silent no-op, so a typo cannot look like a
 # clean run.
 #
 # The Java modules build from the repository root, not from their own
-# directory: every service depends on platform-commons,
+# directory: every service but service-audit depends on platform-commons,
 # and Maven only resolves that from the reactor when it is given all of them.
 # ============================================================
 
@@ -37,7 +37,7 @@ MARKDOWNLINT_VERSION="0.45.0"
 # not this pin, is what keeps local runs and CI agreeing.
 YAMLLINT_VERSION="1.35.1"
 
-VALID_SCOPES=("all" "general" "platform-commons" "service-commerce" "service-inventory" "service-player" "infrastructure/keycloak/public-id-mapper" "frontend-portal")
+VALID_SCOPES=("all" "general" "platform-commons" "service-audit" "service-commerce" "service-inventory" "service-player" "infrastructure/keycloak/public-id-mapper" "frontend-portal")
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -166,6 +166,7 @@ run_maven_module() {
 }
 
 run_maven_module platform-commons
+run_maven_module service-audit
 run_maven_module service-commerce
 run_maven_module service-inventory
 run_maven_module service-player

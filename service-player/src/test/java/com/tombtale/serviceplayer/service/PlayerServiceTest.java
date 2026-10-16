@@ -158,7 +158,6 @@ class PlayerServiceTest {
     void shouldWriteThePlayerCreatedEventWithTheNewPlayer() {
         runTheTransaction();
         Player saved = new Player();
-        saved.setDisplayName("Player_random1");
 
         when(playerRepository.findByPublicIdWithCharacters(PUBLIC_ID)).thenReturn(Optional.empty());
         when(playerRepository.save(any(Player.class))).thenReturn(saved);
@@ -174,7 +173,6 @@ class PlayerServiceTest {
                 payload.capture());
 
         assertThat(payload.getValue().playerPublicId()).isEqualTo(saved.getPublicId());
-        assertThat(payload.getValue().displayName()).isEqualTo("Player_random1");
         assertThat(payload.getValue().characterPublicId()).isNotNull();
     }
 

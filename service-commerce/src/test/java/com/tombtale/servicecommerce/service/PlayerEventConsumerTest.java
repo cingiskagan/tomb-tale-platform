@@ -54,7 +54,6 @@ class PlayerEventConsumerTest extends PostgresTestBase {
                 "producer": "service-player",
                 "data": {
                     "playerPublicId": "%s",
-                    "displayName": "Player_a1b2c3d4",
                     "characterPublicId": "77d2b381-5e19-4a6d-9c03-2f8ab41d7e55"
                 }
             }
@@ -69,7 +68,6 @@ class PlayerEventConsumerTest extends PostgresTestBase {
                 "producer": "service-player",
                 "data": {
                     "playerPublicId": null,
-                    "displayName": "Player_a1b2c3d4",
                     "characterPublicId": "77d2b381-5e19-4a6d-9c03-2f8ab41d7e55"
                 }
             }

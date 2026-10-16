@@ -13,7 +13,6 @@ Read this before Commit E1. It fixes the shape of every published event.
   "producer": "service-player",
   "data": {
     "playerPublicId": "3c9a6f10-0b44-4c8e-8f37-1d2a9c7b5e60",
-    "displayName": "Player_a1b2c3d4",
     "characterPublicId": "77d2b381-5e19-4a6d-9c03-2f8ab41d7e55"
   }
 }
@@ -22,10 +21,10 @@ Read this before Commit E1. It fixes the shape of every published event.
 Five envelope fields, plus a `data` object owned by the event type. The
 producer creates `eventId` once, in the transaction that records the fact,
 and a retry reuses it. `service-audit` stores it as `_id`, so a redelivery
-overwrites its own document ([data store research](data-store-research.md)).
+writes nothing new ([ADR 0029](../adr/0029-service-audit-inserts-each-event-once-and-keeps-only-listed-fields.md)).
 `eventType` is the routing key on the producer's exchange, such as
-`player.events`. `occurredAt` is when the fact happened, not when the
-publisher reached the broker.
+`player.events`. `occurredAt` records the moment the fact happened, not the
+moment the publisher reached the broker.
 
 ## Rules
 
@@ -38,7 +37,8 @@ publisher reached the broker.
   A separate `character.created` waits for the second character.
 - Payloads carry `publicId` values, never Keycloak's user id
   ([ADR 0014](../adr/0014-player-publicid-is-the-cross-service-identifier.md)).
-  A published field cannot be withdrawn, so add one when a consumer needs it.
+  A published field cannot be withdrawn, so add a field only for a consumer
+  that needs it.
 - Publish the facts another service acts on. Combat hits and page views are
   telemetry for the log pipeline.
 - Inside a version, only add optional fields. A field that disappears or

@@ -25,6 +25,7 @@
 		<module>service-player</module>
 		<module>service-commerce</module>
 		<module>service-inventory</module>
+		<module>service-audit</module>
 		<module>infrastructure/keycloak/public-id-mapper</module>
 	</modules>
 

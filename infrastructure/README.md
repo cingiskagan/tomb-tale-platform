@@ -25,6 +25,22 @@ user in the script, such as `service_inventory`, the program that needs it
 cannot start. Copy any new keys from `.env.example` to `.env`, then run
 `docker compose down -v` to start from empty volumes. This deletes all local data.
 
+## MongoDB
+
+`init-mongo.sh` creates the `audit` database and two users
+([ADR 0029](../docs/adr/0029-service-audit-inserts-each-event-once-and-keeps-only-listed-fields.md)).
+`service_audit` can insert into `events` and do nothing else. `audit_reader`
+can read and change nothing. To browse the events in MongoDB Compass, connect
+as the reader, with the password from `MONGO_AUDIT_READER_PASSWORD`:
+
+```text
+mongodb://audit_reader:<password>@localhost:27017/audit?authSource=audit
+```
+
+MongoDB also runs the script only on an empty volume. If your volume predates
+the script, stop MongoDB and delete its volume, `tombtale_mongo-data`. This
+deletes the stored events.
+
 ## Keycloak
 
 Keycloak reads `keycloak/import/tombtale-realm.json` when it starts. The file
@@ -86,6 +102,7 @@ service that publishes on an exchange has a test that loads the same file.
 | 8081 | service-player (`run-local.sh`) |
 | 8082 | service-commerce (`run-local.sh`) |
 | 8083 | service-inventory (`run-local.sh`) |
+| 8084 | service-audit (`run-local.sh`) |
 | 4200 | frontend-portal (`npm start`) |
 | 5432 | Postgres |
 | 6379 | Redis |
