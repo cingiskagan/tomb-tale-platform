@@ -55,14 +55,14 @@ a user attribute that players can neither see nor edit. The Keycloak image
 builds the module from source.
 
 The file also turns on Keycloak events, and the admin console shows them under
-Events. Keycloak keeps login events for 180 days, the 15552000 seconds of
-`eventsExpiration`. Admin events, such as a role grant, keep no expiry and
-store no copy of the changed object. The
+Events. User events, such as logins and password resets, expire after 180
+days, the 15552000 seconds of `eventsExpiration`. Admin events, such as a role
+grant, keep no expiry and store no copy of the changed object. The
 [log policy](../docs/design/log-policy.md) gives the reasons.
 
 If the `tombtale` realm already exists, Keycloak does not import the file. After
-you change the file, delete the `tombtale` realm in the admin console, then
-restart Keycloak:
+you change the file, delete the `tombtale` realm in the admin console. This
+also deletes its users and its events. Then restart Keycloak:
 
 ```bash
 docker compose restart keycloak
