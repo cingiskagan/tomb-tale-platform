@@ -15,7 +15,10 @@
 	<description>Commerce service for Tomb Tale platform — purchases with ACID guarantees</description>
 	<url/>
 	<licenses>
-		<license/>
+		<license>
+			<name>MIT License</name>
+			<url>https://opensource.org/license/mit</url>
+		</license>
 	</licenses>
 	<developers>
 		<developer/>
