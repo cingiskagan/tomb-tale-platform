@@ -13,6 +13,22 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>service-audit</name>
 	<description>Audit service for Tomb Tale platform: the domain events, kept in MongoDB</description>
+	<url/>
+	<licenses>
+		<license>
+			<name>MIT License</name>
+			<url>https://opensource.org/license/mit</url>
+		</license>
+	</licenses>
+	<developers>
+		<developer/>
+	</developers>
+	<scm>
+		<connection/>
+		<developerConnection/>
+		<tag/>
+		<url/>
+	</scm>
 	<!--
 		The plugin setup copies service-commerce/pom.xml, whose comments explain
 		each choice. Change the two together.
