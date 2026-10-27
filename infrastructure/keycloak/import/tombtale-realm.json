@@ -95,6 +95,7 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
+      "fullScopeAllowed": false,
       "redirectUris": ["http://127.0.0.1:7777/callback", "com.madnomad.tombtale://auth/callback"],
       "webOrigins": [],
       "defaultClientScopes": ["basic", "profile"],
@@ -144,6 +145,9 @@
         }
       ]
     }
+  ],
+  "scopeMappings": [
+    { "client": "tombtale-game", "roles": ["player", "offline_access"] }
   ],
   "browserFlow": "tombtale browser",
   "authenticationFlows": [
