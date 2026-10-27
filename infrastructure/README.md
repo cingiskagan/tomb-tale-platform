@@ -52,7 +52,9 @@ placeholders.
 `tombtale-game` is the Unity client. It has no secret and no web origin. Its
 redirects are fixed in the realm file, because each game build has its own
 copy in `PlatformConfig.asset`, and the two must match: `127.0.0.1:7777` for
-the editor and desktop, and `com.madnomad.tombtale://` for Android.
+the editor and desktop, and `com.madnomad.tombtale://` for Android. The game asks
+for `offline_access`, and an offline session lasts 30 days idle and 90 days at
+most ([ADR 0030](../docs/adr/0030-the-game-is-a-public-client-with-offline-sessions-and-touches-only-its-own-data.md)).
 
 `public_id` is a UUID of its own, never Keycloak's user id. The
 `public-id-mapper` module creates it on the user's first token and keeps it as

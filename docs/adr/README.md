@@ -97,3 +97,4 @@ in sequence here — a record written later can describe an earlier choice.
 | [0027](0027-a-purchase-is-a-choreographed-saga-that-waits-in-pending.md) | A purchase is a choreographed saga that waits in `PENDING` | 2026-10-13 | accepted |
 | [0028](0028-micrometer-with-opentelemetry-traces-the-services-and-exports-nothing-yet.md) | Micrometer with OpenTelemetry traces the services, and exports nothing yet | 2026-10-16 | accepted |
 | [0029](0029-service-audit-inserts-each-event-once-and-keeps-only-listed-fields.md) | service-audit inserts each event once, and keeps only listed fields | 2026-10-16 | accepted |
+| [0030](0030-the-game-is-a-public-client-with-offline-sessions-and-touches-only-its-own-data.md) | The game is a public client with offline sessions, and touches only its own data | 2026-10-27 | accepted |
