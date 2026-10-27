@@ -56,6 +56,13 @@ the editor and desktop, and `com.madnomad.tombtale://` for Android. The game ask
 for `offline_access`, and an offline session lasts 30 days idle and 90 days at
 most ([ADR 0030](../docs/adr/0030-the-game-is-a-public-client-with-offline-sessions-and-touches-only-its-own-data.md)).
 
+Both clients list their own scopes and get lightweight access tokens. Such a
+token keeps Keycloak's essentials and only the claims whose mapper sets
+`lightweight.claim`: `sub`, `roles` and `public_id`. Names and email stay in
+the ID token, which only the portal reads. A new claim the services need must
+set it too. A client asking for a scope that is not in its lists gets
+`invalid_scope`.
+
 `public_id` is a UUID of its own, never Keycloak's user id. The
 `public-id-mapper` module creates it on the user's first token and keeps it as
 a user attribute that players can neither see nor edit. The Keycloak image
