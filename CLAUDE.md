@@ -38,7 +38,13 @@ All service ports, credentials, and Keycloak settings come from `infrastructure/
 ```bash
 cd service-player            # or service-commerce, service-inventory, service-audit
 ./run-local.sh               # full mode: real Postgres (MongoDB for audit) + RabbitMQ from Docker
-./scripts/run-all-local.sh   # from the root: all four, or the ones named (player commerce inventory audit)
+```
+
+From the repository root, one launcher starts them one after another:
+
+```bash
+./scripts/run-all-local.sh                    # all four
+./scripts/run-all-local.sh player inventory   # only the ones named
 ```
 
 Maven, from the repository root. `-pl` picks the module and `-am` builds what it depends on, which is how `platform-commons` gets onto the classpath:

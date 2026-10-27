@@ -39,7 +39,7 @@ done
 # Each service runs in a process group of its own, so killing the group also
 # stops the JVM that spring-boot:run forks.
 PIDS=()
-# shellcheck disable=SC2317  # reached only through the trap
+# shellcheck disable=SC2317,SC2329  # reached only through the trap
 stop_all() {
   trap - EXIT
   for pid in "${PIDS[@]}"; do
