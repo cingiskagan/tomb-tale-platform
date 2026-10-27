@@ -44,10 +44,15 @@ deletes the stored events.
 ## Keycloak
 
 When Keycloak starts, it reads `keycloak/import/tombtale-realm.json`. The file
-holds the three roles, `player` as the default role, the portal client, the
-`roles` and `public_id` claims, and the login flow: the password, then a code
-sent by email. Secrets stay in `.env`, because the file reads `${...}`
+holds the three roles, `player` as the default role, the portal and game
+clients, the `roles` and `public_id` claims, and the login flow: the password,
+then a code sent by email. Secrets stay in `.env`, because the file reads `${...}`
 placeholders.
+
+`tombtale-game` is the Unity client. It has no secret and no web origin. Its
+redirects are fixed in the realm file, because each game build has its own
+copy in `PlatformConfig.asset`, and the two must match: `127.0.0.1:7777` for
+the editor and desktop, and `com.madnomad.tombtale://` for Android.
 
 `public_id` is a UUID of its own, never Keycloak's user id. The
 `public-id-mapper` module creates it on the user's first token and keeps it as
