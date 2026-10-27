@@ -16,6 +16,7 @@ Monorepo for the "Tomb Tale Online RPG" platform: four Spring Boot microservices
 - `infrastructure/`: Docker Compose stack: nginx, Keycloak (auth), Postgres, Redis, MongoDB, RabbitMQ, Mailpit (catches Keycloak's mail in dev, inbox at :8025)
 - `config/checkstyle/`, `config/pmd/`: static-analysis rulesets shared by every Java module
 - `scripts/pre-pr-tests.sh`: full local pre-PR check pipeline across every module
+- `scripts/run-all-local.sh`: starts every service through its `run-local.sh`, one after another
 
 The services use Java 21 and Spring Boot 4. The frontend requires the Node version pinned in `frontend-portal/.nvmrc`.
 
@@ -37,6 +38,7 @@ All service ports, credentials, and Keycloak settings come from `infrastructure/
 ```bash
 cd service-player            # or service-commerce, service-inventory, service-audit
 ./run-local.sh               # full mode: real Postgres (MongoDB for audit) + RabbitMQ from Docker
+./scripts/run-all-local.sh   # from the root: all four, or the ones named (player commerce inventory audit)
 ```
 
 Maven, from the repository root. `-pl` picks the module and `-am` builds what it depends on, which is how `platform-commons` gets onto the classpath:
