@@ -44,10 +44,26 @@ deletes the stored events.
 ## Keycloak
 
 When Keycloak starts, it reads `keycloak/import/tombtale-realm.json`. The file
-holds the three roles, `player` as the default role, the portal client, the
-`roles` and `public_id` claims, and the login flow: the password, then a code
-sent by email. Secrets stay in `.env`, because the file reads `${...}`
+holds the three roles, `player` as the default role, the portal and game
+clients, the `roles` and `public_id` claims, and the login flow: the password,
+then a code sent by email. Secrets stay in `.env`, because the file reads `${...}`
 placeholders.
+
+`tombtale-game` is the Unity client. It has no secret and no web origin. Its
+redirects are fixed in the realm file, because each game build has its own
+copy in `PlatformConfig.asset`, and the two must match: `127.0.0.1:7777` for
+the editor and desktop, and `com.madnomad.tombtale://` for Android. Its tokens
+carry only the `player` and `offline_access` roles, even for staff, because
+`fullScopeAllowed` is off and `scopeMappings` names those two. The game asks
+for `offline_access`, and an offline session lasts 30 days idle and 90 days at
+most ([ADR 0030](../docs/adr/0030-the-game-is-a-public-client-with-offline-sessions-and-touches-only-its-own-data.md)).
+
+Both clients list their own scopes and get lightweight access tokens. Such a
+token keeps Keycloak's essentials and only the claims whose mapper sets
+`lightweight.claim`: `sub`, `roles` and `public_id`. Names and email stay in
+the ID token, which only the portal reads. A new claim the services need must
+set it too. A client asking for a scope that is not in its lists gets
+`invalid_scope`.
 
 `public_id` is a UUID of its own, never Keycloak's user id. The
 `public-id-mapper` module creates it on the user's first token and keeps it as

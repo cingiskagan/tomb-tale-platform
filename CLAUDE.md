@@ -16,6 +16,7 @@ Monorepo for the "Tomb Tale Online RPG" platform: four Spring Boot microservices
 - `infrastructure/`: Docker Compose stack: nginx, Keycloak (auth), Postgres, Redis, MongoDB, RabbitMQ, Mailpit (catches Keycloak's mail in dev, inbox at :8025)
 - `config/checkstyle/`, `config/pmd/`: static-analysis rulesets shared by every Java module
 - `scripts/pre-pr-tests.sh`: full local pre-PR check pipeline across every module
+- `scripts/run-all-local.sh`: starts every service through its `run-local.sh`, one after another
 
 The services use Java 21 and Spring Boot 4. The frontend requires the Node version pinned in `frontend-portal/.nvmrc`.
 
@@ -37,6 +38,13 @@ All service ports, credentials, and Keycloak settings come from `infrastructure/
 ```bash
 cd service-player            # or service-commerce, service-inventory, service-audit
 ./run-local.sh               # full mode: real Postgres (MongoDB for audit) + RabbitMQ from Docker
+```
+
+From the repository root, one launcher starts them one after another:
+
+```bash
+./scripts/run-all-local.sh                    # all four
+./scripts/run-all-local.sh player inventory   # only the ones named
 ```
 
 Maven, from the repository root. `-pl` picks the module and `-am` builds what it depends on, which is how `platform-commons` gets onto the classpath:
@@ -106,7 +114,7 @@ The actor columns come from Spring Data auditing. Every Postgres service wires `
 
 **Tracing**: Micrometer Tracing over OpenTelemetry. Nothing is exported until Phase G picks a backend (ADR 0028). A log line written inside a request or a message carries the trace id. RabbitMQ messages carry the W3C `traceparent`. The outbox row stores it, so the later send from the publisher continues the same trace. Tests turn trace export off, and that also stops propagation. A test that checks a trace needs `@AutoConfigureTracing`.
 
-**Auth model**: every service with an API is a stateless OAuth2 resource server validating Keycloak JWTs (`SecurityConfig`). Keycloak lists realm roles in the flat `roles` claim; `RoleClaimConverter` in `platform-commons` turns those into Spring authorities, so endpoints guard with `@PreAuthorize("hasAuthority('platform_admin') or hasAuthority('game_master')")`. The three roles are `player`, `game_master`, `platform_admin` — kept in sync with the frontend's `PlatformRole` enum.
+**Auth model**: every service with an API is a stateless OAuth2 resource server validating Keycloak JWTs (`SecurityConfig`). Keycloak lists realm roles in the flat `roles` claim; `RoleClaimConverter` in `platform-commons` turns those into Spring authorities, so endpoints guard with `@PreAuthorize("hasAuthority('platform_admin') or hasAuthority('game_master')")`. The three roles are `player`, `game_master`, `platform_admin` — kept in sync with the frontend's `PlatformRole` enum. Access tokens are lightweight: a claim reaches the services only if its mapper in the realm file sets `lightweight.claim`, as `sub`, `roles` and `public_id` do.
 
 The services share one Postgres instance, and each has its own DB user and its own schema (`service_player`/`player`, `service_commerce`/`commerce`, `service_inventory`/`inventory`), provisioned by `infrastructure/init-db.sh`. Each user owns its schema and has no rights in the others. Flyway owns the schema and Hibernate only validates it (`ddl-auto: validate`, hardcoded); the schema each service targets is set by `spring.jpa.properties.hibernate.default_schema` and `spring.flyway.schemas`.
 

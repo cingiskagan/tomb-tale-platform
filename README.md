@@ -55,6 +55,8 @@ docker compose up -d
 
 Navigate to the module directory for any of the Spring Boot microservices to start them. The services use Maven and are configured to connect to the local Docker infrastructure by default.
 
+To start all four at once, run `./scripts/run-all-local.sh` from the repository root. Name some of them, such as `./scripts/run-all-local.sh player inventory`, to start only those. Ctrl+C stops them all.
+
 **Service Commerce:**
 
 ```bash
