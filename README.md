@@ -7,7 +7,7 @@ Tomb Tale Platform is the monorepo for the "Tomb Tale Online RPG" services. This
 ### Project Structure
 
 - `frontend-portal/`: The Angular-based web portal for users.
-- `service-commerce/`: Spring Boot Java microservice handling purchases, payments, and economy.
+- `service-commerce/`: Spring Boot Java microservice handling purchases and payments.
 - `service-inventory/`: Spring Boot Java microservice for the item catalog and the items players hold.
 - `service-audit/`: Spring Boot Java microservice that keeps every domain event in MongoDB.
 - `service-player/`: Spring Boot Java microservice handling player account management.
@@ -16,9 +16,9 @@ Tomb Tale Platform is the monorepo for the "Tomb Tale Online RPG" services. This
 
 ## Project Status
 
-Development is platform-first: the backend services and the Angular admin portal
-come before any Unity game client. Nothing is deployed anywhere yet — everything
-below runs locally against the Docker Compose stack.
+Inventory comes next, then the first game server for a town, then dungeons
+([development pathway](docs/design/pathway.md)). Nothing is deployed anywhere
+yet — everything below runs locally against the Docker Compose stack.
 
 | Component | State | What works today |
 | --- | --- | --- |
@@ -26,10 +26,11 @@ below runs locally against the Docker Compose stack.
 | `service-commerce` | Working | Create, read, list, update and cancel purchases, with a purchase status state machine. A new purchase waits in `PENDING` until inventory grants its items or rejects it, and a rejected purchase keeps the reason. Mutations are admin-only, reads are open to game masters too. Flyway-managed schema, 83 tests. |
 | `frontend-portal` | Working | Keycloak login and callback, dashboard, own-profile page, and role-gated player and purchase lists. |
 | `infrastructure` | Working | nginx, Keycloak, Postgres, Redis, MongoDB, RabbitMQ and Mailpit, started with one `docker compose up`. |
-| `service-inventory` | Partial | Grants the items of each purchase into the player's stacks, rejects an unknown item code, and sends each item grant to commerce through RabbitMQ. No endpoint yet, and the catalog stays empty until item sets exist. Flyway-managed schema, 11 tests. |
+| `service-inventory` | Partial | Grants the items of each purchase into the player's stacks, rejects an unknown item code, and sends each item grant to commerce through RabbitMQ. No endpoint yet, and the catalog stays empty until the portal can create templates. Flyway-managed schema, 11 tests. |
 | `service-audit` | Partial | Keeps every event from player, commerce and inventory in MongoDB, as a user that can only insert. A redelivery writes nothing new, and a field off its event type's allow-list is not stored. A read-only user browses the events, for example in MongoDB Compass. No endpoint yet. 13 tests. |
 | `service-dungeon` | Planned | See the [development pathway](docs/design/pathway.md). |
-| Unity game client | Planned | Deliberately last. |
+| Game server | Planned | A Unity dedicated server with FishNet, for towns first. See [game server](docs/design/game-server.md). |
+| Unity game client | Partial | Logs in through Keycloak and calls `POST /players/me`. It lives in its own repository. |
 
 Some of the stack is wired but not yet earning its place. Redis runs in the
 Compose stack for services that will need it, and no service connects to it
