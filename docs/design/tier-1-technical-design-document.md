@@ -16,7 +16,7 @@ The [GDD](tier-1-game-design-document.md) says what happens in Tier 1. This docu
 
 ### Connecting
 
-- The client sends its Keycloak access token through FishNet's authenticator. The server checks the signature against Keycloak's published keys, the issuer and the expiry, and reads `public_id`. Any other token closes the connection.
+- The client sends its Keycloak access token through FishNet's authenticator. The server checks the signature against Keycloak's published keys, the issuer and the expiry, that the token was issued to the game's client (`azp` is `tombtale-game`) and that it carries the `player` role, and reads `public_id`. A portal token or any other token closes the connection.
 - A player is in one place at a time. A second connection with the same `public_id` replaces the first, and the player goes where the first one was: the same dungeon copy if it still runs, otherwise a town ([game server](game-server.md#one-session-per-player)).
 - The server puts the player in a town copy with room, and opens a new copy when every copy is full.
 
@@ -54,5 +54,5 @@ The client moves its character, and FishNet sends the position to the other play
 ## 4. Security Principles
 
 - **Never trust the client, except for movement:** the client owns its position, and the server checks it. A client only asks to cast a skill. The server checks stamina and cooldown, resolves the hit, and tells every client.
-- **Only the game server grants:** items and run reports come from the `game_server` role. A game token reaches only the player's own data ([ADR 0030](../adr/0030-the-game-is-a-public-client-with-offline-sessions-and-touches-only-its-own-data.md)).
+- **Only the game server grants from play:** drops and run reports come from the `game_server` role. Purchases and the portal's admin gifts are the only other ways an item arrives. A game token reaches only the player's own data ([ADR 0030](../adr/0030-the-game-is-a-public-client-with-offline-sessions-and-touches-only-its-own-data.md)).
 - **Payload validation:** the platform validates every request from the game server like any other request, with typed DTOs and Jakarta validation.

@@ -77,7 +77,9 @@ seconds, before the server can drop Animators.
 The server grants each drop to inventory when it drops, not at the end of the
 run, so a crash loses only the grants still in flight. Each drop carries a
 `dropId` that the server makes, and a retry with the same `dropId` grants
-nothing twice.
+nothing twice. Inventory stores the `dropId` under a unique constraint, as it
+stores a purchase's `purchase_id` in `item_grants`, and answers a repeat with
+the first result.
 
 The server calls inventory as its own Keycloak client, with a `game_server`
 role that no player token carries. Inventory still checks that the item
@@ -87,9 +89,9 @@ exists and the quantity is sane.
 
 FishNet's Unity Transport adapter carries Android and Steam players over one
 UDP transport, so they can share a town. The client sends its Keycloak access
-token when it connects, so the adapter runs with DTLS. Tugboat, FishNet's
-default transport, has no encryption. Steam's own networking is out, because
-Android players have no Steam.
+token when it connects, so we turn on the adapter's DTLS encryption, which is
+off by default. Tugboat, FishNet's default transport, has no encryption.
+Steam's own networking is out, because Android players have no Steam.
 
 ## Scaling
 
@@ -103,8 +105,9 @@ Android players have no Steam.
    Edgegap.
 
 The game server keeps no permanent data, so any process can take any player.
-Unity's Multiplay hosting closed on 2026-03-31 and Hathora closed on
-2026-05-05, so the server stays a plain container that any host can run.
+Unity's Multiplay hosting takes no new servers or allocations since
+2026-04-01, and Hathora closed on 2026-05-05, so the server stays a plain
+container that any host can run.
 
 ## Rejected
 
