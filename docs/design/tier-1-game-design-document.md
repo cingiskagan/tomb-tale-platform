@@ -1,30 +1,32 @@
 ---
-description: Initial Game Design Document focusing on the MVP Tier 1 combat loop.
+description: Game design for Tier 1, the first playable game, a town and then a dungeon run.
 ---
 
 # Tomb Tale Online RPG: Tier 1 Game Design Document
 
-## 1. Executive Summary
+Tier 1 is the first playable game. Players meet in a town, form a party of up to 5, and clear a dungeon. It is built in two steps, the town and then the dungeon ([pathway](pathway.md)).
 
-The objective of the **Tier 1 MVP** is to create a fully playable, networked proof-of-concept for the core combat loop of "Tomb Tale." The scope is strictly limited to a single dungeon room where a player can connect, encounter an enemy, and successfully resolve combat to a win/loss state.
+Skills beyond the basic attack, drop tables, progression, quests, the economy and trading come in later tiers.
 
-All meta-game systems (Inventory, Economy, Questing, Progression) are explicitly out of scope for this prototype to ensure focus on combat "feel" and network stability.
+## 1. Town
 
----
+- A town copy holds 20 players. When every copy is full, a new copy opens.
+- A player who logs in appears at the town's spawn point as their character, with the character's name over its head.
+- Players move with the touch joystick on Android and the keyboard on Steam, and see every other player in their copy move.
+- The town is safe: it has no enemies and no combat.
+- A player who leaves the game leaves the town.
 
-## 2. Infrastructure Assumptions (Prerequisites)
+## 2. Dungeon
 
-To test this Tier 1 design, the underlying architecture must support:
+### 2.1 The Run
 
-- **Networking**: A dedicated server instance running the combat logic authoritatively.
-- **Matchmaking**: A barebones launcher or lobby that connects 1-4 players into the same dungeon instance room.
-- **Persistence**: A basic player profile pulling an initial set of stats (e.g., Base HP, Base Damage) from the `service-player` database.
+- A party of 1 to 5 players leaves the town for a dungeon copy of its own. How a party forms is open.
+- The first dungeon has one fixed layout. Later, every run gets a generated layout of rooms and corridors.
+- **Win:** every enemy is dead. **Loss:** every player is dead. Either way, the party returns to the town.
+- A drop goes into the player's inventory when it falls.
+- A player who logs in again, on any device, returns to the dungeon if it still runs, otherwise to the town.
 
----
-
-## 3. Tier 1 Systems Breakdown
-
-### 3.1 Resource System
+### 2.2 Resource System
 
 The Resource System handles numerical pools that gate character existence and actions.
 
@@ -36,40 +38,29 @@ The Resource System handles numerical pools that gate character existence and ac
   - **Generation**: Passive regeneration per server tick (e.g., +5 Stamina per second).
   - **Consumption**: Executing an attack costs a fixed amount of Stamina.
   - **Limits**: Capped at `MaxStamina`. Cannot initiate an attack if `CurrentStamina < AttackCost`.
+  - **Name**: a mage's pool is called Mana. Only the label changes, and the pool works the same.
 
-### 3.2 Spawning System
+### 2.3 Spawning System
 
-Controls the lifecycle of entities within the dungeon instance.
+- **Players** spawn at the layout's player spawn points. A player at 0 HP despawns until the run ends.
+- **Enemies** spawn at the layout's enemy spawn points, all at once when the run starts. There is no wave manager yet.
 
-- **Instance Initialization**: Upon instance creation, the server loads a predefined "Dungeon Room" layout.
-- **Player Spawns**: Players spawn at designated, safe target points (e.g., `Point_PlayerSpawn_1`). If HP reaches 0, they despawn and the match is lost.
-- **Enemy Spawns**: Enemies are placed at predefined coordinates. At MVP, there are no complex "wave managers" — all enemies spawn immediately upon instance initialization.
-
-### 3.3 AI Behavior System
+### 2.4 AI Behavior System
 
 All NPCs (monsters) use a simplified Finite State Machine (FSM) executed on the authoritative server.
 
 - **State 1: Idle**: Enemy stands at spawn point. Looks for targets within an Aggro Radius.
 - **State 2: Chase**: If a player enters the Aggro Radius, the enemy paths directly toward the player.
-- **State 3: Attack**: If the player is within the enemy's `AttackRange`, standard movement stops, and the monster executes an attack animation/event.
+- **State 3: Attack**: If the player is within the enemy's `AttackRange`, standard movement stops, and the monster executes an attack.
 - **State 4: Death**: Triggered when `HP <= 0`. Plays death animation, disables collision, and despawns after a set timer.
 
-### 3.4 Combat System
-
-The core collision and mathematics engine for resolving fights.
+### 2.5 Combat System
 
 - **Hit Detection**:
-  - Uses simple collision forms (Server-side physics boxes or capsules).
-  - When an attacker executes a "Strike" event, it generates a hitbox in front of them for a specific duration (Active Frames).
+  - Uses simple collision forms (server-side boxes or capsules).
+  - A strike opens a hitbox in front of the attacker for an active window, set in seconds rather than by the animation.
   - If a defender's hurtbox intersects the hitbox, a hit is registered.
 - **Damage Calculation (MVP Formula)**:
   - `Final Damage = Max(1, (AttackerBaseDamage * AttackMultiplier) - DefenderArmor)`
 - **Hit Reactions**:
   - Applying damage must interrupt the defender's movement slightly (Hit Stun) to provide physical feedback to the players.
-- **Match Resolution**:
-  - **Win**: All AI entities in the Spawning System reach the `[Death]` state. Triggers transition back to lobby.
-  - **Loss**: All Player entities reach the `[Death]` state. Triggers transition back to lobby.
-
----
-
-*End of Tier 1 GDD.*

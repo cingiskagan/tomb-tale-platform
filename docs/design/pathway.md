@@ -1,22 +1,39 @@
 # Development Pathway: Tomb Tale Online RPG
 
-This document categorizes both the standard game design systems and the necessary technical backend systems based on their implementation priority. Development follows a **platform-first strategy**: build backend microservices and Angular admin tools before writing any Unity game client code.
+This document orders the work and records the design each phase starts from. The [README](../../README.md#project-status) lists what runs today.
 
----
+## Order
 
-## 🏗️ Platform-First: Microservice Architecture
+1. **Inventory:** `service-inventory` gets its catalog, item sets and coins, the portal writes them, and the game client shows the player's items.
+2. **Town:** the first game server. Players meet in a town and see each other move, with their character names over their heads.
+3. **Dungeon:** a party of up to 5 runs the combat loop in a dungeon copy, first on one fixed layout and then on layouts from `service-dungeon`.
+4. **Later tiers:** the systems after Tier 1.
 
-| Microservice | Database | Responsibility |
+Tier 1 is the town and the dungeon. The [Tier 1 GDD](tier-1-game-design-document.md) says what the player does, the [Tier 1 TDD](tier-1-technical-design-document.md) says which piece does what, and [game server](game-server.md) records the network technology.
+
+## Services
+
+| Service | Database | Responsibility |
 | --- | --- | --- |
-| **service-player** | PostgreSQL | Player accounts, core stats (level, XP, base attributes). Fixed relational schema. |
-| **service-inventory** | PostgreSQL | Item catalog templates, player-owned item instances (template + rolled stats pattern). `jsonb` holds the stat pools that vary per item type. |
-| **service-dungeon** | PostgreSQL | Procedural dungeon generation, room/corridor templates, seed management. `jsonb` holds the generated floor layouts. Multithreaded floor generation. |
-| **service-commerce** | PostgreSQL | Shop storefront, virtual currency wallets, purchase transactions. *(Already exists)* |
-| **service-audit** | MongoDB | Domain events consumed from RabbitMQ. The only writer to MongoDB, and the read API behind the player timeline. |
+| `service-player` | PostgreSQL | Player accounts, and their characters with name, level and experience. |
+| `service-inventory` | PostgreSQL | The item catalog and item sets, the items players hold, coins for each character, and premium currency for each player. `jsonb` holds the stat pools that vary per item type. |
+| `service-commerce` | PostgreSQL | Purchases, and later real-money payments and ad rewards. A purchase gets its items through the saga in [ADR 0027](../adr/0027-a-purchase-is-a-choreographed-saga-that-waits-in-pending.md). |
+| `service-audit` | MongoDB | Domain events consumed from RabbitMQ. The only writer to MongoDB, and later the read API behind the player timeline. |
+| `service-dungeon` | PostgreSQL | Procedural dungeon layouts built from room and corridor templates. `jsonb` holds the generated floors. |
+| Game server | None | A Unity dedicated server with FishNet. One process runs every town and dungeon copy and keeps no permanent data. |
 
-MongoDB holds domain events, never game state or logs, and
-`service-audit` is the only service that connects to it.
-Read [data store research](data-store-research.md) before either service starts.
+MongoDB holds domain events, never game state or logs, and `service-audit` is the only service that connects to it. Read [data store research](data-store-research.md) before inventory or dungeon work starts.
+
+## 1. Inventory
+
+- Create, edit and retire item templates in the portal, one at a time. A template defines base stats, random stat pools, rarity, its `assetKey` and an optional item set.
+- Item sets, with a bonus for the complete set.
+- A coin balance for each character. Premium currency belongs to the player, and waits until the game uses it.
+- Give a player items with rolled stats from the portal.
+- An admin view of a player's equipment and backpack.
+- The game client's inventory screen, where the player sees the backpack and changes equipment.
+
+Open question: coins belong to a character, but items belong to the player today (`item_instances.player_id`).
 
 ### Item Architecture: Template vs. Instance Pattern
 
@@ -26,93 +43,65 @@ Items use a two-layer design for easy rebalancing:
 - **Item Instance** (`item_instances` table): One owned stack. The row references its template, carries a `quantity` that exceeds one for stackable items, and stores the RNG-rolled modifiers. An item that rolls modifiers cannot stack, so its row has quantity 1.
 - **Final Stats**: Computed at read time from the current template (`template base + rolled stats`), never stored. The version an instance records is provenance for its roll, not a pin, which is what allows global rebalancing without data migrations.
 
-### Item Sets: How Templates Change
+### Item Templates and Sets
 
-Flyway owns the shape of `item_templates`, not its rows. Templates are content, and the portal writes them only through item sets.
+Flyway owns the shape of `item_templates`, not its rows. Templates are content, and the portal creates, edits and retires them one at a time.
 
-- An item set is one file, for example `potions.json`, that holds many template rows. Each template belongs to exactly one set.
-- A template is matched by a stable `code` such as `SWORD_IRON`, never by `publicId`, because UUIDs differ between environments.
-- Import computes the diff for one set on the server, and a preview page shows the added, changed and retired templates.
-- Apply writes that diff in one transaction. If the catalog changed after the preview, apply returns 409.
-- A template that is missing from its set is retired, never deleted. It stops dropping and leaves the shop, but copies that players own still resolve.
-- Export writes every set back to files. The files are a backup, and they move the catalog to a new system.
-- Apply also writes an audit event with the diff to the outbox table, in the same transaction. The outbox publisher delivers it to `service-audit` through RabbitMQ, at least once ([events](events.md)). Without this, nothing keeps the balance history.
+- A template is matched by a stable `code` such as `SWORD_IRON`, never by `publicId`. Purchases, other services and client assets name the code, so it never changes after creation.
+- An edit sends the template version it started from. If the template changed since, the edit returns 409.
+- A template is retired, never deleted. It stops dropping and leaves the shop, but copies that players own still resolve.
+- Every create, edit and retire writes an event with the change to an outbox table, in the same transaction. The outbox publisher delivers it to `service-audit` through RabbitMQ, at least once ([events](events.md)). Without this, nothing keeps the balance history.
+- A template can belong to one item set, such as `IRON_SET`. The set is a row of its own, with a `code` and a bonus. A player has the bonus while every template of the set is equipped. Like final stats, the bonus is computed at read time and never stored.
+- Copying the whole catalog to a new environment is out of scope for now. That copy matches templates by `code`, because UUIDs differ between environments.
 
-Definitions come first. You import an item set before the client release that carries its assets, and the import never checks what clients hold. The server refuses every operation on a `code` that has no template.
+Definitions come first. You create a template before the client release that carries its asset, and creating it never checks what clients hold. The server refuses every operation on a `code` that has no template.
 
 Each template carries an `assetKey`, the Addressables address of its asset, because artists move files and the address stays. A client with no asset for a template shows the item as a gray, generic object that the player cannot use. When a gray item is not acceptable, the platform forces a client update.
 
-Clients never read the set files. They know only the template rows, and so does the validator in Unity CI. It fails the build for an asset that no template uses, because its definition must be imported first. A template with no asset is only a warning.
+Clients know only the template rows, and so does the validator in Unity CI. It fails the build for an asset that no template uses, because the template must exist first. A template with no asset is only a warning.
 
-Open question: which credentials Unity CI uses to read the template rows.
+Open questions: which credentials Unity CI uses to read the template rows, and whether a retired template still counts toward its set.
 
----
+## 2. Town
 
-## 📋 Platform Development Phases (No Unity Required)
+The first real multiplayer test, built on the town in the [GDD](tier-1-game-design-document.md#1-town).
 
-### Phase 1: Player Management (`service-player`)
+- The game server: a Unity dedicated server build with FishNet, in one process, with town copies of 20.
+- The game server's own Keycloak client and `game_server` role, so it can read character names from `service-player`.
+- Done when a phone and a desktop build see each other move in one town copy, each with its character's name. The [TDD](tier-1-technical-design-document.md#2-town-step) lists the checks.
 
-- Player list with search and filtering (Angular + PrimeNG)
-- View and edit player stats (add/subtract XP, adjust level)
-- Full player profile admin panel
+## 3. Dungeon
 
-### Phase 2: Inventory & Item Catalog (`service-inventory`)
+- The combat loop of the [GDD](tier-1-game-design-document.md#2-dungeon), on one fixed layout written in the format `service-dungeon` will produce.
+- Parties of up to 5 in dungeon copies of their own, and the way back to the town.
+- Drops granted to inventory as they fall ([game server](game-server.md#item-grants)).
+- `service-dungeon`: seeded generation from room and corridor templates, multithreaded floors (`CompletableFuture`, `ForkJoinPool`), batches of pre-generated seeds, and an Angular viewer for generated layouts. Its layouts then replace the fixed one, and the game server does not change.
 
-- Item set import with a change preview, and export (templates define base stats, random stat pools, rarity)
-- Assign item instances to players with rolled stats
-- Admin view: inspect a player's full equipment and backpack
-- Template versioning for rebalancing
+## Gameplay Systems by Tier
 
-### Phase 3: Procedural Dungeon Generation (`service-dungeon`)
+### Tier 1: The Town and the Dungeon
 
-- Room and corridor template definitions
-- Seed-based procedural generation algorithm
-- Multithreaded floor generation (`CompletableFuture`, `ForkJoinPool`)
-- Angular test UI to visualize generated dungeon layouts in real-time
-- Batch pre-generation of dungeon seeds
+- **Sessions:** login, one place per player, town copies, parties and dungeon copies.
+- **Combat, AI, spawning and resources**, as the [GDD](tier-1-game-design-document.md) describes them.
+- **Drops:** each drop goes into inventory when it falls.
+- **UI:** login, the HUD and combat feedback.
 
----
+### Tier 2: A Rewarding Loop
 
-## 🔌 Core Infrastructure: Online Capabilities (Prerequisites)
+- **Skill system:** abilities, upgrades and specialization paths.
+- **Timer system:** cooldowns, resets and live operations cycles.
+- **Drop tables:** drop rates, rarity and distribution.
 
-*Mandatory to build the foundation for an online multiplayer game.*
+### Tier 3: The Meta-Game
 
-- **Networking & Replication System**: Manages server-client communication, latency compensation, and state synchronization.
-- **Matchmaking & Session System**: Groups players together and connects them to dedicated dungeon instance servers.
-- **Persistence & Database System**: Securely saves character progression, inventory, and stats to backend microservices (so players can't cheat/hack their data).
-- **UI/UX System**: Provides the interface for main menus, matchmaking lobbies, in-game HUDs, and combat feedback.
+- **Inventory limits:** storage and capacity.
+- **Progression:** levels and unlocks.
+- **Quests:** objectives, progression tasks and rewards.
+- **Economy:** coin flow, prices and sinks.
+- **Trading:** a bazaar and trades between players, during a run too. A listed item is locked, and an equipped item can't be listed or traded.
+- **Social:** friends, chat and groups.
 
-## 🚨 Tier 1: Absolute Must-Haves (The Core Gameplay Loop MVP)
+### Tier 4: Re-Evaluate
 
-*The required gameplay systems to make two entities successfully fight in a server instance.*
-
-- **Combat system**: Controls how players fight, deal damage, and resolve encounters.
-- **AI behavior system**: Defines how NPCs act, react, and make gameplay decisions.
-- **Spawning system**: Controls placement of enemies, items, and dynamic world events.
-- **Resource system**: Tracks generation, consumption, and limits of core gameplay resources.
-
-## 🟡 Tier 2: Highly Recommended for a "Good" First Impression
-
-*Required to actually test if your combat loop is fun and rewarding.*
-
-- **Skill system**: Provides abilities, upgrades, and specialization paths for players.
-- **Timer system**: Manages time-based events, cooldowns, resets, and live operations cycles.
-- **Loot / drop system**: Determines rewards, drop rates, rarity, and distribution logic.
-
-## 🛑 Tier 3: Develop Later (Alpha / Beta / Post-Launch)
-
-*The "Meta-game" that gives players a reason to keep grinding matches.*
-
-- **Inventory system**: Handles item storage, capacity limits, and equipment organization rules.
-- **Progression system**: Defines how players grow, level up, and unlock new power.
-- **Quest system**: Structures player objectives, progression tasks, and mission rewards.
-- **Economy system**: Manages currency flow, pricing, sinks, and player spending behavior.
-- **Social system**: Supports player interaction, cooperation, competition, and group dynamics.
-
-## ❌ Tier 4: Optional / Re-evaluate (Potentially Out of Scope)
-
-*These systems add immense security and technical complexity. Depending on your exact vision for Tomb Tale, strongly consider skipping these to launch faster.*
-
-- **Trading system**: Enables exchange of items between players. (Creates major security/black-market/RMT risks; usually better to use personal-only loot).
-- **Crafting system**: Combining materials into items. (Distracts from the action combat loop; pure monster-loot drops are easier to balance).
-- **Exploration system**: Encourages discovery of secrets. (Less necessary if your dungeons are meant to be fast, arena-style combat grinds).
+- **Crafting:** combining materials into items. It distracts from the combat loop, and monster drops are easier to balance.
+- **Exploration:** discovering secrets. It matters less if dungeons are fast combat runs.
