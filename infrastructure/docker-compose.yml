@@ -147,8 +147,10 @@ services:
   # --- CUSTOM PLATFORM SERVICES ---
   # service-audit's events, and nothing else (ADR 0026). init-mongo.sh gives
   # service-audit a user that can only insert, and people a read-only one.
+  # 7.0, because MongoDB 8 refuses to start on Linux 6.19 to 7.0.13 and reads
+  # Ubuntu's 7.0 kernels as 7.0.0 (SERVER-136848). MongoTestBase matches it.
   mongodb:
-    image: mongo:8.0
+    image: mongo:7.0
     logging: *default-logging
     ports:
       - "27017:27017"
