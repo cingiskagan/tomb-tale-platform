@@ -39,7 +39,8 @@ mongodb://audit_reader:<password>@localhost:27017/audit?authSource=audit
 
 MongoDB also runs the script only on an empty volume. If your volume predates
 the script, stop MongoDB and delete its volume, `tombtale_mongo-data`. This
-deletes the stored events.
+deletes the stored events. Delete it the same way if `mongo:8.0` created it,
+because `mongo:7.0` cannot open it.
 
 ## Keycloak
 

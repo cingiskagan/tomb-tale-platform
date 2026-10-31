@@ -33,7 +33,7 @@ public abstract class MongoTestBase {
     private static final String EVENTS = "events";
 
     /** The init script runs on a first server, which stops, so the second "Waiting for connections" is the ready one. */
-    static final GenericContainer<?> MONGO = new GenericContainer<>("mongo:8.0")
+    static final GenericContainer<?> MONGO = new GenericContainer<>("mongo:7.0")
             .withEnv("MONGO_INITDB_ROOT_USERNAME", "root")
             .withEnv("MONGO_INITDB_ROOT_PASSWORD", ROOT_PASSWORD)
             .withEnv("MONGO_AUDIT_USER", AUDIT_USER)
