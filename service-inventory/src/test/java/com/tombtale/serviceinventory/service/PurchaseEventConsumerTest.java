@@ -100,7 +100,7 @@ class PurchaseEventConsumerTest extends PostgresTestBase {
         amqpAdmin.declareBinding(BindingBuilder.bind(itemGrants).to(itemEventsExchange).with("item.#"));
     }
 
-    /** Item sets write templates as an admin, so the test does too. */
+    /** The portal writes templates as an admin, so the test does too. */
     private void addItemTemplate(String itemCode) {
         SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(Jwt.withTokenValue("token")
                 .header("alg", "none").claim(PublicIdClaim.CLAIM, ADMIN.toString()).build(), List.of()));

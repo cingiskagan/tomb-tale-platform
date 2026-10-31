@@ -11,7 +11,7 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 /**
- * One entry in the item catalog. Item sets write these rows, and every other service names a template by its
+ * One entry in the item catalog. The portal writes these rows, and every other service names a template by its
  * {@code code}, never by {@code publicId}, because a code is the same in every environment.
  */
 @Entity

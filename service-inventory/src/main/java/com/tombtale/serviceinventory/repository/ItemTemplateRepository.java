@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface ItemTemplateRepository extends JpaRepository<ItemTemplate, Long> {
 
     /**
-     * Finds the template an item set or a purchase names. The match is exact, so {@code sword_iron} is unknown.
+     * Finds the template a purchase names. The match is exact, so {@code sword_iron} is unknown.
      *
      * @param code the template's code, such as {@code SWORD_IRON}
      * @return the template, or empty when the catalog does not know the code
