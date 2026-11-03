@@ -94,3 +94,8 @@ app:
   # publishers wait the same time, so this reads their key in infrastructure/.env.
   publish:
     confirm-timeout: ${OUTBOX_CONFIRM_TIMEOUT}
+
+# --- Game rules ---
+inventory:
+  # The coins every new character starts with, written with their history row.
+  starting-coins: ${INVENTORY_STARTING_COINS}

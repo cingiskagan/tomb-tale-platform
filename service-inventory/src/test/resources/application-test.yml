@@ -31,3 +31,7 @@ logging:
 app:
   publish:
     confirm-timeout: PT5S
+
+inventory:
+  # Not .env's 100000, so a test fails if the code ignores the setting.
+  starting-coins: 250

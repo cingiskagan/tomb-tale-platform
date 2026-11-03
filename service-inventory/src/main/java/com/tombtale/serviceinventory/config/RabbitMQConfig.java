@@ -1,5 +1,6 @@
 package com.tombtale.serviceinventory.config;
 
+import com.tombtale.serviceinventory.dto.event.PlayerCreatedPayload;
 import com.tombtale.serviceinventory.dto.event.PurchaseCreatedPayload;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -15,17 +16,47 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Inventory's queue on commerce's exchange, with a DLQ, and the exchange inventory sends item grants to.
- * Both exchanges are declared on both sides, so either service can start first.
+ * Inventory's queues on service-player's and commerce's exchanges, each with a DLQ, and the exchange inventory
+ * sends item grants to. Every exchange is declared on both sides, so either service can start first.
  */
 @Configuration
+@SuppressWarnings("PMD.TooManyMethods") // one bean per broker object, and each queue brings three
 public class RabbitMQConfig {
+
+    public static final String PLAYER_EVENTS_EXCHANGE = "player.events";
+    public static final String PLAYER_CREATED_QUEUE = "inventory.player-created";
+    public static final String PLAYER_CREATED_DLQ = PLAYER_CREATED_QUEUE + ".dlq";
 
     public static final String PURCHASE_EVENTS_EXCHANGE = "purchase.events";
     public static final String PURCHASE_CREATED_QUEUE = "inventory.purchase-created";
     public static final String PURCHASE_CREATED_DLQ = PURCHASE_CREATED_QUEUE + ".dlq";
 
     public static final String ITEM_EVENTS_EXCHANGE = "item.events";
+
+    /** Declared with the same arguments as service-player's, or the broker refuses one of them. */
+    @Bean
+    public TopicExchange playerEventsExchange() {
+        return new TopicExchange(PLAYER_EVENTS_EXCHANGE, true, false);
+    }
+
+    /** A rejected message goes through the default exchange, which routes by queue name, to the DLQ. */
+    @Bean
+    public Queue playerCreatedQueue() {
+        return QueueBuilder.durable(PLAYER_CREATED_QUEUE)
+                .deadLetterExchange("")
+                .deadLetterRoutingKey(PLAYER_CREATED_DLQ)
+                .build();
+    }
+
+    @Bean
+    public Queue playerCreatedDeadLetterQueue() {
+        return QueueBuilder.durable(PLAYER_CREATED_DLQ).build();
+    }
+
+    @Bean
+    public Binding playerCreatedBinding(Queue playerCreatedQueue, TopicExchange playerEventsExchange) {
+        return BindingBuilder.bind(playerCreatedQueue).to(playerEventsExchange).with(PlayerCreatedPayload.EVENT_TYPE);
+    }
 
     /** Declared with the same arguments as service-commerce's, or the broker refuses one of them. */
     @Bean
