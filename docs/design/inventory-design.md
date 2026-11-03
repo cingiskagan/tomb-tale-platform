@@ -18,6 +18,7 @@ The inventory phase's decisions as of 2026-11-03. The other design documents giv
 - One set of endpoints, with the character in the path, serves every caller: `platform_admin` for any character, `player` for its own, and `game_server` for reads and grants.
 - Equipment may change during a run too. When anything in a player's inventory changes, inventory informs the game server, which updates the player's stats, so the server never relies on the client to report a change.
 - Inventory informs it with a thin `inventory.changed` event, carrying only the character's id, through its outbox and RabbitMQ. The server then reads the equipment over REST, so a repeated or late event does no harm.
+- Until the event arrives, combat uses the stats the server read last, for a moment at most. A running server loses no event, because the outbox delivers at least once, and a server that restarts reads every connected player's equipment again.
 - RabbitMQ's .NET client must work in the IL2CPP server build, and a short test before the town step checks it. If it doesn't, the server asks inventory for its players' equipment every few seconds instead.
 
 ### The dungeon lock
