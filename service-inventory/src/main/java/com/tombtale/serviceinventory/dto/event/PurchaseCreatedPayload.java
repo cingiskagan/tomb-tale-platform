@@ -6,12 +6,14 @@ import java.util.UUID;
 /**
  * The data of {@code purchase.created}, which commerce sends for every purchase an admin creates.
  *
- * @param purchasePublicId the purchase, which inventory names in its item grant
- * @param playerPublicId   the player who receives the items
- * @param itemCode         the catalog code to look up
- * @param quantity         how many copies to grant, at least 1
+ * @param purchasePublicId  the purchase, which inventory names in its item grant
+ * @param playerPublicId    the player who bought the items
+ * @param characterPublicId the player's character that receives them
+ * @param itemCode          the catalog code to look up
+ * @param quantity          how many copies to grant, at least 1
  */
-public record PurchaseCreatedPayload(UUID purchasePublicId, UUID playerPublicId, String itemCode, Integer quantity) {
+public record PurchaseCreatedPayload(
+        UUID purchasePublicId, UUID playerPublicId, UUID characterPublicId, String itemCode, Integer quantity) {
 
     /** The event type, which is also the routing key. */
     public static final String EVENT_TYPE = "purchase.created";
@@ -22,6 +24,7 @@ public record PurchaseCreatedPayload(UUID purchasePublicId, UUID playerPublicId,
     public PurchaseCreatedPayload {
         Objects.requireNonNull(purchasePublicId, "purchasePublicId");
         Objects.requireNonNull(playerPublicId, "playerPublicId");
+        Objects.requireNonNull(characterPublicId, "characterPublicId");
         Objects.requireNonNull(itemCode, "itemCode");
         Objects.requireNonNull(quantity, "quantity");
         if (quantity < MIN_QUANTITY) {

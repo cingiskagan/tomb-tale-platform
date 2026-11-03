@@ -3,14 +3,17 @@ package com.tombtale.serviceinventory.service;
 import com.tombtale.serviceinventory.config.JpaConfig;
 import com.tombtale.serviceinventory.domain.ItemGrantOutcome;
 import com.tombtale.serviceinventory.dto.event.PurchaseCreatedPayload;
+import com.tombtale.serviceinventory.entity.CharacterInventory;
 import com.tombtale.serviceinventory.entity.ItemGrant;
 import com.tombtale.serviceinventory.entity.ItemInstance;
 import com.tombtale.serviceinventory.entity.ItemTemplate;
+import com.tombtale.serviceinventory.repository.CharacterInventoryRepository;
 import com.tombtale.serviceinventory.repository.ItemGrantRepository;
 import com.tombtale.serviceinventory.repository.ItemInstanceRepository;
 import com.tombtale.serviceinventory.repository.ItemTemplateRepository;
 import com.tombtale.serviceinventory.support.FixedAuthorTestBase;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -27,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest(showSql = false)
 @ActiveProfiles("test")
 @Import({ JpaConfig.class, ItemGrantService.class })
+@SuppressWarnings("PMD.TooManyMethods") // the test-data builders push the count past PMD's 10
 class ItemGrantServiceTest extends FixedAuthorTestBase {
 
     private static final String POTION = "POTION_HEALTH";
@@ -42,6 +46,9 @@ class ItemGrantServiceTest extends FixedAuthorTestBase {
     private ItemGrantService itemGrantService;
 
     @Autowired
+    private CharacterInventoryRepository characterInventoryRepository;
+
+    @Autowired
     private ItemTemplateRepository itemTemplateRepository;
 
     @Autowired
@@ -53,54 +60,109 @@ class ItemGrantServiceTest extends FixedAuthorTestBase {
     @Autowired
     private TestEntityManager entityManager;
 
+    private CharacterInventory character;
+
+    @BeforeEach
+    void aCharacterOfThePlayer() {
+        character = aCharacterOf(player);
+    }
+
     @Test
     void fillsTheStackWithRoomThenOpensANewOne() {
         ItemTemplate potion = aTemplate(POTION, POTION_STACK);
-        itemInstanceRepository.save(
-                ItemInstance.builder().playerId(player).template(potion).quantity(STACK_WITH_ROOM).build());
+        aStack(character, potion, STACK_WITH_ROOM);
 
-        ItemGrant itemGrant = itemGrantService.findOrCreateItemGrant(aPurchase(POTION, QUANTITY));
+        ItemGrant itemGrant = itemGrantService.findOrCreateItemGrant(aPurchase(character, POTION, QUANTITY));
 
         assertThat(itemGrant.getOutcome()).isEqualTo(ItemGrantOutcome.GRANTED);
-        assertThat(stackSizes()).containsExactly(POTION_STACK, STACK_WITH_ROOM + QUANTITY - POTION_STACK);
+        assertThat(itemGrant.getCharacterId()).isEqualTo(character.getPublicId());
+        assertThat(stackSizes(character)).containsExactly(POTION_STACK, STACK_WITH_ROOM + QUANTITY - POTION_STACK);
+    }
+
+    /** A player may own several characters, and each fills only its own stacks. */
+    @Test
+    void leavesAnotherCharactersStackWithRoomAlone() {
+        ItemTemplate potion = aTemplate(POTION, POTION_STACK);
+        CharacterInventory sibling = aCharacterOf(player);
+        aStack(sibling, potion, STACK_WITH_ROOM);
+
+        itemGrantService.findOrCreateItemGrant(aPurchase(character, POTION, QUANTITY));
+
+        assertThat(stackSizes(sibling)).containsExactly(STACK_WITH_ROOM);
+        assertThat(stackSizes(character)).containsExactly(QUANTITY);
     }
 
     @Test
     void givesEachCopyOfAnItemThatDoesNotStackItsOwnRow() {
         aTemplate(SWORD, 1);
 
-        itemGrantService.findOrCreateItemGrant(aPurchase(SWORD, SWORD_COPIES));
+        itemGrantService.findOrCreateItemGrant(aPurchase(character, SWORD, SWORD_COPIES));
 
-        assertThat(stackSizes()).containsExactly(1, 1, 1);
+        assertThat(stackSizes(character)).containsExactly(1, 1, 1);
     }
 
     @Test
     void givesARedeliveredPurchaseItsFirstItemGrant() {
         aTemplate(POTION, POTION_STACK);
-        PurchaseCreatedPayload purchase = aPurchase(POTION, QUANTITY);
+        PurchaseCreatedPayload purchase = aPurchase(character, POTION, QUANTITY);
 
         ItemGrant first = itemGrantService.findOrCreateItemGrant(purchase);
         ItemGrant second = itemGrantService.findOrCreateItemGrant(purchase);
 
         assertThat(second.getPublicId()).isEqualTo(first.getPublicId());
-        assertThat(stackSizes()).containsExactly(QUANTITY);
+        assertThat(stackSizes(character)).containsExactly(QUANTITY);
         assertThat(itemGrantRepository.findByPurchaseId(purchase.purchasePublicId())).isPresent();
+    }
+
+    @Test
+    void rejectsACharacterThatInventoryDoesNotKnow() {
+        aTemplate(POTION, POTION_STACK);
+        UUID unknown = UUID.randomUUID();
+
+        ItemGrant itemGrant = itemGrantService.findOrCreateItemGrant(
+                new PurchaseCreatedPayload(UUID.randomUUID(), player, unknown, POTION, QUANTITY));
+
+        assertThat(itemGrant.getOutcome()).isEqualTo(ItemGrantOutcome.REJECTED);
+        assertThat(itemGrant.getReason()).isEqualTo("UNKNOWN_CHARACTER");
+        assertThat(itemGrant.getCharacterId()).isEqualTo(unknown);
+    }
+
+    @Test
+    void rejectsACharacterThatAnotherPlayerOwns() {
+        aTemplate(POTION, POTION_STACK);
+        CharacterInventory someoneElses = aCharacterOf(UUID.randomUUID());
+
+        ItemGrant itemGrant = itemGrantService.findOrCreateItemGrant(aPurchase(someoneElses, POTION, QUANTITY));
+
+        assertThat(itemGrant.getOutcome()).isEqualTo(ItemGrantOutcome.REJECTED);
+        assertThat(itemGrant.getReason()).isEqualTo("CHARACTER_OF_ANOTHER_PLAYER");
+        assertThat(stackSizes(someoneElses)).isEmpty();
+    }
+
+    private CharacterInventory aCharacterOf(UUID owner) {
+        return characterInventoryRepository.save(CharacterInventory.builder().playerId(owner).coins(0L).build());
     }
 
     private ItemTemplate aTemplate(String code, int maxStackSize) {
         return itemTemplateRepository.save(ItemTemplate.builder().code(code).maxStackSize(maxStackSize).build());
     }
 
-    private PurchaseCreatedPayload aPurchase(String itemCode, int quantity) {
-        return new PurchaseCreatedPayload(UUID.randomUUID(), player, itemCode, quantity);
+    private void aStack(CharacterInventory owner, ItemTemplate template, int quantity) {
+        itemInstanceRepository.save(
+                ItemInstance.builder().characterInventory(owner).template(template).quantity(quantity).build());
     }
 
-    /** The player's stacks as the database holds them, oldest first. */
-    private List<Integer> stackSizes() {
+    /** A purchase by this test's player for the given character. */
+    private PurchaseCreatedPayload aPurchase(CharacterInventory receiver, String itemCode, int quantity) {
+        return new PurchaseCreatedPayload(UUID.randomUUID(), player, receiver.getPublicId(), itemCode, quantity);
+    }
+
+    /** The character's stacks as the database holds them, oldest first. */
+    private List<Integer> stackSizes(CharacterInventory owner) {
         entityManager.flush();
         entityManager.clear();
         return itemInstanceRepository.findAll(Sort.by("id")).stream()
-                .filter(stack -> player.equals(stack.getPlayerId()))
+                .filter(stack -> owner.getId().equals(stack.getCharacterInventory().getId()))
                 .map(ItemInstance::getQuantity)
                 .toList();
     }
