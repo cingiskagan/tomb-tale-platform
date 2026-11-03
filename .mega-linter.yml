@@ -37,9 +37,10 @@ ENABLE_LINTERS:
   # --- Shell ---
   - BASH_SHELLCHECK
 
-  # --- Git ---
-  - GIT_GIT_DIFF
-  - REPOSITORY_GITLEAKS       # Secret leak detection
+  # --- Repository ---
+  # MegaLinter 10 ignores the old GIT_GIT_DIFF and REPOSITORY_GITLEAKS keys.
+  - REPOSITORY_GIT_DIFF
+  - REPOSITORY_BETTERLEAKS    # Secret leak detection; reads .gitleaksignore
   - REPOSITORY_CHECKOV        # Infrastructure-as-code security
 
 # ---------------------
