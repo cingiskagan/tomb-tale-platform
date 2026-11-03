@@ -26,14 +26,14 @@ MongoDB holds domain events, never game state or logs, and `service-audit` is th
 
 ## 1. Inventory
 
-- Create, edit and retire item templates in the portal, one at a time. A template defines base stats, random stat pools, rarity, its `assetKey` and an optional item set.
+The [inventory design](inventory-design.md) holds this phase's decisions, and it wins where this section differs.
+
+- Create, edit and retire item templates in the portal, one at a time. A template defines base stats, its item type, price, name and icon, its `assetKey` and an optional item set. Rarity belongs to each item instance.
 - Item sets, with a bonus for the complete set.
 - A coin balance for each character. Premium currency belongs to the player, and waits until the game uses it.
-- Give a player items with rolled stats from the portal.
+- Test bonuses with custom items that an admin puts on a dealer's stand.
 - An admin view of a player's equipment and backpack.
 - The game client's inventory screen, where the player sees the backpack and changes equipment.
-
-Open question: coins belong to a character, but items belong to the player today (`item_instances.player_id`).
 
 ### Item Architecture: Template vs. Instance Pattern
 
@@ -91,14 +91,14 @@ The first real multiplayer test, built on the town in the [GDD](tier-1-game-desi
 - **Skill system:** abilities, upgrades and specialization paths.
 - **Timer system:** cooldowns, resets and live operations cycles.
 - **Drop tables:** drop rates, rarity and distribution.
+- **Inventory limits:** storage and capacity.
 
 ### Tier 3: The Meta-Game
 
-- **Inventory limits:** storage and capacity.
 - **Progression:** levels and unlocks.
 - **Quests:** objectives, progression tasks and rewards.
 - **Economy:** coin flow, prices and sinks.
-- **Trading:** a bazaar and trades between players, during a run too. A listed item is locked, and an equipped item can't be listed or traded.
+- **Trading:** a marketplace NPC in town, and trades between party members, during a run too. A listed item goes to the NPC, and an equipped item can't be listed or traded ([inventory design](inventory-design.md#npcs-and-the-marketplace)).
 - **Social:** friends, chat and groups.
 
 ### Tier 4: Re-Evaluate

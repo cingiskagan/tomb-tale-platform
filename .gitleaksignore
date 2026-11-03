@@ -1,0 +1,6 @@
+# Test UUIDs that the generic-api-key rule takes for keys, because the
+# variable names hold "KEY" (KEYCLOAK_ID, PublicIdClaim.KEY). They live only
+# in these commits; the current files no longer contain them.
+b991dfa0ad642cd69c40efceaedeb8a1047f2155:service-player/src/test/java/com/tombtale/serviceplayer/service/PlayerServiceTest.java:generic-api-key:55
+e2dcd48af15d362969cab55c8debaf02c194ba8b:platform-commons/src/test/java/com/tombtale/commons/security/PublicIdClaimTest.java:generic-api-key:32
+e2dcd48af15d362969cab55c8debaf02c194ba8b:platform-commons/src/test/java/com/tombtale/commons/security/PublicIdClaimTest.java:generic-api-key:62

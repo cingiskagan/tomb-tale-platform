@@ -62,5 +62,6 @@ All NPCs (monsters) use a simplified Finite State Machine (FSM) executed on the 
   - If a defender's hurtbox intersects the hitbox, a hit is registered.
 - **Damage Calculation (MVP Formula)**:
   - `Final Damage = Max(1, (AttackerBaseDamage * AttackMultiplier) - DefenderArmor)`
+  - Armor reduces physical damage only. Fire, ice, dread and divine follow the defender's nature, from the weakness chart in the [inventory design](inventory-design.md#damage-types).
 - **Hit Reactions**:
   - Applying damage must interrupt the defender's movement slightly (Hit Stun) to provide physical feedback to the players.
