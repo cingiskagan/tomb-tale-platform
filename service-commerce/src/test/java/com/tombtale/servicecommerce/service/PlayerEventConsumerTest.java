@@ -43,6 +43,7 @@ class PlayerEventConsumerTest extends PostgresTestBase {
     private static final long DELIVERY_TIMEOUT_MILLIS = 10_000L;
 
     private static final String PLAYER_ID = "3c9a6f10-0b44-4c8e-8f37-1d2a9c7b5e60";
+    private static final String CHARACTER_ID = "77d2b381-5e19-4a6d-9c03-2f8ab41d7e55";
     private static final String ROUTING_KEY = "player.created";
 
     String messageJsonValid = """
@@ -54,10 +55,10 @@ class PlayerEventConsumerTest extends PostgresTestBase {
                 "producer": "service-player",
                 "data": {
                     "playerPublicId": "%s",
-                    "characterPublicId": "77d2b381-5e19-4a6d-9c03-2f8ab41d7e55"
+                    "characterPublicId": "%s"
                 }
             }
-            """.formatted(PLAYER_ID);
+            """.formatted(PLAYER_ID, CHARACTER_ID);
 
     String messageJsonInvalid = """
             {
@@ -131,6 +132,21 @@ class PlayerEventConsumerTest extends PostgresTestBase {
                 .filter(purchase -> PLAYER_ID.equals(purchase.getPlayerId().toString())).toList();
 
         assertThat(receivedPurchases).hasSize(1);
+    }
+
+    @Test
+    void theBeginnerSetGoesToTheFirstCharacter() throws InterruptedException {
+        rabbitTemplate.send(RabbitMQConfig.PLAYER_EVENTS_EXCHANGE, ROUTING_KEY, messageValid);
+
+        InvocationData data = harness
+                .getNextInvocationDataFor(PlayerEventConsumer.LISTENER_ID, DELIVERY_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+
+        assertThat(data).isNotNull();
+        assertThat(data.getThrowable()).isNull();
+        assertThat(purchaseRepository.findAll())
+                .singleElement()
+                .extracting(Purchase::getCharacterId)
+                .hasToString(CHARACTER_ID);
     }
 
     @Test

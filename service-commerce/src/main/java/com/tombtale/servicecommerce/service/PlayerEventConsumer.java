@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 
 /**
- * Gives every new player the beginner set, as a free purchase that is later turned into gold and items.
+ * Gives every new player's first character the beginner set, as a free purchase that is later turned into items.
  * Delivery is at least once, so a repeated event finds the purchase by its key and saves nothing.
  */
 @Component
@@ -30,7 +30,7 @@ public class PlayerEventConsumer {
     private final PurchaseRepository purchaseRepository;
 
     /**
-     * Saves one completed, zero-price {@code BEGINNER_SET} purchase for the player in the event.
+     * Saves one completed, zero-price {@code BEGINNER_SET} purchase for the character in the event.
      * No person is behind the write, so it runs as {@link SystemActor#COMMERCE_PLAYER_EVENT_CONSUMER}.
      *
      * @param event the delivered {@code player.created}
@@ -44,6 +44,7 @@ public class PlayerEventConsumer {
 
         SystemActor.COMMERCE_PLAYER_EVENT_CONSUMER.run(() -> purchaseRepository.save(Purchase.builder()
                 .playerId(event.data().playerPublicId())
+                .characterId(event.data().characterPublicId())
                 .itemCode(BEGINNER_SET_ITEM_CODE)
                 .quantity(1)
                 .unitPrice(BigDecimal.ZERO)

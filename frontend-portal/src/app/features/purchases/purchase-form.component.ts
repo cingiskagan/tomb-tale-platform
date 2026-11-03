@@ -74,6 +74,7 @@ export class PurchaseFormComponent implements OnInit {
   private initForm() {
     this.form = this.fb.group({
       playerId: ['', Validators.required],
+      characterId: ['', Validators.required],
       itemCode: ['', Validators.required],
       quantity: [1, [Validators.required, Validators.min(1)]],
       unitPrice: [0, [Validators.required, Validators.min(0)]],
@@ -87,6 +88,7 @@ export class PurchaseFormComponent implements OnInit {
     if (!this.purchasePublicId) {
       this.form.reset({ quantity: 1, unitPrice: 0, status: PurchaseStatus.PENDING });
       this.form.get('playerId')?.enable();
+      this.form.get('characterId')?.enable();
       this.form.get('itemCode')?.enable();
       return;
     }
@@ -97,13 +99,14 @@ export class PurchaseFormComponent implements OnInit {
       if (requestSeq !== this.loadRequestSeq || this.purchasePublicId !== publicId || !this.visible) return;
       this.form.patchValue({
         playerId: data.playerId,
+        characterId: data.characterId,
         itemCode: data.itemCode,
         quantity: data.quantity,
         unitPrice: data.unitPrice,
         status: data.status,
       });
-      // Only the status changes after creation. The template marks playerId, itemCode and unitPrice
-      // readonly and hides the quantity, which inventory already granted.
+      // Only the status changes after creation. The template marks playerId, characterId, itemCode and
+      // unitPrice readonly and hides the quantity, which inventory already granted.
     } catch (err) {
       console.error('Failed to load purchase data', err);
       this.close();
@@ -131,6 +134,7 @@ export class PurchaseFormComponent implements OnInit {
       } else {
         await firstValueFrom(this.purchaseService.createPurchase({
           playerId: val.playerId,
+          characterId: val.characterId,
           itemCode: val.itemCode,
           quantity: val.quantity,
           unitPrice: val.unitPrice,

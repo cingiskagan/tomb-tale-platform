@@ -117,6 +117,7 @@ class EventConsumerTest extends MongoTestBase {
         return Stream.of(
                 Arguments.of(RabbitMQConfig.PURCHASE_EVENTS_EXCHANGE, "purchase.created", """
                         {"purchasePublicId": "%s", "playerPublicId": "3c9a6f10-0b44-4c8e-8f37-1d2a9c7b5e60",
+                         "characterPublicId": "77d2b381-5e19-4a6d-9c03-2f8ab41d7e55",
                          "itemCode": "POTION_HEALTH", "quantity": 3}""".formatted(PURCHASE_ID)),
                 Arguments.of(RabbitMQConfig.ITEM_EVENTS_EXCHANGE, "item.grant-rejected", """
                         {"purchasePublicId": "%s", "reason": "UNKNOWN_ITEM_CODE"}""".formatted(PURCHASE_ID)));

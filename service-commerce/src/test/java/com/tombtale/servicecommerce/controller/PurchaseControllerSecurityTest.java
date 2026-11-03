@@ -71,12 +71,14 @@ class PurchaseControllerSecurityTest {
         private static final String ROLE_PLATFORM_ADMIN = "platform_admin";
         private static final String SUBJECT = "6f1c2b9e-4d3a-4e8b-9a71-2c5d8e0f3b64";
         private static final UUID PLAYER_ID = UUID.fromString("aaaaaaaa-0000-4000-8000-000000000001");
+        private static final UUID CHARACTER_ID = UUID.fromString("bbbbbbbb-0000-4000-8000-000000000001");
         private static final UUID PURCHASE_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
         private static final int PAGE_SIZE = 20;
 
         private static final String VALID_CREATE_BODY = """
                         {
                         "playerId": "aaaaaaaa-0000-4000-8000-000000000001",
+                        "characterId": "bbbbbbbb-0000-4000-8000-000000000001",
                         "itemCode": "SWORD_IRON",
                         "quantity": 2,
                         "unitPrice": 150.00
@@ -121,6 +123,7 @@ class PurchaseControllerSecurityTest {
                 return new PurchaseResponse(
                                 PURCHASE_ID,
                                 PLAYER_ID,
+                                CHARACTER_ID,
                                 "SWORD_IRON",
                                 2,
                                 new BigDecimal("150.00"),
@@ -163,7 +166,7 @@ class PurchaseControllerSecurityTest {
         }
 
         @Test
-        void createAsAdminReturns201WithPlayerIdFromBody() throws Exception {
+        void createAsAdminReturns201WithPlayerAndCharacterFromBody() throws Exception {
                 when(purchaseService.createPurchase(any())).thenReturn(aPurchaseResponse());
 
                 mockMvc.perform(post(PURCHASES_URL)
@@ -171,11 +174,26 @@ class PurchaseControllerSecurityTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(VALID_CREATE_BODY))
                                 .andExpect(status().isCreated())
-                                .andExpect(jsonPath("$.playerId").value(PLAYER_ID.toString()));
+                                .andExpect(jsonPath("$.playerId").value(PLAYER_ID.toString()))
+                                .andExpect(jsonPath("$.characterId").value(CHARACTER_ID.toString()));
 
                 ArgumentCaptor<CreatePurchaseRequest> captor = ArgumentCaptor.forClass(CreatePurchaseRequest.class);
                 verify(purchaseService).createPurchase(captor.capture());
                 assertThat(captor.getValue().playerId()).isEqualTo(PLAYER_ID);
+                assertThat(captor.getValue().characterId()).isEqualTo(CHARACTER_ID);
+        }
+
+        @Test
+        void createWithoutCharacterReturns400() throws Exception {
+                mockMvc.perform(post(PURCHASES_URL)
+                                .with(tokenWithRoles(ROLE_PLATFORM_ADMIN))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(VALID_CREATE_BODY.replace(
+                                                "\"characterId\": \"bbbbbbbb-0000-4000-8000-000000000001\",", "")))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.errors.characterId").value("characterId is required"));
+
+                verifyNoInteractions(purchaseService);
         }
 
         @Test

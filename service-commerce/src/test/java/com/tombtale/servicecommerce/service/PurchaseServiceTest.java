@@ -47,6 +47,7 @@ class PurchaseServiceTest {
 
     private static final UUID PURCHASE_ID = UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
     private static final UUID PLAYER_ID = UUID.fromString("aaaaaaaa-0000-4000-8000-000000000001");
+    private static final UUID CHARACTER_ID = UUID.fromString("bbbbbbbb-0000-4000-8000-000000000001");
     private static final String ITEM_CODE = "SWORD_IRON";
     private static final int QUANTITY = 3;
     private static final BigDecimal UNIT_PRICE = new BigDecimal("150.0000");
@@ -73,6 +74,7 @@ class PurchaseServiceTest {
     private static Purchase buildPurchaseEntity(UUID publicId) {
         Purchase.PurchaseBuilder<?, ?> builder = Purchase.builder()
                 .playerId(PLAYER_ID)
+                .characterId(CHARACTER_ID)
                 .itemCode(ITEM_CODE)
                 .quantity(QUANTITY)
                 .unitPrice(UNIT_PRICE)
@@ -85,13 +87,13 @@ class PurchaseServiceTest {
 
     private static PurchaseResponse buildPurchaseResponse() {
         return new PurchaseResponse(
-                PURCHASE_ID, PLAYER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE, EXPECTED_TOTAL,
+                PURCHASE_ID, PLAYER_ID, CHARACTER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE, EXPECTED_TOTAL,
                 PurchaseStatus.PENDING, Instant.now(), null);
     }
 
     @Test
     void shouldCreatePurchaseWithCalculatedTotalPrice() {
-        CreatePurchaseRequest request = new CreatePurchaseRequest(PLAYER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE);
+        CreatePurchaseRequest request = new CreatePurchaseRequest(PLAYER_ID, CHARACTER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE);
         Purchase mappedEntity = buildPurchaseEntity();
         Purchase savedEntity = buildPurchaseEntity(PURCHASE_ID);
         PurchaseResponse expectedResponse = buildPurchaseResponse();
@@ -106,7 +108,7 @@ class PurchaseServiceTest {
         assertThat(result.totalPrice()).isEqualByComparingTo(EXPECTED_TOTAL);
         verify(purchaseRepository).save(any(Purchase.class));
         verify(outboxService).append(eq(PurchaseCreatedPayload.EVENT_TYPE), eq(PurchaseCreatedPayload.EVENT_VERSION),
-                eq(PURCHASE_ID), eq(new PurchaseCreatedPayload(PURCHASE_ID, PLAYER_ID, ITEM_CODE, QUANTITY)));
+                eq(PURCHASE_ID), eq(new PurchaseCreatedPayload(PURCHASE_ID, PLAYER_ID, CHARACTER_ID, ITEM_CODE, QUANTITY)));
     }
 
     @Test
@@ -155,7 +157,7 @@ class PurchaseServiceTest {
         entity.setStatus(PurchaseStatus.COMPLETED);
         UpdatePurchaseRequest request = new UpdatePurchaseRequest(PurchaseStatus.REFUNDED);
         PurchaseResponse expectedResponse = new PurchaseResponse(
-                PURCHASE_ID, PLAYER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE, EXPECTED_TOTAL,
+                PURCHASE_ID, PLAYER_ID, CHARACTER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE, EXPECTED_TOTAL,
                 PurchaseStatus.REFUNDED, Instant.now(), null);
 
         when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));
@@ -265,7 +267,7 @@ class PurchaseServiceTest {
         UpdatePurchaseRequest request = new UpdatePurchaseRequest(PurchaseStatus.COMPLETED);
 
         PurchaseResponse expectedResponse = new PurchaseResponse(
-                PURCHASE_ID, PLAYER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE, EXPECTED_TOTAL,
+                PURCHASE_ID, PLAYER_ID, CHARACTER_ID, ITEM_CODE, QUANTITY, UNIT_PRICE, EXPECTED_TOTAL,
                 PurchaseStatus.COMPLETED, Instant.now(), null);
 
         when(purchaseRepository.findByPublicId(PURCHASE_ID)).thenReturn(Optional.of(entity));

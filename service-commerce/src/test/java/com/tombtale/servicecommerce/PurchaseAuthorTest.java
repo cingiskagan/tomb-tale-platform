@@ -39,6 +39,7 @@ class PurchaseAuthorTest extends PostgresTestBase {
     private static final String NEW_PURCHASE_BODY = """
             {
               "playerId": "aaaaaaaa-0000-4000-8000-00000000beef",
+              "characterId": "bbbbbbbb-0000-4000-8000-00000000beef",
               "itemCode": "SWORD_IRON",
               "quantity": 2,
               "unitPrice": 150.00

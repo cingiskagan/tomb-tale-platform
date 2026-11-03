@@ -8,6 +8,7 @@ export enum PurchaseStatus {
 export interface PurchaseResponse {
   publicId: string;
   playerId: string;
+  characterId: string;
   itemCode: string;
   quantity: number;
   unitPrice: number;
@@ -27,6 +28,7 @@ export interface PurchaseFilterRequest {
 
 export interface CreatePurchaseRequest {
   playerId: string;
+  characterId: string;
   itemCode: string;
   quantity: number;
   unitPrice: number;

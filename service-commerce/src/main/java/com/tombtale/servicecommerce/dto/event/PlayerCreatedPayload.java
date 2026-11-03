@@ -7,15 +7,17 @@ import java.util.UUID;
  * The fields of {@code player.created} that commerce reads.
  * The converter ignores the rest, so a field the producer adds breaks nothing here.
  *
- * @param playerPublicId the new player
+ * @param playerPublicId    the new player
+ * @param characterPublicId the player's first character, which receives the beginner set
  */
-public record PlayerCreatedPayload(UUID playerPublicId) {
+public record PlayerCreatedPayload(UUID playerPublicId, UUID characterPublicId) {
 
     /** The event type, which is also the routing key. */
     public static final String EVENT_TYPE = "player.created";
 
-    /** An event with no player fails conversion, so it goes to the DLQ with no retry. */
+    /** An event that misses a field fails conversion, so it goes to the DLQ with no retry. */
     public PlayerCreatedPayload {
         Objects.requireNonNull(playerPublicId, "playerPublicId");
+        Objects.requireNonNull(characterPublicId, "characterPublicId");
     }
 }

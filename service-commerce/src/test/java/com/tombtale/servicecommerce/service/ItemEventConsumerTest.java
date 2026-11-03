@@ -123,6 +123,7 @@ class ItemEventConsumerTest extends PostgresTestBase {
         try {
             return purchaseRepository.save(Purchase.builder()
                     .playerId(UUID.randomUUID())
+                    .characterId(UUID.randomUUID())
                     .itemCode("SWORD_IRON")
                     .quantity(1)
                     .unitPrice(BigDecimal.TEN)
