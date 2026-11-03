@@ -58,7 +58,9 @@ copy if it still runs, otherwise in a town.
 
 One process enforces this from its own connections. With several processes, a
 Redis key per `public_id` holds the player's place. The allocator writes it,
-and it expires if the server dies.
+and it expires if the server dies. The dungeon lock is a separate lease in
+inventory ([inventory design](inventory-design.md#the-dungeon-lock)), so the
+two must agree once both exist.
 
 ## Authority
 

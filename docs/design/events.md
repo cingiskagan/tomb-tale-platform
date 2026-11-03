@@ -53,6 +53,7 @@ moment the publisher reached the broker.
 The event says a player exists, and the reward is consumer policy.
 `service-commerce` owns the whole set. On `player.created`, it records one
 free, completed `BEGINNER_SET` purchase, keyed by the player and
-`beginner_set`. A later step turns that purchase into 10 gold and the starter
-items, on the path that every purchase takes. So one service defines the set,
-and the set needs no path of its own.
+`beginner_set`. A later step turns that purchase into the starter items, on
+the path that every purchase takes. So one service defines the set, and the
+set needs no path of its own. Starting coins come from inventory when the
+character is created ([inventory design](inventory-design.md#coins)).

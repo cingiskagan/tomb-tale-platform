@@ -46,7 +46,7 @@ The client moves its character, and FishNet sends the position to the other play
 
 - **No matchmaker yet:** the game server moves a party from its town copy into a new dungeon copy inside its own process. An allocator comes with a second process ([game server](game-server.md#scaling)).
 - **Run id:** each run gets a `runId`, made by the game server while it runs alone and by the allocator after that.
-- **Stats:** before the run, the server reads each member's character from `service-player` and their equipment from `service-inventory`. When a player changes equipment during the run, the client tells the server, and the server reads the new equipment from inventory instead of trusting the client. The schema for combat stats is not defined yet.
+- **Stats:** before the run, the server reads each member's character from `service-player` and their equipment from `service-inventory`. When a player's equipment changes during the run, inventory tells the server with `inventory.changed`, and the server reads the new equipment ([inventory design](inventory-design.md#who-calls-inventory)). The schema for combat stats is not defined yet.
 - **Layout:** the server loads the fixed layout first, and later asks `service-dungeon` for one. It sends the layout to the party.
 - **Drops:** the server grants each drop to inventory when it falls, with a `dropId` ([game server](game-server.md#item-grants)).
 - **End:** a win or a loss returns the party to the town. The server reports the run with its `runId`, so a repeated report counts once, and `service-player` keeps the count of runs played. Whether grants and reports travel over REST or RabbitMQ is open.
@@ -54,5 +54,5 @@ The client moves its character, and FishNet sends the position to the other play
 ## 4. Security Principles
 
 - **Never trust the client, except for movement:** the client owns its position, and the server checks it. A client only asks to cast a skill. The server checks stamina and cooldown, resolves the hit, and tells every client.
-- **Only the game server grants from play:** drops and run reports come from the `game_server` role. Purchases and the portal's admin gifts are the only other ways an item arrives. A game token reaches only the player's own data ([ADR 0030](../adr/0030-the-game-is-a-public-client-with-offline-sessions-and-touches-only-its-own-data.md)).
+- **Only the game server grants from play:** drops and run reports come from the `game_server` role. Purchases, dealer buys and the marketplace are the only other ways an item arrives. A game token reaches only the player's own data ([ADR 0030](../adr/0030-the-game-is-a-public-client-with-offline-sessions-and-touches-only-its-own-data.md), [ADR 0031](../adr/0031-the-game-acts-on-its-own-characters-inventory-directly.md)).
 - **Payload validation:** the platform validates every request from the game server like any other request, with typed DTOs and Jakarta validation.
