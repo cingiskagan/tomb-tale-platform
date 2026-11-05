@@ -55,9 +55,8 @@ public class PurchaseService {
 
         Purchase saved = purchaseRepository.save(purchase);
         outboxService.append(PurchaseCreatedPayload.EVENT_TYPE, PurchaseCreatedPayload.EVENT_VERSION, saved.getPublicId(),
-                new PurchaseCreatedPayload(saved.getPublicId(), saved.getPlayerId(), saved.getCharacterId(),
-                        saved.getItemCode(), saved.getQuantity()));
-        LOG.info("Created purchase id={} for character={}", saved.getPublicId(), saved.getCharacterId());
+                new PurchaseCreatedPayload(saved.getPublicId(), saved.getPlayerId(), saved.getItemCode(), saved.getQuantity()));
+        LOG.info("Created purchase id={} for player={}", saved.getPublicId(), saved.getPlayerId());
         return purchaseMapper.toResponse(saved);
     }
 

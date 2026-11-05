@@ -229,7 +229,6 @@ class PurchaseQueryRepositoryImplTest extends FixedAuthorTestBase {
         BigDecimal price = new BigDecimal(unitPrice);
         return Purchase.builder()
                 .playerId(playerId)
-                .characterId(UUID.randomUUID())
                 .itemCode(itemCode)
                 .quantity(quantity)
                 .unitPrice(price)

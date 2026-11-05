@@ -14,7 +14,7 @@ public final class EventAllowList {
 
     private static final Map<Key, Set<String>> FIELDS = Map.of(
             new Key("player.created", 1), Set.of("playerPublicId", "characterPublicId"),
-            new Key("purchase.created", 1), Set.of("purchasePublicId", "playerPublicId", "characterPublicId", "itemCode", "quantity"),
+            new Key("purchase.created", 1), Set.of("purchasePublicId", "playerPublicId", "itemCode", "quantity"),
             new Key("item.granted", 1), Set.of("purchasePublicId"),
             new Key("item.grant-rejected", 1), Set.of("purchasePublicId", "reason"));
 

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,6 +23,15 @@ public interface CharacterInventoryRepository extends JpaRepository<CharacterInv
      * @return true once the character's {@code player.created} was applied
      */
     boolean existsByPublicId(UUID publicId);
+
+    /**
+     * The ids of the player's characters. It loads no row, so the lock taken next is the row's first read.
+     *
+     * @param playerId the owner's {@code publicId}
+     * @return the {@code publicId} of every character inventory knows for the player
+     */
+    @Query("select c.publicId from CharacterInventory c where c.playerId = :playerId")
+    List<UUID> findPublicIdsByPlayerId(@Param("playerId") UUID playerId);
 
     /**
      * The character's row, locked until the transaction ends, so a second write for the character waits for it.

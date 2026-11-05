@@ -197,12 +197,11 @@ class PurchaseEventConsumerTest extends PostgresTestBase {
                     "data": {
                         "purchasePublicId": "%s",
                         "playerPublicId": "%s",
-                        "characterPublicId": "%s",
                         "itemCode": "%s",
                         "quantity": %d
                     }
                 }
-                """.formatted(UUID.randomUUID(), purchase, player, character.getPublicId(), itemCode, quantity);
+                """.formatted(UUID.randomUUID(), purchase, player, itemCode, quantity);
         return MessageBuilder.withBody(json.getBytes(StandardCharsets.UTF_8))
                 .setContentType(MessageProperties.CONTENT_TYPE_JSON)
                 .build();

@@ -38,8 +38,8 @@ public class ItemGrant extends BaseEntity {
     @Column(name = "player_id", nullable = false, updatable = false)
     private UUID playerId;
 
-    /** The character the purchase names, kept as it arrived, also when inventory does not know it. */
-    @Column(name = "character_id", nullable = false, updatable = false)
+    /** The player's character the purchase went to, or null when the player had none or several. */
+    @Column(name = "character_id", updatable = false)
     private UUID characterId;
 
     /** The code the purchase names, kept as it arrived, also when the catalog does not know it. */

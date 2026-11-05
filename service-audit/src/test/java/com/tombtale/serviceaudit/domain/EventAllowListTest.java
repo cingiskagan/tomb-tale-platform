@@ -20,14 +20,6 @@ class EventAllowListTest {
     }
 
     @Test
-    void aPurchaseKeepsTheCharacterThatReceivesIt() {
-        Map<String, Object> data = Map.of("purchasePublicId", "p-1", "playerPublicId", "pl-1",
-                "characterPublicId", "c-1", "itemCode", "SWORD_IRON", "quantity", 1);
-
-        assertThat(EventAllowList.keep("purchase.created", 1, data)).isEqualTo(data);
-    }
-
-    @Test
     void aVersionWithNoListIsRefused() {
         assertThatThrownBy(() -> EventAllowList.keep("player.created", 2, Map.of()))
                 .isInstanceOf(UnlistedEventException.class)

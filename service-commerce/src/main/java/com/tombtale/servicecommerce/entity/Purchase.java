@@ -66,10 +66,6 @@ public class Purchase extends BaseEntity {
     @Column(name = "player_id", nullable = false)
     private UUID playerId;
 
-    /** The {@code publicId} of the player's character that receives the items. Unchecked here, like {@code playerId}. */
-    @Column(name = "character_id", nullable = false)
-    private UUID characterId;
-
     /** Catalogue item identifier (e.g. {@code SWORD_IRON}). */
     @Column(name = "item_code", nullable = false, length = ITEM_CODE_MAX_LENGTH)
     private String itemCode;

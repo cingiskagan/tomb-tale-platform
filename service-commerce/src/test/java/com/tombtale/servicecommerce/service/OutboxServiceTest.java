@@ -85,7 +85,7 @@ class OutboxServiceTest extends FixedAuthorTestBase {
                 PurchaseCreatedPayload.EVENT_TYPE,
                 PurchaseCreatedPayload.EVENT_VERSION,
                 aggregateId,
-                new PurchaseCreatedPayload(aggregateId, UUID.randomUUID(), UUID.randomUUID(), ITEM_CODE, 2));
+                new PurchaseCreatedPayload(aggregateId, UUID.randomUUID(), ITEM_CODE, 2));
     }
 
     private List<OutboxEvent> committedRows() {

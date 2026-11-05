@@ -109,7 +109,7 @@ class CharacterLockTest extends FixedAuthorTestBase {
     }
 
     private PurchaseCreatedPayload aPurchase(int quantity) {
-        return new PurchaseCreatedPayload(UUID.randomUUID(), player, character.getPublicId(), POTION, quantity);
+        return new PurchaseCreatedPayload(UUID.randomUUID(), player, POTION, quantity);
     }
 
     /** Returns once some transaction waits for a lock another one holds, which here only the second grant can do. */

@@ -18,22 +18,17 @@ import java.util.UUID;
  *
  * <p>It is the player's {@code publicId}, which the caller already holds —
  * the portal lists players from service-player before it opens this form.
- * Commerce stores it and {@code characterId} without checking them (ADR 0014).
+ * Commerce stores it without checking that such a player exists (ADR 0014).
  *
- * @param playerId    the buying player's publicId
- * @param characterId the publicId of the player's character that receives the items
- * @param itemCode    catalogue item code (e.g. {@code SWORD_IRON})
- * @param quantity    number of items to purchase (≥ 1)
- * @param unitPrice   price per single item (≥ 0)
+ * @param playerId  the buying player's publicId
+ * @param itemCode  catalogue item code (e.g. {@code SWORD_IRON})
+ * @param quantity  number of items to purchase (≥ 1)
+ * @param unitPrice price per single item (≥ 0)
  */
 public record CreatePurchaseRequest(
         @Schema(example = "aaaaaaaa-0000-4000-8000-000000000001", description = "publicId of the player making the purchase")
         @NotNull(message = "playerId is required")
         UUID playerId,
-
-        @Schema(example = "bbbbbbbb-0000-4000-8000-000000000001", description = "publicId of the character that receives the items")
-        @NotNull(message = "characterId is required")
-        UUID characterId,
 
         @Schema(example = "SWORD_IRON", description = "Identifier code of the virtual item")
         @NotBlank(message = "itemCode is required")

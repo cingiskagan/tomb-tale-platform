@@ -47,7 +47,7 @@ The inventory phase's decisions as of 2026-11-03. The other design documents giv
 - A character owns its items and its coins. Only premium currency belongs to the player, and it waits until the game uses it.
 - Inventory keeps a `character_inventories` table, one row per character with only what inventory needs: the character's `publicId`, its owner's `publicId`, its coins and a `version`. Names and levels stay in service-player.
 - Inventory fills it from `player.created`, because its database user has no rights in service-player's schema ([ADR 0006](../adr/0006-one-postgres-schema-and-user-per-service.md)). The row lets inventory check that a player owns the character they call for.
-- An item row points at its character's row with a foreign key, and a purchase names the character that receives it. Commerce finds a new player's first character in `player.created`.
+- An item row points at its character's row with a foreign key. A purchase names only the player. Until the player can pick the character that claims it, inventory gives it to the player's only character and refuses it when the player has none or several.
 
 ### The character lock
 

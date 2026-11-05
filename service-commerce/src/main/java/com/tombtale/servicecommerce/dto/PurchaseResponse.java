@@ -16,21 +16,19 @@ import java.util.UUID;
  * internal key never leaves the persistence layer, so {@code publicId} is the
  * only identifier here.
  *
- * @param publicId           the purchase's public identifier
- * @param playerId           publicId of the purchasing player
- * @param characterId        publicId of the character that receives the items
- * @param itemCode           catalogue item code
- * @param quantity           number of items purchased
- * @param unitPrice          price per single item
- * @param totalPrice         {@code quantity × unitPrice}
- * @param status             current lifecycle state
- * @param createdAt          UTC timestamp of the purchase
+ * @param publicId   the purchase's public identifier
+ * @param playerId   publicId of the purchasing player
+ * @param itemCode   catalogue item code
+ * @param quantity   number of items purchased
+ * @param unitPrice  price per single item
+ * @param totalPrice {@code quantity × unitPrice}
+ * @param status     current lifecycle state
+ * @param createdAt  UTC timestamp of the purchase
  * @param cancellationReason why the purchase was cancelled, such as {@code UNKNOWN_ITEM_CODE}, or null
  */
 public record PurchaseResponse(
         UUID publicId,
         UUID playerId,
-        UUID characterId,
         String itemCode,
         Integer quantity,
         BigDecimal unitPrice,

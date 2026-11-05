@@ -72,23 +72,22 @@ class ItemGrantServiceTest extends FixedAuthorTestBase {
         ItemTemplate potion = aTemplate(POTION, POTION_STACK);
         aStack(character, potion, STACK_WITH_ROOM);
 
-        ItemGrant itemGrant = itemGrantService.findOrCreateItemGrant(aPurchase(character, POTION, QUANTITY));
+        ItemGrant itemGrant = itemGrantService.findOrCreateItemGrant(aPurchase(POTION, QUANTITY));
 
         assertThat(itemGrant.getOutcome()).isEqualTo(ItemGrantOutcome.GRANTED);
         assertThat(itemGrant.getCharacterId()).isEqualTo(character.getPublicId());
         assertThat(stackSizes(character)).containsExactly(POTION_STACK, STACK_WITH_ROOM + QUANTITY - POTION_STACK);
     }
 
-    /** A player may own several characters, and each fills only its own stacks. */
     @Test
-    void leavesAnotherCharactersStackWithRoomAlone() {
+    void leavesAnotherPlayersStackWithRoomAlone() {
         ItemTemplate potion = aTemplate(POTION, POTION_STACK);
-        CharacterInventory sibling = aCharacterOf(player);
-        aStack(sibling, potion, STACK_WITH_ROOM);
+        CharacterInventory someoneElses = aCharacterOf(UUID.randomUUID());
+        aStack(someoneElses, potion, STACK_WITH_ROOM);
 
-        itemGrantService.findOrCreateItemGrant(aPurchase(character, POTION, QUANTITY));
+        itemGrantService.findOrCreateItemGrant(aPurchase(POTION, QUANTITY));
 
-        assertThat(stackSizes(sibling)).containsExactly(STACK_WITH_ROOM);
+        assertThat(stackSizes(someoneElses)).containsExactly(STACK_WITH_ROOM);
         assertThat(stackSizes(character)).containsExactly(QUANTITY);
     }
 
@@ -96,7 +95,7 @@ class ItemGrantServiceTest extends FixedAuthorTestBase {
     void givesEachCopyOfAnItemThatDoesNotStackItsOwnRow() {
         aTemplate(SWORD, 1);
 
-        itemGrantService.findOrCreateItemGrant(aPurchase(character, SWORD, SWORD_COPIES));
+        itemGrantService.findOrCreateItemGrant(aPurchase(SWORD, SWORD_COPIES));
 
         assertThat(stackSizes(character)).containsExactly(1, 1, 1);
     }
@@ -104,7 +103,7 @@ class ItemGrantServiceTest extends FixedAuthorTestBase {
     @Test
     void givesARedeliveredPurchaseItsFirstItemGrant() {
         aTemplate(POTION, POTION_STACK);
-        PurchaseCreatedPayload purchase = aPurchase(character, POTION, QUANTITY);
+        PurchaseCreatedPayload purchase = aPurchase(POTION, QUANTITY);
 
         ItemGrant first = itemGrantService.findOrCreateItemGrant(purchase);
         ItemGrant second = itemGrantService.findOrCreateItemGrant(purchase);
@@ -115,28 +114,29 @@ class ItemGrantServiceTest extends FixedAuthorTestBase {
     }
 
     @Test
-    void rejectsACharacterThatInventoryDoesNotKnow() {
+    void rejectsAPlayerWithNoCharacter() {
         aTemplate(POTION, POTION_STACK);
-        UUID unknown = UUID.randomUUID();
 
         ItemGrant itemGrant = itemGrantService.findOrCreateItemGrant(
-                new PurchaseCreatedPayload(UUID.randomUUID(), player, unknown, POTION, QUANTITY));
+                new PurchaseCreatedPayload(UUID.randomUUID(), UUID.randomUUID(), POTION, QUANTITY));
 
         assertThat(itemGrant.getOutcome()).isEqualTo(ItemGrantOutcome.REJECTED);
-        assertThat(itemGrant.getReason()).isEqualTo("UNKNOWN_CHARACTER");
-        assertThat(itemGrant.getCharacterId()).isEqualTo(unknown);
+        assertThat(itemGrant.getReason()).isEqualTo("NO_SINGLE_CHARACTER");
+        assertThat(itemGrant.getCharacterId()).isNull();
     }
 
+    /** Only the claim box can tell which of them the player wants. */
     @Test
-    void rejectsACharacterThatAnotherPlayerOwns() {
+    void rejectsAPlayerWithTwoCharacters() {
         aTemplate(POTION, POTION_STACK);
-        CharacterInventory someoneElses = aCharacterOf(UUID.randomUUID());
+        CharacterInventory second = aCharacterOf(player);
 
-        ItemGrant itemGrant = itemGrantService.findOrCreateItemGrant(aPurchase(someoneElses, POTION, QUANTITY));
+        ItemGrant itemGrant = itemGrantService.findOrCreateItemGrant(aPurchase(POTION, QUANTITY));
 
         assertThat(itemGrant.getOutcome()).isEqualTo(ItemGrantOutcome.REJECTED);
-        assertThat(itemGrant.getReason()).isEqualTo("CHARACTER_OF_ANOTHER_PLAYER");
-        assertThat(stackSizes(someoneElses)).isEmpty();
+        assertThat(itemGrant.getReason()).isEqualTo("NO_SINGLE_CHARACTER");
+        assertThat(stackSizes(character)).isEmpty();
+        assertThat(stackSizes(second)).isEmpty();
     }
 
     private CharacterInventory aCharacterOf(UUID owner) {
@@ -152,9 +152,8 @@ class ItemGrantServiceTest extends FixedAuthorTestBase {
                 ItemInstance.builder().characterInventory(owner).template(template).quantity(quantity).build());
     }
 
-    /** A purchase by this test's player for the given character. */
-    private PurchaseCreatedPayload aPurchase(CharacterInventory receiver, String itemCode, int quantity) {
-        return new PurchaseCreatedPayload(UUID.randomUUID(), player, receiver.getPublicId(), itemCode, quantity);
+    private PurchaseCreatedPayload aPurchase(String itemCode, int quantity) {
+        return new PurchaseCreatedPayload(UUID.randomUUID(), player, itemCode, quantity);
     }
 
     /** The character's stacks as the database holds them, oldest first. */
