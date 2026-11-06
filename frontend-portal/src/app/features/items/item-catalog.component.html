@@ -1,0 +1,170 @@
+<div class="items-container">
+  <h2 class="page-title">Items</h2>
+
+  <p-tabs value="templates">
+    <p-tablist>
+      <p-tab value="templates">Templates</p-tab>
+      <p-tab value="sets">Sets</p-tab>
+    </p-tablist>
+
+    <p-tabpanels>
+      <p-tabpanel value="templates">
+        <div class="header-actions">
+          <span>Every template, retired ones grayed out.</span>
+          <p-button label="New Template" icon="pi pi-plus" (onClick)="openTemplate(null)" />
+        </div>
+
+        <p-table
+          [value]="templates"
+          [lazy]="true"
+          (onLazyLoad)="loadTemplates($event)"
+          [paginator]="true"
+          [rows]="20"
+          [totalRecords]="templateTotal"
+          [loading]="templatesLoading"
+          [rowsPerPageOptions]="[10, 20, 50]"
+          sortField="code"
+          [sortOrder]="1"
+          styleClass="p-datatable-sm"
+        >
+          <ng-template #header>
+            <tr>
+              <th scope="col" class="icon-cell">Icon</th>
+              <th scope="col" pSortableColumn="code">Code <p-sortIcon field="code" /></th>
+              <th scope="col" pSortableColumn="name">Name <p-sortIcon field="name" /></th>
+              <th scope="col" pSortableColumn="itemType">Type <p-sortIcon field="itemType" /></th>
+              <th scope="col" pSortableColumn="price">Price <p-sortIcon field="price" /></th>
+              <th scope="col">Base stats</th>
+              <th scope="col">Set</th>
+              <th scope="col">Status</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </ng-template>
+
+          <ng-template #body let-template>
+            <tr [class.retired]="template.retired">
+              <td class="icon-cell">
+                @if (template.iconHash && !brokenIcons.has(template.iconHash)) {
+                  <img
+                    [src]="iconUrl(template.iconHash)"
+                    [alt]="template.name"
+                    (error)="brokenIcons.add(template.iconHash)"
+                  />
+                } @else {
+                  <i class="pi pi-image generic-icon" aria-hidden="true"></i>
+                }
+              </td>
+              <td>{{ template.code }}</td>
+              <td>{{ template.name }}</td>
+              <td>{{ template.itemType }}</td>
+              <td>{{ template.price }}</td>
+              <td>{{ formatStats(template.baseStats) }}</td>
+              <td>{{ setName(template.itemSetId) }}</td>
+              <td>
+                @if (template.retired) {
+                  <p-tag value="RETIRED" severity="secondary" />
+                } @else {
+                  <p-tag value="ACTIVE" severity="success" />
+                }
+              </td>
+              <td>
+                <p-button
+                  icon="pi pi-pencil"
+                  [rounded]="true"
+                  [text]="true"
+                  severity="success"
+                  ariaLabel="Edit"
+                  (onClick)="openTemplate(template.publicId)"
+                />
+                <p-button
+                  icon="pi pi-ban"
+                  [rounded]="true"
+                  [text]="true"
+                  severity="danger"
+                  ariaLabel="Retire"
+                  [disabled]="template.retired"
+                  (onClick)="confirmRetire(template)"
+                />
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="9">No templates yet.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-tabpanel>
+
+      <p-tabpanel value="sets">
+        <div class="header-actions">
+          <span>A character with every template of a set equipped gets its bonus.</span>
+          <p-button label="New Set" icon="pi pi-plus" (onClick)="openSet(null)" />
+        </div>
+
+        <p-table
+          [value]="sets"
+          [lazy]="true"
+          (onLazyLoad)="loadSets($event)"
+          [paginator]="true"
+          [rows]="20"
+          [totalRecords]="setTotal"
+          [loading]="setsLoading"
+          sortField="code"
+          [sortOrder]="1"
+          styleClass="p-datatable-sm"
+        >
+          <ng-template #header>
+            <tr>
+              <th scope="col" pSortableColumn="code">Code <p-sortIcon field="code" /></th>
+              <th scope="col" pSortableColumn="name">Name <p-sortIcon field="name" /></th>
+              <th scope="col">Bonus</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </ng-template>
+
+          <ng-template #body let-itemSet>
+            <tr>
+              <td>{{ itemSet.code }}</td>
+              <td>{{ itemSet.name }}</td>
+              <td>{{ formatStats(itemSet.bonus) }}</td>
+              <td>
+                <p-button
+                  icon="pi pi-pencil"
+                  [rounded]="true"
+                  [text]="true"
+                  severity="success"
+                  ariaLabel="Edit"
+                  (onClick)="openSet(itemSet.publicId)"
+                />
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="4">No item sets yet.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+</div>
+
+<app-item-template-form
+  [templatePublicId]="selectedTemplateId"
+  [(visible)]="isTemplateFormVisible"
+  [sets]="allSets"
+  (saved)="onTemplateSaved()"
+/>
+
+<app-item-set-form
+  [setPublicId]="selectedSetId"
+  [(visible)]="isSetFormVisible"
+  (saved)="onSetSaved()"
+/>
+
+<p-confirmDialog [style]="{ width: '450px' }" />
+<p-toast />

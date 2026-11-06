@@ -1,0 +1,28 @@
+<fieldset class="stats-editor">
+  <legend>{{ label }}</legend>
+  @for (row of rows.controls; track row; let i = $index) {
+    <div class="stat-row" [formGroup]="row">
+      <p-select
+        formControlName="stat"
+        [options]="statOptions"
+        placeholder="Stat"
+        ariaLabel="Stat"
+        appendTo="body"
+        styleClass="stat-name"
+      />
+      <p-inputNumber formControlName="value" ariaLabel="Value" styleClass="stat-value" />
+      <p-button
+        icon="pi pi-times"
+        [rounded]="true"
+        [text]="true"
+        severity="danger"
+        ariaLabel="Remove stat"
+        (onClick)="remove(i)"
+      />
+    </div>
+  }
+  @if (rows.hasError('duplicateStat')) {
+    <small class="form-error">Each stat may appear once.</small>
+  }
+  <p-button label="Add stat" icon="pi pi-plus" [text]="true" size="small" (onClick)="add()" />
+</fieldset>
