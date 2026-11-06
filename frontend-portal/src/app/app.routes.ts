@@ -43,6 +43,12 @@ export const routes: Routes = [
         data: { roles: [PlatformRole.PLATFORM_ADMIN, PlatformRole.GAME_MASTER] },
         loadComponent: () => import('./features/players/player-list.component').then(m => m.PlayerListComponent)
       },
+      {
+        path: 'items',
+        canActivate: [roleGuard],
+        data: { roles: [PlatformRole.PLATFORM_ADMIN] },
+        loadComponent: () => import('./features/items/item-catalog.component').then(m => m.ItemCatalogComponent)
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
   },

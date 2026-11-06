@@ -1,0 +1,88 @@
+package com.tombtale.serviceinventory.controller;
+
+import com.tombtale.commons.security.RoleConstants;
+import com.tombtale.commons.web.PagedResponse;
+import com.tombtale.serviceinventory.dto.CreateItemSetRequest;
+import com.tombtale.serviceinventory.dto.ItemSetResponse;
+import com.tombtale.serviceinventory.dto.UpdateItemSetRequest;
+import com.tombtale.serviceinventory.service.ItemSetService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
+
+/**
+ * Item sets, for {@code platform_admin} only.
+ */
+@RestController
+@RequestMapping("/api/v1/inventory/sets")
+@RequiredArgsConstructor
+@PreAuthorize(RoleConstants.IS_ADMIN)
+@Tag(name = "Item sets", description = "Groups of templates with a bonus for the complete set")
+@SecurityRequirement(name = "bearer-jwt")
+public class ItemSetController {
+
+    private static final int DEFAULT_PAGE_SIZE = 20;
+
+    private final ItemSetService itemSetService;
+
+    /**
+     * @param request the new set
+     * @return the saved set
+     */
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create an item set", description = "A taken code answers 409.")
+    public ItemSetResponse createSet(@Valid @RequestBody CreateItemSetRequest request) {
+        return itemSetService.createSet(request);
+    }
+
+    /**
+     * @param pageable the page, by code unless the caller sorts
+     * @return one page of sets
+     */
+    @GetMapping
+    @Operation(summary = "List item sets")
+    public PagedResponse<ItemSetResponse> listSets(
+            @PageableDefault(size = DEFAULT_PAGE_SIZE, sort = "code", direction = Sort.Direction.ASC)
+            Pageable pageable) {
+        return PagedResponse.from(itemSetService.listSets(pageable));
+    }
+
+    /**
+     * @param publicId the set
+     * @return the set
+     */
+    @GetMapping("/{publicId}")
+    @Operation(summary = "Get an item set")
+    public ItemSetResponse findSet(@PathVariable UUID publicId) {
+        return itemSetService.findSet(publicId);
+    }
+
+    /**
+     * @param publicId the set
+     * @param request  its new fields and the version the edit started from
+     * @return the set after the edit
+     */
+    @PutMapping("/{publicId}")
+    @Operation(summary = "Edit an item set", description = "A stale version answers 409.")
+    public ItemSetResponse updateSet(@PathVariable UUID publicId, @Valid @RequestBody UpdateItemSetRequest request) {
+        return itemSetService.updateSet(publicId, request);
+    }
+}

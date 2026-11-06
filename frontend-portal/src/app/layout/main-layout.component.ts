@@ -48,6 +48,12 @@ export class MainLayoutComponent {
       command: () => this.router.navigate(['/players']),
     },
     {
+      label: 'Items',
+      icon: 'pi pi-box',
+      visible: this.authService.hasAnyRole([PlatformRole.PLATFORM_ADMIN]),
+      command: () => this.router.navigate(['/items']),
+    },
+    {
       label: 'My Profile',
       icon: 'pi pi-id-card',
       command: () => this.router.navigate(['/profile']),

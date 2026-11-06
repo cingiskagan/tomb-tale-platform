@@ -29,6 +29,7 @@ public class ItemGrantService {
     private static final int SINGLE_CHARACTER = 1;
     private static final String NO_SINGLE_CHARACTER = "NO_SINGLE_CHARACTER";
     private static final String UNKNOWN_ITEM_CODE = "UNKNOWN_ITEM_CODE";
+    private static final String RETIRED_ITEM_CODE = "RETIRED_ITEM_CODE";
 
     private final CharacterInventoryRepository characterInventoryRepository;
     private final ItemTemplateRepository itemTemplateRepository;
@@ -58,6 +59,9 @@ public class ItemGrantService {
         Optional<ItemTemplate> template = itemTemplateRepository.findByCode(purchase.itemCode());
         if (template.isEmpty()) {
             return saveItemGrant(purchase, character.getPublicId(), ItemGrantOutcome.REJECTED, UNKNOWN_ITEM_CODE);
+        }
+        if (template.get().isRetired()) {
+            return saveItemGrant(purchase, character.getPublicId(), ItemGrantOutcome.REJECTED, RETIRED_ITEM_CODE);
         }
         addToStacks(character, template.get(), purchase.quantity());
         return saveItemGrant(purchase, character.getPublicId(), ItemGrantOutcome.GRANTED, null);

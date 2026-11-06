@@ -63,6 +63,7 @@ The inventory phase's decisions as of 2026-11-03. The other design documents giv
 - Copies stack only when they share the template and the rarity and have no bonus.
 - Every template has an `item_type`, such as helmet, so equipping can check that an item fits its slot.
 - Item sets with their set bonus are in this phase, as the pathway describes them.
+- A retired template stays in its set, so an owned copy still counts and retiring a piece never takes a bonus away. To make a set need fewer pieces, an admin takes the template out of the set.
 
 ### Icons and names
 
