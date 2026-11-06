@@ -5,7 +5,7 @@ package com.tombtale.serviceinventory.domain;
  */
 public enum ItemGrantOutcome {
 
-    /** The items are in the player's stacks. */
+    /** The items are in the character's stacks. */
     GRANTED("item.granted"),
 
     /** Inventory refused the items, for the reason the item grant records. */

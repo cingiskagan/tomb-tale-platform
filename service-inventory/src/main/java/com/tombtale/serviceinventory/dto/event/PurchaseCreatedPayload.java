@@ -7,7 +7,7 @@ import java.util.UUID;
  * The data of {@code purchase.created}, which commerce sends for every purchase an admin creates.
  *
  * @param purchasePublicId the purchase, which inventory names in its item grant
- * @param playerPublicId   the player who receives the items
+ * @param playerPublicId   the player who bought the items
  * @param itemCode         the catalog code to look up
  * @param quantity         how many copies to grant, at least 1
  */

@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 
 /**
- * Gives every new player the beginner set, as a free purchase that is later turned into gold and items.
+ * Gives every new player the beginner set, as a free purchase that is later turned into items.
  * Delivery is at least once, so a repeated event finds the purchase by its key and saves nothing.
  */
 @Component

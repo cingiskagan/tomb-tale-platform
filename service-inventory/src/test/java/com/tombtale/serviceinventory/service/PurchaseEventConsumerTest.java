@@ -31,9 +31,11 @@ import com.tombtale.commons.audit.SystemActor;
 import com.tombtale.commons.security.PublicIdClaim;
 import com.tombtale.serviceinventory.config.RabbitMQConfig;
 import com.tombtale.serviceinventory.dto.event.PurchaseCreatedPayload;
+import com.tombtale.serviceinventory.entity.CharacterInventory;
 import com.tombtale.serviceinventory.entity.ItemGrant;
 import com.tombtale.serviceinventory.entity.ItemInstance;
 import com.tombtale.serviceinventory.entity.ItemTemplate;
+import com.tombtale.serviceinventory.repository.CharacterInventoryRepository;
 import com.tombtale.serviceinventory.repository.ItemGrantRepository;
 import com.tombtale.serviceinventory.repository.ItemInstanceRepository;
 import com.tombtale.serviceinventory.repository.ItemTemplateRepository;
@@ -84,6 +86,9 @@ class PurchaseEventConsumerTest extends PostgresTestBase {
     private ObjectMapper objectMapper;
 
     @Autowired
+    private CharacterInventoryRepository characterInventoryRepository;
+
+    @Autowired
     private ItemTemplateRepository itemTemplateRepository;
 
     @Autowired
@@ -92,8 +97,12 @@ class PurchaseEventConsumerTest extends PostgresTestBase {
     @Autowired
     private ItemGrantRepository itemGrantRepository;
 
+    private CharacterInventory character;
+
     @BeforeEach
-    void aCatalogAndAQueueForTheItemGrants() {
+    void aCharacterACatalogAndAQueueForTheItemGrants() {
+        character = SystemActor.INVENTORY_PLAYER_EVENT_CONSUMER.run(() -> characterInventoryRepository.save(
+                CharacterInventory.builder().playerId(player).coins(0L).build()));
         addItemTemplate(POTION);
 
         amqpAdmin.declareQueue(itemGrants);
@@ -114,6 +123,7 @@ class PurchaseEventConsumerTest extends PostgresTestBase {
         itemInstanceRepository.deleteAllInBatch();
         itemGrantRepository.deleteAllInBatch();
         itemTemplateRepository.deleteAllInBatch();
+        characterInventoryRepository.delete(character);
     }
 
     @Test
@@ -205,7 +215,7 @@ class PurchaseEventConsumerTest extends PostgresTestBase {
 
     private List<Integer> stackSizes() {
         return itemInstanceRepository.findAll().stream()
-                .filter(stack -> player.equals(stack.getPlayerId()))
+                .filter(stack -> character.getId().equals(stack.getCharacterInventory().getId()))
                 .map(ItemInstance::getQuantity)
                 .toList();
     }

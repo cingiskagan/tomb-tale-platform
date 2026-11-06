@@ -13,10 +13,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-import java.util.UUID;
-
 /**
- * One stack a player owns: copies of one template, up to its {@code maxStackSize}.
+ * One stack a character owns: copies of one template, up to its {@code maxStackSize}.
  */
 @Entity
 @Table(name = "item_instances")
@@ -26,9 +24,10 @@ import java.util.UUID;
 @SuperBuilder
 public class ItemInstance extends BaseEntity {
 
-    /** The owner's {@code publicId}. There is no foreign key, because players live in service-player (ADR 0014). */
-    @Column(name = "player_id", nullable = false)
-    private UUID playerId;
+    /** The character that owns the stack. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "character_inventory_id", nullable = false)
+    private CharacterInventory characterInventory;
 
     /** The catalog entry this stack holds copies of. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

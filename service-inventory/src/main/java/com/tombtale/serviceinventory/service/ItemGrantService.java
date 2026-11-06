@@ -2,9 +2,11 @@ package com.tombtale.serviceinventory.service;
 
 import com.tombtale.serviceinventory.domain.ItemGrantOutcome;
 import com.tombtale.serviceinventory.dto.event.PurchaseCreatedPayload;
+import com.tombtale.serviceinventory.entity.CharacterInventory;
 import com.tombtale.serviceinventory.entity.ItemGrant;
 import com.tombtale.serviceinventory.entity.ItemInstance;
 import com.tombtale.serviceinventory.entity.ItemTemplate;
+import com.tombtale.serviceinventory.repository.CharacterInventoryRepository;
 import com.tombtale.serviceinventory.repository.ItemGrantRepository;
 import com.tombtale.serviceinventory.repository.ItemInstanceRepository;
 import com.tombtale.serviceinventory.repository.ItemTemplateRepository;
@@ -12,19 +14,23 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Turns a purchase into an item grant: adds its items to the player's stacks and saves the item grant,
+ * Turns a purchase into an item grant: adds its items to the character's stacks and saves the item grant,
  * in one transaction.
  */
 @Service
 @RequiredArgsConstructor
 public class ItemGrantService {
 
+    private static final int SINGLE_CHARACTER = 1;
+    private static final String NO_SINGLE_CHARACTER = "NO_SINGLE_CHARACTER";
     private static final String UNKNOWN_ITEM_CODE = "UNKNOWN_ITEM_CODE";
 
+    private final CharacterInventoryRepository characterInventoryRepository;
     private final ItemTemplateRepository itemTemplateRepository;
     private final ItemInstanceRepository itemInstanceRepository;
     private final ItemGrantRepository itemGrantRepository;
@@ -41,19 +47,26 @@ public class ItemGrantService {
                 .orElseGet(() -> createItemGrant(purchase));
     }
 
+    /** Until the player can pick a character, the items go to their only one, locked first as every write does. */
     private ItemGrant createItemGrant(PurchaseCreatedPayload purchase) {
+        List<UUID> characters = characterInventoryRepository.findPublicIdsByPlayerId(purchase.playerPublicId());
+        if (characters.size() != SINGLE_CHARACTER) {
+            return saveItemGrant(purchase, null, ItemGrantOutcome.REJECTED, NO_SINGLE_CHARACTER);
+        }
+        CharacterInventory character =
+                characterInventoryRepository.findByPublicIdForUpdate(characters.getFirst()).orElseThrow();
         Optional<ItemTemplate> template = itemTemplateRepository.findByCode(purchase.itemCode());
         if (template.isEmpty()) {
-            return saveItemGrant(purchase, ItemGrantOutcome.REJECTED, UNKNOWN_ITEM_CODE);
+            return saveItemGrant(purchase, character.getPublicId(), ItemGrantOutcome.REJECTED, UNKNOWN_ITEM_CODE);
         }
-        addToStacks(purchase.playerPublicId(), template.get(), purchase.quantity());
-        return saveItemGrant(purchase, ItemGrantOutcome.GRANTED, null);
+        addToStacks(character, template.get(), purchase.quantity());
+        return saveItemGrant(purchase, character.getPublicId(), ItemGrantOutcome.GRANTED, null);
     }
 
     /** Fills the stacks that have room, oldest first, then opens new stacks for the rest (data-store-research.md). */
-    private void addToStacks(UUID playerId, ItemTemplate template, int quantity) {
+    private void addToStacks(CharacterInventory character, ItemTemplate template, int quantity) {
         int remaining = quantity;
-        for (ItemInstance stack : itemInstanceRepository.findStacksWithRoom(playerId, template)) {
+        for (ItemInstance stack : itemInstanceRepository.findStacksWithRoom(character, template)) {
             int added = Math.min(template.getMaxStackSize() - stack.getQuantity(), remaining);
             stack.setQuantity(stack.getQuantity() + added);
             remaining -= added;
@@ -64,7 +77,7 @@ public class ItemGrantService {
         while (remaining > 0) {
             int size = Math.min(template.getMaxStackSize(), remaining);
             itemInstanceRepository.save(ItemInstance.builder()
-                    .playerId(playerId)
+                    .characterInventory(character)
                     .template(template)
                     .quantity(size)
                     .build());
@@ -72,10 +85,12 @@ public class ItemGrantService {
         }
     }
 
-    private ItemGrant saveItemGrant(PurchaseCreatedPayload purchase, ItemGrantOutcome outcome, String reason) {
+    private ItemGrant saveItemGrant(
+            PurchaseCreatedPayload purchase, UUID characterId, ItemGrantOutcome outcome, String reason) {
         return itemGrantRepository.save(ItemGrant.builder()
                 .purchaseId(purchase.purchasePublicId())
                 .playerId(purchase.playerPublicId())
+                .characterId(characterId)
                 .itemCode(purchase.itemCode())
                 .quantity(purchase.quantity())
                 .outcome(outcome)
