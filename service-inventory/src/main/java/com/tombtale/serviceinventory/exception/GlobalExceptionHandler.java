@@ -45,4 +45,44 @@ public class GlobalExceptionHandler extends PlatformExceptionHandler {
         LOG.warn("Unknown stat: {}", ex.getMessage());
         return problem(HttpStatus.BAD_REQUEST, "Unknown Stat", ex.getMessage());
     }
+
+    /**
+     * @param ex the missing icon
+     * @return a 404 problem detail
+     */
+    @ExceptionHandler(IconNotFoundException.class)
+    public ProblemDetail handleIconNotFound(IconNotFoundException ex) {
+        LOG.warn("Icon not found: {}", ex.getMessage());
+        return problem(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
+    }
+
+    /**
+     * @param ex the icon hash a template names
+     * @return a 400 problem detail
+     */
+    @ExceptionHandler(UnknownIconException.class)
+    public ProblemDetail handleUnknownIcon(UnknownIconException ex) {
+        LOG.warn("Unknown icon: {}", ex.getMessage());
+        return problem(HttpStatus.BAD_REQUEST, "Unknown Icon", ex.getMessage());
+    }
+
+    /**
+     * @param ex an upload that is neither PNG nor WebP
+     * @return a 415 problem detail
+     */
+    @ExceptionHandler(UnsupportedIconException.class)
+    public ProblemDetail handleUnsupportedIcon(UnsupportedIconException ex) {
+        LOG.warn("Unsupported icon: {}", ex.getMessage());
+        return problem(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported Icon", ex.getMessage());
+    }
+
+    /**
+     * @param ex an upload over the limit
+     * @return a 413 problem detail
+     */
+    @ExceptionHandler(IconTooLargeException.class)
+    public ProblemDetail handleIconTooLarge(IconTooLargeException ex) {
+        LOG.warn("Icon too large: {}", ex.getMessage());
+        return problem(HttpStatus.CONTENT_TOO_LARGE, "Icon Too Large", ex.getMessage());
+    }
 }

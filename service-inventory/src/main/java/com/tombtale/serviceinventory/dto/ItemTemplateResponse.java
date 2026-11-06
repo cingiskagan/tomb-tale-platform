@@ -18,6 +18,7 @@ import java.util.UUID;
  * @param price        what a gray copy costs, in coins
  * @param baseStats    the stats every copy has before its bonus
  * @param assetKey     the Addressables address of its asset
+ * @param iconHash     the hash of its icon, or null for a generic one
  * @param retired      whether it is out of the game
  * @param version      what an edit sends back
  * @param createdAt    when it was created
@@ -32,6 +33,7 @@ public record ItemTemplateResponse(
         Long price,
         Map<Stat, Integer> baseStats,
         String assetKey,
+        String iconHash,
         boolean retired,
         Integer version,
         Instant createdAt,

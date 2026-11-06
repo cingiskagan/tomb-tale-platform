@@ -99,3 +99,6 @@ app:
 inventory:
   # The coins every new character starts with, written with their history row.
   starting-coins: ${INVENTORY_STARTING_COINS}
+  icons:
+    # The largest icon an upload may send. The multipart limit, 1MB, stays above it.
+    max-size: 256KB

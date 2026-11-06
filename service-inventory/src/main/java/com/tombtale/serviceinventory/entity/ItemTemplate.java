@@ -35,6 +35,7 @@ public class ItemTemplate extends BaseEntity {
     private static final int NAME_MAX_LENGTH = 100;
     private static final int ITEM_TYPE_MAX_LENGTH = 30;
     private static final int ASSET_KEY_MAX_LENGTH = 200;
+    private static final int ICON_HASH_LENGTH = 64;
 
     /** A stable key such as {@code SWORD_IRON}. A new code is a new template, so it never changes. */
     @Column(name = "code", nullable = false, unique = true, updatable = false, length = CODE_MAX_LENGTH)
@@ -67,6 +68,10 @@ public class ItemTemplate extends BaseEntity {
     /** The Addressables address of the template's asset in the Unity client. */
     @Column(name = "asset_key", nullable = false, length = ASSET_KEY_MAX_LENGTH)
     private String assetKey;
+
+    /** The SHA-256 of its icon in {@code item_icons}, or null for a generic one. */
+    @Column(name = "icon_hash", length = ICON_HASH_LENGTH)
+    private String iconHash;
 
     /** A retired template is never sold or granted again, and the copies players own keep it. */
     @Column(name = "retired", nullable = false)

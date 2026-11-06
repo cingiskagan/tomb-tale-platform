@@ -19,6 +19,7 @@ import java.util.Map;
  * @param price     what a gray copy costs, in coins
  * @param baseStats stat names with their values
  * @param assetKey  the Addressables address of its asset
+ * @param iconHash  the hash of its uploaded icon, or null
  */
 public record CreateItemTemplateRequest(
         @Schema(example = "SWORD_IRON")
@@ -48,6 +49,11 @@ public record CreateItemTemplateRequest(
         @Schema(example = "Items/Weapons/SwordIron")
         @NotBlank(message = "assetKey is required")
         @Size(max = 200, message = "assetKey is at most 200 characters")
-        String assetKey
+        String assetKey,
+
+        @Schema(example = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                description = "The hash an icon upload answered with, or null for none")
+        @Pattern(regexp = "[0-9a-f]{64}", message = "iconHash is a SHA-256 in lower-case hex")
+        String iconHash
 ) {
 }

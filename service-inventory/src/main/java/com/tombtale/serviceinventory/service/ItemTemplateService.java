@@ -9,7 +9,9 @@ import com.tombtale.serviceinventory.dto.UpdateItemTemplateRequest;
 import com.tombtale.serviceinventory.entity.ItemTemplate;
 import com.tombtale.serviceinventory.exception.DuplicateItemCodeException;
 import com.tombtale.serviceinventory.exception.ItemTemplateNotFoundException;
+import com.tombtale.serviceinventory.exception.UnknownIconException;
 import com.tombtale.serviceinventory.mapper.ItemTemplateMapper;
+import com.tombtale.serviceinventory.repository.ItemIconRepository;
 import com.tombtale.serviceinventory.repository.ItemTemplateRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -39,6 +41,7 @@ public class ItemTemplateService {
             Set.of("code", "name", "itemType", "price", "retired", "createdAt", "updatedAt");
 
     private final ItemTemplateRepository itemTemplateRepository;
+    private final ItemIconRepository itemIconRepository;
     private final ItemTemplateMapper itemTemplateMapper;
 
     /**
@@ -61,6 +64,7 @@ public class ItemTemplateService {
                 .price(request.price())
                 .baseStats(Stat.fromNames(request.baseStats()))
                 .assetKey(request.assetKey())
+                .iconHash(knownIcon(request.iconHash()))
                 .build());
         LOG.info("Created item template code={} id={}", saved.getCode(), saved.getPublicId());
         return itemTemplateMapper.toResponse(saved);
@@ -84,6 +88,7 @@ public class ItemTemplateService {
         template.setPrice(request.price());
         template.setBaseStats(Stat.fromNames(request.baseStats()));
         template.setAssetKey(request.assetKey());
+        template.setIconHash(knownIcon(request.iconHash()));
         ItemTemplate saved = itemTemplateRepository.saveAndFlush(template);
         LOG.info("Updated item template code={} to version {}", saved.getCode(), saved.getVersion());
         return itemTemplateMapper.toResponse(saved);
@@ -129,6 +134,14 @@ public class ItemTemplateService {
             }
         }
         return itemTemplateRepository.findAll(pageable).map(itemTemplateMapper::toResponse);
+    }
+
+    /** A template may have no icon, but one it names must have been uploaded. */
+    private String knownIcon(String hash) {
+        if (hash != null && !itemIconRepository.existsByHash(hash)) {
+            throw new UnknownIconException(hash);
+        }
+        return hash;
     }
 
     private ItemTemplate findEntity(UUID publicId) {

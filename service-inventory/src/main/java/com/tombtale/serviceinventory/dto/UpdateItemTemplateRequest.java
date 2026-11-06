@@ -3,6 +3,7 @@ package com.tombtale.serviceinventory.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
@@ -15,6 +16,7 @@ import java.util.Map;
  * @param price     what a gray copy costs, in coins
  * @param baseStats stat names with their values
  * @param assetKey  the Addressables address of its asset
+ * @param iconHash  the hash of its uploaded icon, or null
  * @param version   the version the edit started from. A stale one answers 409
  */
 public record UpdateItemTemplateRequest(
@@ -32,6 +34,11 @@ public record UpdateItemTemplateRequest(
         @NotBlank(message = "assetKey is required")
         @Size(max = 200, message = "assetKey is at most 200 characters")
         String assetKey,
+
+        @Schema(example = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                description = "The hash an icon upload answered with, or null for none")
+        @Pattern(regexp = "[0-9a-f]{64}", message = "iconHash is a SHA-256 in lower-case hex")
+        String iconHash,
 
         @Schema(example = "0")
         @NotNull(message = "version is required")

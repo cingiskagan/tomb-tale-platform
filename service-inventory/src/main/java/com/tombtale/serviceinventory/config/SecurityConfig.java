@@ -6,6 +6,7 @@ import com.tombtale.commons.security.RoleClaimConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -20,6 +21,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 /**
  * The same rules as service-commerce: {@code /api/**} needs a Keycloak JWT, and everything else is public.
+ * Reading an icon is the one API call that needs no token.
  */
 @Configuration
 @EnableWebSecurity
@@ -41,6 +43,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        // An icon is public, so the game and an img tag load it with no token.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/inventory/icons/*").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll())
                 .oauth2ResourceServer(
