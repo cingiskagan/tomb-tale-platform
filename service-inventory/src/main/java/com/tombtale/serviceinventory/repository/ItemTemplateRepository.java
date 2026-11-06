@@ -1,6 +1,9 @@
 package com.tombtale.serviceinventory.repository;
 
 import com.tombtale.serviceinventory.entity.ItemTemplate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
@@ -24,6 +27,16 @@ public interface ItemTemplateRepository extends JpaRepository<ItemTemplate, Long
      * @return whether a template, retired or not, has it
      */
     boolean existsByCode(String code);
+
+    /**
+     * Loads each template's set in the same query, so a page doesn't read its sets one by one.
+     *
+     * @param pageable the page
+     * @return one page of templates
+     */
+    @Override
+    @EntityGraph(attributePaths = "itemSet")
+    Page<ItemTemplate> findAll(Pageable pageable);
 
     /**
      * @param publicId the template's id in the API

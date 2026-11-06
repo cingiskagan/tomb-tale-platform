@@ -7,6 +7,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import lombok.AccessLevel;
@@ -72,6 +75,11 @@ public class ItemTemplate extends BaseEntity {
     /** The SHA-256 of its icon in {@code item_icons}, or null for a generic one. */
     @Column(name = "icon_hash", length = ICON_HASH_LENGTH)
     private String iconHash;
+
+    /** The one set the template belongs to, or null. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "item_set_id")
+    private ItemSet itemSet;
 
     /** A retired template is never sold or granted again, and the copies players own keep it. */
     @Column(name = "retired", nullable = false)

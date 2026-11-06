@@ -9,6 +9,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * A new template. Inventory checks the stat names, and sets the stack size from the type.
@@ -20,6 +21,7 @@ import java.util.Map;
  * @param baseStats stat names with their values
  * @param assetKey  the Addressables address of its asset
  * @param iconHash  the hash of its uploaded icon, or null
+ * @param itemSetId the set it belongs to, or null
  */
 public record CreateItemTemplateRequest(
         @Schema(example = "SWORD_IRON")
@@ -54,6 +56,9 @@ public record CreateItemTemplateRequest(
         @Schema(example = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
                 description = "The hash an icon upload answered with, or null for none")
         @Pattern(regexp = "[0-9a-f]{64}", message = "iconHash is a SHA-256 in lower-case hex")
-        String iconHash
+        String iconHash,
+
+        @Schema(description = "The publicId of the item set it belongs to, or null for none")
+        UUID itemSetId
 ) {
 }

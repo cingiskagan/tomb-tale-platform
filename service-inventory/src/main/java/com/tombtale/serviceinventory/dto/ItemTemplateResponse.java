@@ -19,6 +19,7 @@ import java.util.UUID;
  * @param baseStats    the stats every copy has before its bonus
  * @param assetKey     the Addressables address of its asset
  * @param iconHash     the hash of its icon, or null for a generic one
+ * @param itemSetId    the publicId of its set, or null
  * @param retired      whether it is out of the game
  * @param version      what an edit sends back
  * @param createdAt    when it was created
@@ -34,6 +35,7 @@ public record ItemTemplateResponse(
         Map<Stat, Integer> baseStats,
         String assetKey,
         String iconHash,
+        UUID itemSetId,
         boolean retired,
         Integer version,
         Instant createdAt,

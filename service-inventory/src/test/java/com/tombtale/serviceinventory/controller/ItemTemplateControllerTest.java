@@ -88,7 +88,7 @@ class ItemTemplateControllerTest extends PostgresTestBase {
         create(SWORD)
                 .andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath(PROBLEM_TITLE).value("Duplicate Item Code"));
+                .andExpect(jsonPath(PROBLEM_TITLE).value("Duplicate Code"));
     }
 
     @Test

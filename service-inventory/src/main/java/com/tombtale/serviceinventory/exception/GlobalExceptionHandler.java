@@ -30,10 +30,30 @@ public class GlobalExceptionHandler extends PlatformExceptionHandler {
      * @param ex the code that is taken
      * @return a 409 problem detail
      */
-    @ExceptionHandler(DuplicateItemCodeException.class)
-    public ProblemDetail handleDuplicateItemCode(DuplicateItemCodeException ex) {
-        LOG.warn("Duplicate item code: {}", ex.getMessage());
-        return problem(HttpStatus.CONFLICT, "Duplicate Item Code", ex.getMessage());
+    @ExceptionHandler(DuplicateCodeException.class)
+    public ProblemDetail handleDuplicateCode(DuplicateCodeException ex) {
+        LOG.warn("Duplicate code: {}", ex.getMessage());
+        return problem(HttpStatus.CONFLICT, "Duplicate Code", ex.getMessage());
+    }
+
+    /**
+     * @param ex the missing set
+     * @return a 404 problem detail
+     */
+    @ExceptionHandler(ItemSetNotFoundException.class)
+    public ProblemDetail handleItemSetNotFound(ItemSetNotFoundException ex) {
+        LOG.warn("Item set not found: {}", ex.getMessage());
+        return problem(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
+    }
+
+    /**
+     * @param ex the set a template names
+     * @return a 400 problem detail
+     */
+    @ExceptionHandler(UnknownItemSetException.class)
+    public ProblemDetail handleUnknownItemSet(UnknownItemSetException ex) {
+        LOG.warn("Unknown item set: {}", ex.getMessage());
+        return problem(HttpStatus.BAD_REQUEST, "Unknown Item Set", ex.getMessage());
     }
 
     /**

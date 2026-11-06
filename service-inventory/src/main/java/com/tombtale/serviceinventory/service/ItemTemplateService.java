@@ -6,19 +6,21 @@ import com.tombtale.serviceinventory.domain.Stat;
 import com.tombtale.serviceinventory.dto.CreateItemTemplateRequest;
 import com.tombtale.serviceinventory.dto.ItemTemplateResponse;
 import com.tombtale.serviceinventory.dto.UpdateItemTemplateRequest;
+import com.tombtale.serviceinventory.entity.ItemSet;
 import com.tombtale.serviceinventory.entity.ItemTemplate;
-import com.tombtale.serviceinventory.exception.DuplicateItemCodeException;
+import com.tombtale.serviceinventory.exception.DuplicateCodeException;
 import com.tombtale.serviceinventory.exception.ItemTemplateNotFoundException;
 import com.tombtale.serviceinventory.exception.UnknownIconException;
+import com.tombtale.serviceinventory.exception.UnknownItemSetException;
 import com.tombtale.serviceinventory.mapper.ItemTemplateMapper;
 import com.tombtale.serviceinventory.repository.ItemIconRepository;
+import com.tombtale.serviceinventory.repository.ItemSetRepository;
 import com.tombtale.serviceinventory.repository.ItemTemplateRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +44,7 @@ public class ItemTemplateService {
 
     private final ItemTemplateRepository itemTemplateRepository;
     private final ItemIconRepository itemIconRepository;
+    private final ItemSetRepository itemSetRepository;
     private final ItemTemplateMapper itemTemplateMapper;
 
     /**
@@ -49,12 +52,12 @@ public class ItemTemplateService {
      *
      * @param request the new template
      * @return the saved template
-     * @throws DuplicateItemCodeException if another template has the code
+     * @throws DuplicateCodeException if another template has the code
      */
     @Transactional
     public ItemTemplateResponse createTemplate(CreateItemTemplateRequest request) {
         if (itemTemplateRepository.existsByCode(request.code())) {
-            throw new DuplicateItemCodeException(request.code());
+            throw new DuplicateCodeException("item template", request.code());
         }
         ItemTemplate saved = itemTemplateRepository.save(ItemTemplate.builder()
                 .code(request.code())
@@ -65,6 +68,7 @@ public class ItemTemplateService {
                 .baseStats(Stat.fromNames(request.baseStats()))
                 .assetKey(request.assetKey())
                 .iconHash(knownIcon(request.iconHash()))
+                .itemSet(knownSet(request.itemSetId()))
                 .build());
         LOG.info("Created item template code={} id={}", saved.getCode(), saved.getPublicId());
         return itemTemplateMapper.toResponse(saved);
@@ -89,6 +93,7 @@ public class ItemTemplateService {
         template.setBaseStats(Stat.fromNames(request.baseStats()));
         template.setAssetKey(request.assetKey());
         template.setIconHash(knownIcon(request.iconHash()));
+        template.setItemSet(knownSet(request.itemSetId()));
         ItemTemplate saved = itemTemplateRepository.saveAndFlush(template);
         LOG.info("Updated item template code={} to version {}", saved.getCode(), saved.getVersion());
         return itemTemplateMapper.toResponse(saved);
@@ -128,11 +133,7 @@ public class ItemTemplateService {
      * @throws InvalidSortFieldException if the sort names another field
      */
     public Page<ItemTemplateResponse> listTemplates(Pageable pageable) {
-        for (Sort.Order order : pageable.getSort()) {
-            if (!SORTABLE_FIELDS.contains(order.getProperty())) {
-                throw new InvalidSortFieldException(order.getProperty());
-            }
-        }
+        SortAllowList.check(pageable.getSort(), SORTABLE_FIELDS);
         return itemTemplateRepository.findAll(pageable).map(itemTemplateMapper::toResponse);
     }
 
@@ -142,6 +143,11 @@ public class ItemTemplateService {
             throw new UnknownIconException(hash);
         }
         return hash;
+    }
+
+    private ItemSet knownSet(UUID publicId) {
+        return publicId == null ? null
+                : itemSetRepository.findByPublicId(publicId).orElseThrow(() -> new UnknownItemSetException(publicId));
     }
 
     private ItemTemplate findEntity(UUID publicId) {
