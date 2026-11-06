@@ -2,6 +2,7 @@ package com.tombtale.serviceinventory.repository;
 
 import com.tombtale.serviceinventory.config.JpaConfig;
 import com.tombtale.serviceinventory.entity.ItemTemplate;
+import com.tombtale.serviceinventory.support.ItemTemplates;
 import com.tombtale.serviceinventory.support.FixedAuthorTestBase;
 
 import org.hibernate.exception.ConstraintViolationException;
@@ -53,10 +54,7 @@ class ItemTemplateRepositoryTest extends FixedAuthorTestBase {
     }
 
     private static ItemTemplate aTemplate(String code, int maxStackSize) {
-        return ItemTemplate.builder()
-                .code(code)
-                .maxStackSize(maxStackSize)
-                .build();
+        return ItemTemplates.aTemplate(code).maxStackSize(maxStackSize).build();
     }
 
     private void persist(ItemTemplate template) {

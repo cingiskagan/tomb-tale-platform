@@ -20,7 +20,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 /**
  * The same rules as service-commerce: {@code /api/**} needs a Keycloak JWT, and everything else is public.
- * The service has no endpoint yet, so this keeps actuator open and readies the API.
  */
 @Configuration
 @EnableWebSecurity
