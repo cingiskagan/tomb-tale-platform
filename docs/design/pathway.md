@@ -60,7 +60,7 @@ Each template carries an `assetKey`, the Addressables address of its asset, beca
 
 Clients know only the template rows, and so does the validator in Unity CI. It fails the build for an asset that no template uses, because the template must exist first. A template with no asset is only a warning.
 
-Open questions: which credentials Unity CI uses to read the template rows, and whether a retired template still counts toward its set.
+Open question: which credentials Unity CI uses to read the template rows. A retired template still counts toward its set ([inventory design](inventory-design.md#items)).
 
 ## 2. Town
 

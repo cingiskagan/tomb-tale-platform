@@ -11,6 +11,7 @@ import com.tombtale.serviceinventory.repository.CharacterInventoryRepository;
 import com.tombtale.serviceinventory.repository.ItemGrantRepository;
 import com.tombtale.serviceinventory.repository.ItemInstanceRepository;
 import com.tombtale.serviceinventory.repository.ItemTemplateRepository;
+import com.tombtale.serviceinventory.support.ItemTemplates;
 import com.tombtale.serviceinventory.support.FixedAuthorTestBase;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -139,12 +140,26 @@ class ItemGrantServiceTest extends FixedAuthorTestBase {
         assertThat(stackSizes(second)).isEmpty();
     }
 
+    /** A retired template keeps the copies players own, and grants no more. */
+    @Test
+    void rejectsARetiredTemplateAndKeepsTheCopiesAlreadyOwned() {
+        ItemTemplate sword = aTemplate(SWORD, 1);
+        aStack(character, sword, 1);
+        sword.setRetired(true);
+
+        ItemGrant itemGrant = itemGrantService.findOrCreateItemGrant(aPurchase(SWORD, 1));
+
+        assertThat(itemGrant.getOutcome()).isEqualTo(ItemGrantOutcome.REJECTED);
+        assertThat(itemGrant.getReason()).isEqualTo("RETIRED_ITEM_CODE");
+        assertThat(stackSizes(character)).containsExactly(1);
+    }
+
     private CharacterInventory aCharacterOf(UUID owner) {
         return characterInventoryRepository.save(CharacterInventory.builder().playerId(owner).coins(0L).build());
     }
 
     private ItemTemplate aTemplate(String code, int maxStackSize) {
-        return itemTemplateRepository.save(ItemTemplate.builder().code(code).maxStackSize(maxStackSize).build());
+        return itemTemplateRepository.save(ItemTemplates.aTemplate(code).maxStackSize(maxStackSize).build());
     }
 
     private void aStack(CharacterInventory owner, ItemTemplate template, int quantity) {

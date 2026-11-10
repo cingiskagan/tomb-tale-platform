@@ -1,0 +1,37 @@
+<p-dialog
+  [header]="isEditMode ? 'Edit Item Set' : 'New Item Set'"
+  [visible]="visible"
+  (visibleChange)="$event || close()"
+  [modal]="true"
+  [style]="{ width: '30rem' }"
+  styleClass="item-dialog"
+>
+  @if (notice) {
+    <p-message [severity]="notice.severity" [text]="notice.text" styleClass="mb-3" />
+  }
+
+  <form [formGroup]="form" (ngSubmit)="save()">
+    <div class="field">
+      <label for="setCode">Code</label>
+      <input id="setCode" pInputText formControlName="code" class="w-full" placeholder="IRON_SET" />
+    </div>
+
+    <div class="field">
+      <label for="setName">Name</label>
+      <input id="setName" pInputText formControlName="name" class="w-full" />
+    </div>
+
+    <app-stats-editor [rows]="form.controls.bonus" label="Bonus for the complete set" />
+  </form>
+
+  <ng-template #footer>
+    <p-button label="Cancel" icon="pi pi-times" severity="secondary" [outlined]="true" (onClick)="close()" />
+    <p-button
+      label="Save"
+      icon="pi pi-check"
+      [disabled]="form.invalid || !loaded || saving"
+      [loading]="saving"
+      (onClick)="save()"
+    />
+  </ng-template>
+</p-dialog>

@@ -10,6 +10,7 @@ nginx sends a request to the `location` in `nginx.conf` that matches it.
 | --- | --- |
 | `/api/v1/players` | service-player on host port 8081 |
 | `/api/v1/purchases` | service-commerce on host port 8082 |
+| `/api/v1/inventory` | service-inventory on host port 8083 |
 | `/realms/`, `/resources/` | Keycloak login pages and OIDC endpoints |
 | any other path | 404 from nginx |
 

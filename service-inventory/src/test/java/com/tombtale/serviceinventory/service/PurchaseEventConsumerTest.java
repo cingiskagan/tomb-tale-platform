@@ -34,11 +34,11 @@ import com.tombtale.serviceinventory.dto.event.PurchaseCreatedPayload;
 import com.tombtale.serviceinventory.entity.CharacterInventory;
 import com.tombtale.serviceinventory.entity.ItemGrant;
 import com.tombtale.serviceinventory.entity.ItemInstance;
-import com.tombtale.serviceinventory.entity.ItemTemplate;
 import com.tombtale.serviceinventory.repository.CharacterInventoryRepository;
 import com.tombtale.serviceinventory.repository.ItemGrantRepository;
 import com.tombtale.serviceinventory.repository.ItemInstanceRepository;
 import com.tombtale.serviceinventory.repository.ItemTemplateRepository;
+import com.tombtale.serviceinventory.support.ItemTemplates;
 import com.tombtale.serviceinventory.support.PostgresTestBase;
 
 import tools.jackson.databind.JsonNode;
@@ -113,7 +113,7 @@ class PurchaseEventConsumerTest extends PostgresTestBase {
     private void addItemTemplate(String itemCode) {
         SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(Jwt.withTokenValue("token")
                 .header("alg", "none").claim(PublicIdClaim.CLAIM, ADMIN.toString()).build(), List.of()));
-        itemTemplateRepository.save(ItemTemplate.builder().code(itemCode).maxStackSize(POTION_STACK).build());
+        itemTemplateRepository.save(ItemTemplates.aTemplate(itemCode).maxStackSize(POTION_STACK).build());
         SecurityContextHolder.clearContext();
     }
 

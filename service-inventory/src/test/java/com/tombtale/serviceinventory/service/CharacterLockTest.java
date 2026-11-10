@@ -10,6 +10,7 @@ import com.tombtale.serviceinventory.repository.CharacterInventoryRepository;
 import com.tombtale.serviceinventory.repository.ItemGrantRepository;
 import com.tombtale.serviceinventory.repository.ItemInstanceRepository;
 import com.tombtale.serviceinventory.repository.ItemTemplateRepository;
+import com.tombtale.serviceinventory.support.ItemTemplates;
 import com.tombtale.serviceinventory.support.FixedAuthorTestBase;
 
 import org.junit.jupiter.api.AfterEach;
@@ -82,7 +83,7 @@ class CharacterLockTest extends FixedAuthorTestBase {
     @BeforeEach
     void aCharacterAndAPotion() {
         character = characterInventoryRepository.save(CharacterInventory.builder().playerId(player).coins(0L).build());
-        potion = itemTemplateRepository.save(ItemTemplate.builder().code(POTION).maxStackSize(POTION_STACK).build());
+        potion = itemTemplateRepository.save(ItemTemplates.aTemplate(POTION).maxStackSize(POTION_STACK).build());
     }
 
     @AfterEach
