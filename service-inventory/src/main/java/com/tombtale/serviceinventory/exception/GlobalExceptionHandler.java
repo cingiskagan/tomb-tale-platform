@@ -15,26 +15,42 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler extends PlatformExceptionHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
-    private static final String NOT_FOUND = "Not Found";
 
     /**
-     * @param ex the missing template
+     * Each exception's message names what is missing.
+     *
+     * @param ex a template, set, icon, character or item no row has
      * @return a 404 problem detail
      */
-    @ExceptionHandler(ItemTemplateNotFoundException.class)
-    public ProblemDetail handleItemTemplateNotFound(ItemTemplateNotFoundException ex) {
-        LOG.warn("Item template not found: {}", ex.getMessage());
-        return problem(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage());
+    @ExceptionHandler({
+            ItemTemplateNotFoundException.class,
+            ItemSetNotFoundException.class,
+            IconNotFoundException.class,
+            CharacterNotFoundException.class,
+            ItemNotFoundException.class})
+    public ProblemDetail handleNotFound(RuntimeException ex) {
+        LOG.warn("Not found: {}", ex.getMessage());
+        return problem(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
     }
 
     /**
-     * @param ex the character inventory doesn't know
-     * @return a 404 problem detail
+     * @param ex an equipped item named where a bag item must be
+     * @return a 409 problem detail
      */
-    @ExceptionHandler(CharacterNotFoundException.class)
-    public ProblemDetail handleCharacterNotFound(CharacterNotFoundException ex) {
-        LOG.warn("Character not found: {}", ex.getMessage());
-        return problem(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage());
+    @ExceptionHandler(ItemNotInBagException.class)
+    public ProblemDetail handleItemNotInBag(ItemNotInBagException ex) {
+        LOG.warn("Item not in the bag: {}", ex.getMessage());
+        return problem(HttpStatus.CONFLICT, "Item Not In Bag", ex.getMessage());
+    }
+
+    /**
+     * @param ex a slot that doesn't take the item's type
+     * @return a 400 problem detail
+     */
+    @ExceptionHandler(WrongSlotException.class)
+    public ProblemDetail handleWrongSlot(WrongSlotException ex) {
+        LOG.warn("Wrong slot: {}", ex.getMessage());
+        return problem(HttpStatus.BAD_REQUEST, "Wrong Slot", ex.getMessage());
     }
 
     /**
@@ -45,16 +61,6 @@ public class GlobalExceptionHandler extends PlatformExceptionHandler {
     public ProblemDetail handleDuplicateCode(DuplicateCodeException ex) {
         LOG.warn("Duplicate code: {}", ex.getMessage());
         return problem(HttpStatus.CONFLICT, "Duplicate Code", ex.getMessage());
-    }
-
-    /**
-     * @param ex the missing set
-     * @return a 404 problem detail
-     */
-    @ExceptionHandler(ItemSetNotFoundException.class)
-    public ProblemDetail handleItemSetNotFound(ItemSetNotFoundException ex) {
-        LOG.warn("Item set not found: {}", ex.getMessage());
-        return problem(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage());
     }
 
     /**
@@ -75,16 +81,6 @@ public class GlobalExceptionHandler extends PlatformExceptionHandler {
     public ProblemDetail handleUnknownStat(UnknownStatException ex) {
         LOG.warn("Unknown stat: {}", ex.getMessage());
         return problem(HttpStatus.BAD_REQUEST, "Unknown Stat", ex.getMessage());
-    }
-
-    /**
-     * @param ex the missing icon
-     * @return a 404 problem detail
-     */
-    @ExceptionHandler(IconNotFoundException.class)
-    public ProblemDetail handleIconNotFound(IconNotFoundException ex) {
-        LOG.warn("Icon not found: {}", ex.getMessage());
-        return problem(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage());
     }
 
     /**
