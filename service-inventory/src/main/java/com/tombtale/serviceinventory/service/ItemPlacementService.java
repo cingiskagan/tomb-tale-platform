@@ -89,6 +89,33 @@ public class ItemPlacementService {
         return inventoryView.build(character, items);
     }
 
+    /**
+     * Moves a bag item to a cell, and the item already there, if any, to the cell it left.
+     *
+     * @param characterId the character
+     * @param cell        the cell to move to
+     * @param itemId      an item in the character's bag
+     * @param caller      who asks
+     * @return the inventory after the change
+     * @throws ItemNotInBagException if the item is equipped
+     */
+    @Transactional
+    public CharacterInventoryResponse move(UUID characterId, int cell, UUID itemId, InventoryCaller caller) {
+        CharacterInventory character = lock(characterId, caller);
+        List<ItemInstance> items = itemInstanceRepository.findByCharacterInventory(character);
+        ItemInstance item = find(items, itemId);
+        Integer from = item.getBagPosition();
+        if (from == null) {
+            throw new ItemNotInBagException(itemId);
+        }
+        items.stream()
+                .filter(other -> Objects.equals(other.getBagPosition(), cell))
+                .findFirst()
+                .ifPresent(other -> other.setBagPosition(from));
+        item.setBagPosition(cell);
+        return inventoryView.build(character, items);
+    }
+
     private CharacterInventory lock(UUID characterId, InventoryCaller caller) {
         CharacterInventory character = characterInventoryRepository.findByPublicIdForUpdate(characterId)
                 .orElseThrow(() -> new CharacterNotFoundException(characterId));
