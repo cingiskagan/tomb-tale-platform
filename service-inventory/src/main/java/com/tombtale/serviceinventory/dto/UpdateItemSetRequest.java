@@ -1,6 +1,5 @@
 package com.tombtale.serviceinventory.dto;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -22,7 +21,6 @@ public record UpdateItemSetRequest(
         @NotNull(message = "bonus is required")
         Map<String, @NotNull(message = "a stat needs a value") Integer> bonus,
 
-        @Schema(example = "0")
         @NotNull(message = "version is required")
         Integer version
 ) {

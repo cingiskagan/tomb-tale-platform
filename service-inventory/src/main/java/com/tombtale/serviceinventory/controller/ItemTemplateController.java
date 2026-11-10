@@ -6,9 +6,6 @@ import com.tombtale.serviceinventory.dto.CreateItemTemplateRequest;
 import com.tombtale.serviceinventory.dto.ItemTemplateResponse;
 import com.tombtale.serviceinventory.dto.UpdateItemTemplateRequest;
 import com.tombtale.serviceinventory.service.ItemTemplateService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -34,8 +31,6 @@ import java.util.UUID;
 @RequestMapping("/api/v1/inventory/templates")
 @RequiredArgsConstructor
 @PreAuthorize(RoleConstants.IS_ADMIN)
-@Tag(name = "Item templates", description = "The item catalog")
-@SecurityRequirement(name = "bearer-jwt")
 public class ItemTemplateController {
 
     private static final int DEFAULT_PAGE_SIZE = 20;
@@ -43,12 +38,13 @@ public class ItemTemplateController {
     private final ItemTemplateService itemTemplateService;
 
     /**
+     * A taken code answers 409.
+     *
      * @param request the new template
      * @return the saved template
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Create a template", description = "A taken code answers 409.")
     public ItemTemplateResponse createTemplate(@Valid @RequestBody CreateItemTemplateRequest request) {
         return itemTemplateService.createTemplate(request);
     }
@@ -58,7 +54,6 @@ public class ItemTemplateController {
      * @return one page of templates, retired ones too
      */
     @GetMapping
-    @Operation(summary = "List templates", description = "Retired templates are included.")
     public PagedResponse<ItemTemplateResponse> listTemplates(
             @PageableDefault(size = DEFAULT_PAGE_SIZE, sort = "code", direction = Sort.Direction.ASC)
             Pageable pageable) {
@@ -70,29 +65,30 @@ public class ItemTemplateController {
      * @return the template
      */
     @GetMapping("/{publicId}")
-    @Operation(summary = "Get a template")
     public ItemTemplateResponse findTemplate(@PathVariable UUID publicId) {
         return itemTemplateService.findTemplate(publicId);
     }
 
     /**
+     * A stale version answers 409.
+     *
      * @param publicId the template
      * @param request  its new fields and the version the edit started from
      * @return the template after the edit
      */
     @PutMapping("/{publicId}")
-    @Operation(summary = "Edit a template", description = "A stale version answers 409.")
     public ItemTemplateResponse updateTemplate(
             @PathVariable UUID publicId, @Valid @RequestBody UpdateItemTemplateRequest request) {
         return itemTemplateService.updateTemplate(publicId, request);
     }
 
     /**
+     * A retired template is never sold or granted again.
+     *
      * @param publicId the template
      * @return the retired template
      */
     @PostMapping("/{publicId}/retire")
-    @Operation(summary = "Retire a template", description = "It is never sold or granted again.")
     public ItemTemplateResponse retireTemplate(@PathVariable UUID publicId) {
         return itemTemplateService.retireTemplate(publicId);
     }

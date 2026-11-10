@@ -20,7 +20,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
 
 /**
- * The same rules as service-commerce: {@code /api/**} needs a Keycloak JWT, and everything else is public.
+ * The same rules as service-commerce: everything needs a Keycloak JWT except the health and info probes.
  * Reading an icon is the one API call that needs no token.
  */
 @Configuration
@@ -45,8 +45,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         // An icon is public, so the game and an img tag load it with no token.
                         .requestMatchers(HttpMethod.GET, "/api/v1/inventory/icons/*").permitAll()
-                        .requestMatchers("/api/**").authenticated()
-                        .anyRequest().permitAll())
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .anyRequest().authenticated())
                 .oauth2ResourceServer(
                         oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
         return http.build();

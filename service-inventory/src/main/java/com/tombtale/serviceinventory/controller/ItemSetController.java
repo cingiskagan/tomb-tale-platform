@@ -6,9 +6,6 @@ import com.tombtale.serviceinventory.dto.CreateItemSetRequest;
 import com.tombtale.serviceinventory.dto.ItemSetResponse;
 import com.tombtale.serviceinventory.dto.UpdateItemSetRequest;
 import com.tombtale.serviceinventory.service.ItemSetService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -34,8 +31,6 @@ import java.util.UUID;
 @RequestMapping("/api/v1/inventory/sets")
 @RequiredArgsConstructor
 @PreAuthorize(RoleConstants.IS_ADMIN)
-@Tag(name = "Item sets", description = "Groups of templates with a bonus for the complete set")
-@SecurityRequirement(name = "bearer-jwt")
 public class ItemSetController {
 
     private static final int DEFAULT_PAGE_SIZE = 20;
@@ -43,12 +38,13 @@ public class ItemSetController {
     private final ItemSetService itemSetService;
 
     /**
+     * A taken code answers 409.
+     *
      * @param request the new set
      * @return the saved set
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Create an item set", description = "A taken code answers 409.")
     public ItemSetResponse createSet(@Valid @RequestBody CreateItemSetRequest request) {
         return itemSetService.createSet(request);
     }
@@ -58,7 +54,6 @@ public class ItemSetController {
      * @return one page of sets
      */
     @GetMapping
-    @Operation(summary = "List item sets")
     public PagedResponse<ItemSetResponse> listSets(
             @PageableDefault(size = DEFAULT_PAGE_SIZE, sort = "code", direction = Sort.Direction.ASC)
             Pageable pageable) {
@@ -70,18 +65,18 @@ public class ItemSetController {
      * @return the set
      */
     @GetMapping("/{publicId}")
-    @Operation(summary = "Get an item set")
     public ItemSetResponse findSet(@PathVariable UUID publicId) {
         return itemSetService.findSet(publicId);
     }
 
     /**
+     * A stale version answers 409.
+     *
      * @param publicId the set
      * @param request  its new fields and the version the edit started from
      * @return the set after the edit
      */
     @PutMapping("/{publicId}")
-    @Operation(summary = "Edit an item set", description = "A stale version answers 409.")
     public ItemSetResponse updateSet(@PathVariable UUID publicId, @Valid @RequestBody UpdateItemSetRequest request) {
         return itemSetService.updateSet(publicId, request);
     }

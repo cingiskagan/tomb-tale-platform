@@ -88,13 +88,6 @@
 			<version>${mapstruct.version}</version>
 		</dependency>
 
-		<!-- === SpringDoc OpenAPI (Swagger UI) === -->
-		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>3.1.0</version>
-		</dependency>
-
 		<!-- === PostgreSQL Driver === -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
