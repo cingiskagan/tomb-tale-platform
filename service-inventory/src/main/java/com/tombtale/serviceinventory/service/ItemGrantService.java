@@ -1,5 +1,6 @@
 package com.tombtale.serviceinventory.service;
 
+import com.tombtale.serviceinventory.domain.BagCells;
 import com.tombtale.serviceinventory.domain.ItemGrantOutcome;
 import com.tombtale.serviceinventory.domain.Rarity;
 import com.tombtale.serviceinventory.dto.event.PurchaseCreatedPayload;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.PrimitiveIterator;
 import java.util.UUID;
 
 /**
@@ -68,7 +70,10 @@ public class ItemGrantService {
         return saveItemGrant(purchase, character.getPublicId(), ItemGrantOutcome.GRANTED, null);
     }
 
-    /** A purchase grants gray copies with no bonus. They fill the stacks that have room, then open new ones. */
+    /**
+     * A purchase grants gray copies with no bonus. They fill the stacks that have room, then open new ones in the
+     * lowest free cells.
+     */
     private void addToStacks(CharacterInventory character, ItemTemplate template, int quantity) {
         int remaining = quantity;
         for (ItemInstance stack : itemInstanceRepository.findStacksWithRoom(character, template, Rarity.GRAY)) {
@@ -79,12 +84,14 @@ public class ItemGrantService {
                 return;
             }
         }
+        PrimitiveIterator.OfInt freeCells = BagCells.free(itemInstanceRepository.findBagPositions(character));
         while (remaining > 0) {
             int size = Math.min(template.getMaxStackSize(), remaining);
             itemInstanceRepository.save(ItemInstance.builder()
                     .characterInventory(character)
                     .template(template)
                     .quantity(size)
+                    .bagPosition(freeCells.nextInt())
                     .build());
             remaining -= size;
         }

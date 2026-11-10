@@ -1,6 +1,7 @@
 package com.tombtale.serviceinventory.entity;
 
 import com.tombtale.commons.entity.BaseEntity;
+import com.tombtale.serviceinventory.domain.EquipmentSlot;
 import com.tombtale.serviceinventory.domain.Rarity;
 import com.tombtale.serviceinventory.domain.Stat;
 import jakarta.persistence.Column;
@@ -24,6 +25,7 @@ import java.util.Map;
 
 /**
  * One stack a character owns: copies of one template and rarity, up to the template's {@code maxStackSize}.
+ * It sits in an equipment slot or in a bag cell, never both.
  */
 @Entity
 @Table(name = "item_instances")
@@ -34,6 +36,7 @@ import java.util.Map;
 public class ItemInstance extends BaseEntity {
 
     private static final int RARITY_MAX_LENGTH = 10;
+    private static final int EQUIPMENT_SLOT_MAX_LENGTH = 20;
 
     /** The character that owns the stack. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -60,6 +63,15 @@ public class ItemInstance extends BaseEntity {
     /** How many copies the stack holds, from 1 to the template's {@code maxStackSize}. */
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
+
+    /** The slot the item is equipped in, or null while it is in the bag. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "equipment_slot", length = EQUIPMENT_SLOT_MAX_LENGTH)
+    private EquipmentSlot equipmentSlot;
+
+    /** The item's cell in the bag, or null while it is equipped. */
+    @Column(name = "bag_position")
+    private Integer bagPosition;
 
     /** An item grant reads a stack before it fills it, so of two item grants on one stack, the later commit fails. */
     @Version

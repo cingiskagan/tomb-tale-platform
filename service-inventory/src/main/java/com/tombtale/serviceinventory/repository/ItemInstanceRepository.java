@@ -30,4 +30,12 @@ public interface ItemInstanceRepository extends JpaRepository<ItemInstance, Long
             @Param("character") CharacterInventory character,
             @Param("template") ItemTemplate template,
             @Param("rarity") Rarity rarity);
+
+    /**
+     * @param character the character that owns the items
+     * @return the bag cells its items take, in no order
+     */
+    @Query("select i.bagPosition from ItemInstance i where i.characterInventory = :character "
+            + "and i.bagPosition is not null")
+    List<Integer> findBagPositions(@Param("character") CharacterInventory character);
 }

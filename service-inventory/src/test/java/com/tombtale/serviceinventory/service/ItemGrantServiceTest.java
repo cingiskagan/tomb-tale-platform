@@ -44,6 +44,8 @@ class ItemGrantServiceTest extends FixedAuthorTestBase {
     private static final int QUANTITY = 5;
     private static final int SWORD_COPIES = 3;
     private static final int BONUS_HP = 40;
+    /** The free cells around full stacks in cells 0 and 2. */
+    private static final List<Integer> CELLS_AROUND_THE_GAP = List.of(1, 3, 4);
 
     private final UUID player = UUID.randomUUID();
 
@@ -66,6 +68,7 @@ class ItemGrantServiceTest extends FixedAuthorTestBase {
     private TestEntityManager entityManager;
 
     private CharacterInventory character;
+    private int nextCell;
 
     @BeforeEach
     void aCharacterOfThePlayer() {
@@ -117,6 +120,21 @@ class ItemGrantServiceTest extends FixedAuthorTestBase {
         itemGrantService.findOrCreateItemGrant(aPurchase(SWORD, SWORD_COPIES));
 
         assertThat(stackSizes(character)).containsExactly(1, 1, 1);
+    }
+
+    @Test
+    void opensNewStacksInTheLowestFreeCells() {
+        ItemTemplate potion = aTemplate(POTION, POTION_STACK);
+        aTemplate(SWORD, 1);
+        aStack(character, potion, POTION_STACK);
+        aStack(character, potion, POTION_STACK).setBagPosition(2);
+
+        itemGrantService.findOrCreateItemGrant(aPurchase(SWORD, SWORD_COPIES));
+
+        assertThat(stacks(character).stream()
+                .filter(stack -> SWORD.equals(stack.getTemplate().getCode()))
+                .map(ItemInstance::getBagPosition))
+                .containsExactlyElementsOf(CELLS_AROUND_THE_GAP);
     }
 
     @Test
@@ -180,27 +198,34 @@ class ItemGrantServiceTest extends FixedAuthorTestBase {
         return itemTemplateRepository.save(ItemTemplates.aTemplate(code).maxStackSize(maxStackSize).build());
     }
 
-    private void aStack(CharacterInventory owner, ItemTemplate template, int quantity) {
-        aStack(owner, template, Rarity.GRAY, Map.of(), quantity);
+    private ItemInstance aStack(CharacterInventory owner, ItemTemplate template, int quantity) {
+        return aStack(owner, template, Rarity.GRAY, Map.of(), quantity);
     }
 
-    private void aStack(
+    private ItemInstance aStack(
             CharacterInventory owner, ItemTemplate template, Rarity rarity, Map<Stat, Integer> bonus, int quantity) {
-        itemInstanceRepository.save(ItemInstance.builder()
-                .characterInventory(owner).template(template).rarity(rarity).bonus(bonus).quantity(quantity).build());
+        int cell = nextCell;
+        nextCell++;
+        return itemInstanceRepository.save(ItemInstance.builder()
+                .characterInventory(owner).template(template).rarity(rarity).bonus(bonus).quantity(quantity)
+                .bagPosition(cell)
+                .build());
     }
 
     private PurchaseCreatedPayload aPurchase(String itemCode, int quantity) {
         return new PurchaseCreatedPayload(UUID.randomUUID(), player, itemCode, quantity);
     }
 
-    /** The character's stacks as the database holds them, oldest first. */
     private List<Integer> stackSizes(CharacterInventory owner) {
+        return stacks(owner).stream().map(ItemInstance::getQuantity).toList();
+    }
+
+    /** The character's stacks as the database holds them, oldest first. */
+    private List<ItemInstance> stacks(CharacterInventory owner) {
         entityManager.flush();
         entityManager.clear();
         return itemInstanceRepository.findAll(Sort.by("id")).stream()
                 .filter(stack -> owner.getId().equals(stack.getCharacterInventory().getId()))
-                .map(ItemInstance::getQuantity)
                 .toList();
     }
 }
