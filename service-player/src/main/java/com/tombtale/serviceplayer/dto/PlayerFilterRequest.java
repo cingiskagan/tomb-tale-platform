@@ -1,7 +1,5 @@
 package com.tombtale.serviceplayer.dto;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-
 /**
  * Query-parameter DTO for filtering the player list endpoint.
  *
@@ -11,6 +9,5 @@ import io.swagger.v3.oas.annotations.media.Schema;
  *
  * @param displayName partial match on display name (case-insensitive)
  */
-public record PlayerFilterRequest(
-        @Schema(example = "Dark", description = "Partial display name match (case-insensitive)") String displayName) {
+public record PlayerFilterRequest(String displayName) {
 }

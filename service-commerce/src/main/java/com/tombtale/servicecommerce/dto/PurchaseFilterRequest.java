@@ -2,7 +2,6 @@ package com.tombtale.servicecommerce.dto;
 
 import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import org.springframework.format.annotation.DateTimeFormat;
-import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -24,20 +23,15 @@ import java.util.UUID;
  * @param createdBefore include purchases on or before this instant
  */
 public record PurchaseFilterRequest(
-        @Schema(example = "aaaaaaaa-0000-4000-8000-000000000001", description = "publicId of the target player")
         UUID playerId,
 
-        @Schema(example = "SWORD_IRON", description = "Specific catalogue item code")
         String itemCode,
 
-        @Schema(example = "PENDING", description = "Current status of the purchase")
         PurchaseStatus status,
 
-        @Schema(example = "2026-01-01T00:00:00Z", description = "Include purchases on or after this instant")
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         Instant createdAfter,
 
-        @Schema(example = "2026-12-31T23:59:59Z", description = "Include purchases on or before this instant")
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         Instant createdBefore
 ) {

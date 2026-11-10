@@ -141,7 +141,6 @@ updates:
           - "org.springframework:*"
           - "org.springframework.security:*"
           - "org.springframework.amqp:*"
-          - "org.springdoc:*"
       test-tooling:
         patterns:
           - "org.junit*:*"
@@ -159,7 +158,7 @@ updates:
           - "net.sourceforge.pmd:*"
       # Catch-all for the rest -- QueryDSL, Flyway, MapStruct, Lombok, the
       # Postgres driver, Jakarta APIs. Without it each one arrives as its own
-      # PR, which is how springdoc and the wrapper's Maven slipped through the
+      # PR, which is how the wrapper's Maven slipped through the
       # first version of this file. The exclusions repeat the patterns above so
       # the grouping never depends on which group Dependabot tries first.
       libraries:
@@ -167,7 +166,6 @@ updates:
           - "*"
         exclude-patterns:
           - "org.springframework*:*"
-          - "org.springdoc:*"
           - "org.junit*:*"
           - "org.mockito:*"
           - "org.assertj:*"
@@ -197,7 +195,6 @@ updates:
           - "org.springframework:*"
           - "org.springframework.security:*"
           - "org.springframework.amqp:*"
-          - "org.springdoc:*"
       test-tooling:
         patterns:
           - "org.junit*:*"
@@ -215,7 +212,7 @@ updates:
           - "net.sourceforge.pmd:*"
       # Catch-all for the rest -- QueryDSL, Flyway, MapStruct, Lombok, the
       # Postgres driver, Jakarta APIs. Without it each one arrives as its own
-      # PR, which is how springdoc and the wrapper's Maven slipped through the
+      # PR, which is how the wrapper's Maven slipped through the
       # first version of this file. The exclusions repeat the patterns above so
       # the grouping never depends on which group Dependabot tries first.
       libraries:
@@ -223,7 +220,6 @@ updates:
           - "*"
         exclude-patterns:
           - "org.springframework*:*"
-          - "org.springdoc:*"
           - "org.junit*:*"
           - "org.mockito:*"
           - "org.assertj:*"
@@ -254,7 +250,6 @@ updates:
           - "org.springframework:*"
           - "org.springframework.security:*"
           - "org.springframework.amqp:*"
-          - "org.springdoc:*"
       test-tooling:
         patterns:
           - "org.junit*:*"
@@ -272,7 +267,6 @@ updates:
           - "*"
         exclude-patterns:
           - "org.springframework*:*"
-          - "org.springdoc:*"
           - "org.junit*:*"
           - "org.mockito:*"
           - "org.assertj:*"
@@ -303,7 +297,6 @@ updates:
           - "org.springframework:*"
           - "org.springframework.security:*"
           - "org.springframework.amqp:*"
-          - "org.springdoc:*"
       test-tooling:
         patterns:
           - "org.junit*:*"
@@ -321,7 +314,6 @@ updates:
           - "*"
         exclude-patterns:
           - "org.springframework*:*"
-          - "org.springdoc:*"
           - "org.junit*:*"
           - "org.mockito:*"
           - "org.assertj:*"

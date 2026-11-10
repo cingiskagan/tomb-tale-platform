@@ -21,9 +21,8 @@ import org.springframework.beans.factory.annotation.Value;
  * Global security configuration for the commerce service.
  *
  * <p>
- * <b>Current state:</b> API endpoints ({@code /api/**}) require JWT
- * authentication. Swagger UI, actuator, and other paths are public
- * to support development and monitoring.
+ * <b>Current state:</b> every path requires JWT authentication except
+ * {@code /actuator/health} and {@code /actuator/info}.
  *
  * <p>
  * Authorization works in two layers. This class configures URL-level
@@ -55,10 +54,10 @@ public class SecurityConfig {
      * Configures the main security filter chain for HTTP requests.
      *
      * <p>
-     * Requests to {@code /api/**} must carry a valid Keycloak JWT; anything
-     * else (Swagger UI, actuator) is public. Rejected requests fail here with
-     * 401 — a 403 comes from the method-security layer instead, once the
-     * caller is known but lacks the required role.
+     * Requests must carry a valid Keycloak JWT, except the health and info
+     * probes. Rejected requests fail here with 401 — a 403 comes from the
+     * method-security layer instead, once the caller is known but lacks the
+     * required role.
      *
      * @param http The HttpSecurity builder to configure.
      * @return The configured SecurityFilterChain.
@@ -73,8 +72,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/**").authenticated()
-                        .anyRequest().permitAll())
+                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .anyRequest().authenticated())
                 .oauth2ResourceServer(
                         oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
         return http.build();

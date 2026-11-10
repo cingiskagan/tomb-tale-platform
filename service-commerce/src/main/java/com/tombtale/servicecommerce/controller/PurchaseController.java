@@ -7,10 +7,6 @@ import com.tombtale.servicecommerce.dto.PurchaseFilterRequest;
 import com.tombtale.servicecommerce.dto.PurchaseResponse;
 import com.tombtale.servicecommerce.dto.UpdatePurchaseRequest;
 import com.tombtale.servicecommerce.service.PurchaseService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -34,8 +30,7 @@ import java.util.UUID;
  * REST controller exposing CRUD operations for in-game purchases.
  *
  * <p>
- * Endpoints are documented with bearer JWT security in OpenAPI. Runtime
- * access control is enforced per method by {@code @PreAuthorize}: mutations
+ * Access control is enforced per method by {@code @PreAuthorize}: mutations
  * require {@code platform_admin}, reads also accept {@code game_master}, and
  * {@code player} has no access. Authorities come from the token's realm roles
  * (see {@code RoleClaimConverter}).
@@ -43,8 +38,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/purchases")
 @RequiredArgsConstructor
-@Tag(name = "Purchases", description = "In-game purchase CRUD operations")
-@SecurityRequirement(name = "bearer-jwt")
 public class PurchaseController {
 
     private static final int DEFAULT_PAGE_SIZE = 20;
@@ -52,7 +45,7 @@ public class PurchaseController {
     private final PurchaseService purchaseService;
 
     /**
-     * Creates a new purchase order.
+     * Creates a {@code PENDING} purchase and computes its totalPrice.
      *
      * <p>
      * Requires {@code platform_admin}. The buyer comes from
@@ -66,7 +59,6 @@ public class PurchaseController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize(RoleConstants.IS_ADMIN)
-    @Operation(summary = "Create a new purchase", description = "Creates a PENDING purchase and calculates totalPrice server-side.")
     public PurchaseResponse createPurchase(@Valid @RequestBody CreatePurchaseRequest request) {
         return purchaseService.createPurchase(request);
     }
@@ -81,10 +73,9 @@ public class PurchaseController {
      * @return the matching purchase
      */
     @GetMapping("/{publicId}")
-    @Operation(summary = "Get purchase by publicId")
     @PreAuthorize(RoleConstants.IS_ADMIN_OR_GAME_MASTER)
     public PurchaseResponse findPurchaseByPublicId(
-            @Parameter(description = "Purchase UUID") @PathVariable UUID publicId) {
+            @PathVariable UUID publicId) {
         return purchaseService.findPurchaseByPublicId(publicId);
     }
 
@@ -105,7 +96,6 @@ public class PurchaseController {
      */
     @GetMapping
     @PreAuthorize(RoleConstants.IS_ADMIN_OR_GAME_MASTER)
-    @Operation(summary = "List purchases", description = "Paginated list with optional filters. CANCELLED purchases hidden by default.")
     public PagedResponse<PurchaseResponse> listPurchases(
             @ModelAttribute PurchaseFilterRequest filter,
             @PageableDefault(size = DEFAULT_PAGE_SIZE) Pageable pageable) {
@@ -128,9 +118,8 @@ public class PurchaseController {
      */
     @PatchMapping("/{publicId}")
     @PreAuthorize(RoleConstants.IS_ADMIN)
-    @Operation(summary = "Update a purchase", description = "Changes the status. A pending purchase is refused.")
     public PurchaseResponse updatePurchase(
-            @Parameter(description = "Purchase UUID") @PathVariable UUID publicId,
+            @PathVariable UUID publicId,
             @Valid @RequestBody UpdatePurchaseRequest request) {
         return purchaseService.updatePurchase(publicId, request);
     }
@@ -146,9 +135,8 @@ public class PurchaseController {
     @DeleteMapping("/{publicId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize(RoleConstants.IS_ADMIN)
-    @Operation(summary = "Soft-delete a purchase", description = "Sets status to CANCELLED and keeps the row. A pending purchase is refused.")
     public void deletePurchase(
-            @Parameter(description = "Purchase UUID") @PathVariable UUID publicId) {
+            @PathVariable UUID publicId) {
         purchaseService.deletePurchase(publicId);
     }
 }
