@@ -43,6 +43,8 @@ export class ItemCatalogComponent implements OnInit {
   templateTotal = 0;
   templatesLoading = true;
   private lastTemplateEvent: TableLazyLoadEvent | null = null;
+  /** Only the newest request fills a table, so a slow answer for an old page never replaces the current one. */
+  private templateSeq = 0;
 
   sets: ItemSetResponse[] = [];
   setTotal = 0;
@@ -50,6 +52,7 @@ export class ItemCatalogComponent implements OnInit {
   /** Every set, for the template form and the Set column. */
   allSets: ItemSetResponse[] = [];
   private lastSetEvent: TableLazyLoadEvent | null = null;
+  private setSeq = 0;
 
   /** Icons whose image failed to load, shown as a generic one. */
   readonly brokenIcons = new Set<string>();
@@ -65,31 +68,43 @@ export class ItemCatalogComponent implements OnInit {
 
   async loadTemplates(event: TableLazyLoadEvent) {
     this.lastTemplateEvent = event;
+    const seq = ++this.templateSeq;
     this.templatesLoading = true;
     try {
       const { page, size, sort } = pageOf(event);
       const response = await firstValueFrom(this.catalog.listTemplates(page, size, sort));
+      if (seq !== this.templateSeq) return;
       this.templates = response.content;
       this.templateTotal = response.page.totalElements;
     } catch (error) {
-      this.showError(error, 'Failed to load the templates');
+      if (seq === this.templateSeq) {
+        this.showError(error, 'Failed to load the templates');
+      }
     } finally {
-      this.templatesLoading = false;
+      if (seq === this.templateSeq) {
+        this.templatesLoading = false;
+      }
     }
   }
 
   async loadSets(event: TableLazyLoadEvent) {
     this.lastSetEvent = event;
+    const seq = ++this.setSeq;
     this.setsLoading = true;
     try {
       const { page, size, sort } = pageOf(event);
       const response = await firstValueFrom(this.catalog.listSets(page, size, sort));
+      if (seq !== this.setSeq) return;
       this.sets = response.content;
       this.setTotal = response.page.totalElements;
     } catch (error) {
-      this.showError(error, 'Failed to load the sets');
+      if (seq === this.setSeq) {
+        this.showError(error, 'Failed to load the sets');
+      }
     } finally {
-      this.setsLoading = false;
+      if (seq === this.setSeq) {
+        this.setsLoading = false;
+      }
     }
   }
 

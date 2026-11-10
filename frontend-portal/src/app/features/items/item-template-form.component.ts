@@ -39,6 +39,8 @@ export class ItemTemplateFormComponent {
 
   private _visible = false;
   private _templatePublicId: string | null = null;
+  /** Moves when the dialog opens another template or closes, so a late answer for the old one is dropped. */
+  private session = 0;
   private loadSeq = 0;
   private version = 0;
 
@@ -46,7 +48,7 @@ export class ItemTemplateFormComponent {
   set visible(value: boolean) {
     this._visible = value;
     if (value) {
-      void this.load();
+      this.openSession();
     }
   }
   get visible() {
@@ -57,7 +59,7 @@ export class ItemTemplateFormComponent {
   set templatePublicId(value: string | null) {
     this._templatePublicId = value;
     if (this._visible) {
-      void this.load();
+      this.openSession();
     }
   }
   get templatePublicId() {
@@ -80,6 +82,8 @@ export class ItemTemplateFormComponent {
     baseStats: statArray(),
   });
 
+  /** False until the form shows the template it edits, so a save never sends another one's fields. */
+  loaded = false;
   saving = false;
   uploading = false;
   iconBroken = false;
@@ -95,20 +99,28 @@ export class ItemTemplateFormComponent {
     return hash ? this.catalog.iconUrl(hash) : null;
   }
 
-  async load() {
+  /** @returns whether the form now shows the template */
+  async load(): Promise<boolean> {
     const seq = ++this.loadSeq;
+    this.loaded = false;
     this.notice = null;
+    // Blank first, so a slow or failed load never leaves the previous template's fields in the form.
+    this.fill(null);
     if (!this._templatePublicId) {
-      this.fill(null);
-      return;
+      this.loaded = true;
+      return true;
     }
     try {
       const template = await firstValueFrom(this.catalog.getTemplate(this._templatePublicId));
-      if (seq === this.loadSeq) {
-        this.fill(template);
-      }
+      if (seq !== this.loadSeq) return false;
+      this.fill(template);
+      this.loaded = true;
+      return true;
     } catch (error) {
-      this.notice = { severity: 'error', text: problemDetail(error, 'Failed to load the template') };
+      if (seq === this.loadSeq) {
+        this.notice = { severity: 'error', text: problemDetail(error, 'Failed to load the template') };
+      }
+      return false;
     }
   }
 
@@ -116,16 +128,22 @@ export class ItemTemplateFormComponent {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
+    const session = this.session;
     this.uploading = true;
     this.notice = null;
     try {
       const icon = await firstValueFrom(this.catalog.uploadIcon(file));
+      if (session !== this.session) return;
       this.iconBroken = false;
       this.form.controls.iconHash.setValue(icon.hash);
     } catch (error) {
-      this.notice = { severity: 'error', text: problemDetail(error, 'Failed to upload the icon') };
+      if (session === this.session) {
+        this.notice = { severity: 'error', text: problemDetail(error, 'Failed to upload the icon') };
+      }
     } finally {
-      this.uploading = false;
+      if (session === this.session) {
+        this.uploading = false;
+      }
       input.value = '';
     }
   }
@@ -135,7 +153,8 @@ export class ItemTemplateFormComponent {
   }
 
   async save() {
-    if (this.form.invalid) return;
+    if (this.form.invalid || !this.loaded) return;
+    const session = this.session;
     this.saving = true;
     this.notice = null;
     const value = this.form.getRawValue();
@@ -157,27 +176,43 @@ export class ItemTemplateFormComponent {
           this.catalog.createTemplate({ ...fields, code: value.code, itemType: value.itemType as ItemType }),
         );
       }
+      // The page still refreshes its table, but a save from an earlier session leaves the open editor alone.
       this.saved.emit();
-      this.close();
+      if (session === this.session) {
+        this.close();
+      }
     } catch (error) {
+      if (session !== this.session) return;
       if (this.isEditMode && error instanceof HttpErrorResponse && error.status === 409) {
-        await this.load();
-        this.notice = {
-          severity: 'warn',
-          text: 'Someone else changed this template. It now shows their version, so check it and save again.',
-        };
+        // A failed reload keeps its own error, so the stale version is never presented as theirs.
+        if (await this.load()) {
+          this.notice = {
+            severity: 'warn',
+            text: 'Someone else changed this template. It now shows their version, so check it and save again.',
+          };
+        }
       } else {
         this.notice = { severity: 'error', text: problemDetail(error, 'Failed to save the template') };
       }
     } finally {
-      this.saving = false;
+      if (session === this.session) {
+        this.saving = false;
+      }
     }
   }
 
   close() {
+    this.session++;
     this.loadSeq++;
     this._visible = false;
     this.visibleChange.emit(false);
+  }
+
+  private openSession() {
+    this.session++;
+    this.saving = false;
+    this.uploading = false;
+    void this.load();
   }
 
   private fill(template: ItemTemplateResponse | null) {

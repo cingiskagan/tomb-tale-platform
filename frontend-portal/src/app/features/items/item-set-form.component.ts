@@ -27,6 +27,8 @@ export class ItemSetFormComponent {
 
   private _visible = false;
   private _setPublicId: string | null = null;
+  /** Moves when the dialog opens another set or closes, so a late answer for the old one is dropped. */
+  private session = 0;
   private loadSeq = 0;
   private version = 0;
 
@@ -34,7 +36,7 @@ export class ItemSetFormComponent {
   set visible(value: boolean) {
     this._visible = value;
     if (value) {
-      void this.load();
+      this.openSession();
     }
   }
   get visible() {
@@ -45,7 +47,7 @@ export class ItemSetFormComponent {
   set setPublicId(value: string | null) {
     this._setPublicId = value;
     if (this._visible) {
-      void this.load();
+      this.openSession();
     }
   }
   get setPublicId() {
@@ -61,6 +63,8 @@ export class ItemSetFormComponent {
     bonus: statArray(),
   });
 
+  /** False until the form shows the set it edits, so a save never sends another one's fields. */
+  loaded = false;
   saving = false;
   notice: { severity: 'warn' | 'error'; text: string } | null = null;
 
@@ -68,25 +72,34 @@ export class ItemSetFormComponent {
     return this._setPublicId !== null;
   }
 
-  async load() {
+  /** @returns whether the form now shows the set */
+  async load(): Promise<boolean> {
     const seq = ++this.loadSeq;
+    this.loaded = false;
     this.notice = null;
+    // Blank first, so a slow or failed load never leaves the previous set's fields in the form.
+    this.fill(null);
     if (!this._setPublicId) {
-      this.fill(null);
-      return;
+      this.loaded = true;
+      return true;
     }
     try {
       const itemSet = await firstValueFrom(this.catalog.getSet(this._setPublicId));
-      if (seq === this.loadSeq) {
-        this.fill(itemSet);
-      }
+      if (seq !== this.loadSeq) return false;
+      this.fill(itemSet);
+      this.loaded = true;
+      return true;
     } catch (error) {
-      this.notice = { severity: 'error', text: problemDetail(error, 'Failed to load the set') };
+      if (seq === this.loadSeq) {
+        this.notice = { severity: 'error', text: problemDetail(error, 'Failed to load the set') };
+      }
+      return false;
     }
   }
 
   async save() {
-    if (this.form.invalid) return;
+    if (this.form.invalid || !this.loaded) return;
+    const session = this.session;
     this.saving = true;
     this.notice = null;
     const { code, name } = this.form.getRawValue();
@@ -97,27 +110,42 @@ export class ItemSetFormComponent {
       } else {
         await firstValueFrom(this.catalog.createSet({ code, name, bonus }));
       }
+      // The page still refreshes its table, but a save from an earlier session leaves the open editor alone.
       this.saved.emit();
-      this.close();
+      if (session === this.session) {
+        this.close();
+      }
     } catch (error) {
+      if (session !== this.session) return;
       if (this.isEditMode && error instanceof HttpErrorResponse && error.status === 409) {
-        await this.load();
-        this.notice = {
-          severity: 'warn',
-          text: 'Someone else changed this set. It now shows their version, so check it and save again.',
-        };
+        // A failed reload keeps its own error, so the stale version is never presented as theirs.
+        if (await this.load()) {
+          this.notice = {
+            severity: 'warn',
+            text: 'Someone else changed this set. It now shows their version, so check it and save again.',
+          };
+        }
       } else {
         this.notice = { severity: 'error', text: problemDetail(error, 'Failed to save the set') };
       }
     } finally {
-      this.saving = false;
+      if (session === this.session) {
+        this.saving = false;
+      }
     }
   }
 
   close() {
+    this.session++;
     this.loadSeq++;
     this._visible = false;
     this.visibleChange.emit(false);
+  }
+
+  private openSession() {
+    this.session++;
+    this.saving = false;
+    void this.load();
   }
 
   private fill(itemSet: ItemSetResponse | null) {

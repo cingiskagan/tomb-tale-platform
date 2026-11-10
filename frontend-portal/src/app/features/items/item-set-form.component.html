@@ -29,7 +29,7 @@
     <p-button
       label="Save"
       icon="pi pi-check"
-      [disabled]="form.invalid || saving"
+      [disabled]="form.invalid || !loaded || saving"
       [loading]="saving"
       (onClick)="save()"
     />

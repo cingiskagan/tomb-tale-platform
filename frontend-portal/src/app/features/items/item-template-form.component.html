@@ -87,6 +87,7 @@
             [text]="true"
             severity="danger"
             ariaLabel="Remove icon"
+            [disabled]="uploading"
             (onClick)="removeIcon()"
           />
         }
@@ -99,7 +100,7 @@
     <p-button
       label="Save"
       icon="pi pi-check"
-      [disabled]="form.invalid || saving || uploading"
+      [disabled]="form.invalid || !loaded || saving || uploading"
       [loading]="saving"
       (onClick)="save()"
     />
