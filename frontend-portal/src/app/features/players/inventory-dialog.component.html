@@ -1,0 +1,77 @@
+<p-dialog
+  [header]="'Inventory — ' + (character?.name ?? '')"
+  [visible]="visible"
+  (visibleChange)="$event || close()"
+  [modal]="true"
+  [style]="{ width: '52rem' }"
+>
+  @if (inventory; as shown) {
+    <div class="inventory" [class.busy]="busy">
+      <section class="equipment" aria-label="Equipment">
+        @for (entry of slots; track entry.slot) {
+          <div
+            class="slot"
+            [style.grid-area]="entry.slot"
+            [attr.data-slot]="entry.slot"
+            (dragover)="allowDrop($event)"
+            (drop)="dropOnSlot($event, entry.slot)"
+          >
+            @if (shown.equipment[entry.slot]; as item) {
+              <ng-container *ngTemplateOutlet="tile; context: { $implicit: item }" />
+            } @else {
+              <span class="slot-label">{{ entry.label }}</span>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="bag" aria-label="Bag">
+        <div class="coins"><i class="pi pi-circle-fill" aria-hidden="true"></i> {{ shown.coins | number }} coins</div>
+        <div class="bag-grid" [style.grid-template-columns]="'repeat(' + columns + ', 3.25rem)'">
+          @for (item of cells; track $index) {
+            <div
+              class="cell"
+              [attr.data-cell]="$index"
+              (dragover)="allowDrop($event)"
+              (drop)="dropOnCell($event, $index)"
+            >
+              @if (item) {
+                <ng-container *ngTemplateOutlet="tile; context: { $implicit: item }" />
+              }
+            </div>
+          }
+        </div>
+        @if (shown.setBonuses.length) {
+          <ul class="set-bonuses">
+            @for (set of shown.setBonuses; track set.code) {
+              <li>{{ set.name }} complete</li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+  } @else {
+    <p class="loading">Loading the inventory…</p>
+  }
+
+  <ng-template #tile let-item>
+    <div
+      class="tile"
+      [class]="'rarity-' + item.rarity"
+      [attr.data-item]="item.publicId"
+      [title]="describe(item)"
+      draggable="true"
+      (dragstart)="onDragStart($event, item)"
+      (dragend)="onDragEnd()"
+    >
+      @if (iconUrl(item); as src) {
+        <img [src]="src" [alt]="item.name" draggable="false" (error)="brokenIcons.add(item.iconUrl)" />
+      } @else {
+        <i class="pi pi-box generic-icon" aria-hidden="true"></i>
+      }
+      @if (item.quantity > 1) {
+        <span class="quantity">{{ item.quantity }}</span>
+      }
+    </div>
+  </ng-template>
+</p-dialog>

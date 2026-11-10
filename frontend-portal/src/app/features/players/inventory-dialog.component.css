@@ -1,0 +1,117 @@
+.inventory {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.inventory.busy {
+  opacity: 0.6;
+}
+
+.equipment {
+  display: grid;
+  grid-template-columns: repeat(3, 3.75rem);
+  grid-auto-rows: 3.75rem;
+  gap: 0.5rem;
+  grid-template-areas:
+    '.         HEAD   NECK'
+    'MAIN_HAND CHEST  OFF_HAND'
+    'HANDS     FEET   .'
+    'RING_1    .      RING_2';
+}
+
+.slot,
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(212, 162, 78, 0.25);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.cell {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.slot-label {
+  font-size: 0.7rem;
+  color: #8a8078;
+  text-align: center;
+}
+
+.bag-grid {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.coins {
+  margin-bottom: 0.75rem;
+  color: #d4a24e;
+}
+
+.set-bonuses {
+  margin: 0.75rem 0 0;
+  padding-left: 1.25rem;
+  color: #e8e0d4;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 90%;
+  height: 90%;
+  border: 2px solid;
+  border-radius: 5px;
+  cursor: grab;
+}
+
+.tile img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+}
+
+.generic-icon {
+  font-size: 1.5rem;
+  color: #8a8078;
+}
+
+.quantity {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  font-size: 0.7rem;
+  color: #e8e0d4;
+}
+
+.rarity-GRAY {
+  border-color: #9d9d9d;
+}
+
+.rarity-GREEN {
+  border-color: #1eff00;
+}
+
+.rarity-BLUE {
+  border-color: #0070dd;
+}
+
+.rarity-PURPLE {
+  border-color: #a335ee;
+}
+
+.rarity-ORANGE {
+  border-color: #ff8000;
+}
+
+.rarity-RED {
+  border-color: #e6312e;
+}
+
+.loading {
+  color: #8a8078;
+}
