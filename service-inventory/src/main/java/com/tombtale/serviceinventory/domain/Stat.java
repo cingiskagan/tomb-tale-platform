@@ -3,6 +3,7 @@ package com.tombtale.serviceinventory.domain;
 import com.tombtale.serviceinventory.exception.UnknownStatException;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,6 +39,17 @@ public enum Stat {
     public static Map<Stat, Integer> fromNames(Map<String, Integer> values) {
         return values.entrySet().stream().collect(Collectors.toMap(
                 entry -> named(entry.getKey()), Map.Entry::getValue, (first, second) -> first, () -> new EnumMap<>(Stat.class)));
+    }
+
+    /**
+     * Adds stats up, such as an item's base stats and its bonus.
+     *
+     * @param parts the stats to add up
+     * @return each stat's total, and no entry for a stat no part has
+     */
+    public static Map<Stat, Integer> sum(Collection<Map<Stat, Integer>> parts) {
+        return parts.stream().flatMap(part -> part.entrySet().stream()).collect(Collectors.toMap(
+                Map.Entry::getKey, Map.Entry::getValue, Integer::sum, () -> new EnumMap<>(Stat.class)));
     }
 
     private static Stat named(String name) {

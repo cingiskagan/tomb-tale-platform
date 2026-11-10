@@ -24,9 +24,12 @@ import java.time.Duration;
  * Icon uploads for {@code platform_admin}, and icon reads for anyone. An icon never changes under its hash.
  */
 @RestController
-@RequestMapping("/api/v1/inventory/icons")
+@RequestMapping(ItemIconController.PATH)
 @RequiredArgsConstructor
 public class ItemIconController {
+
+    /** An icon's URL is this path, a slash and its hash. */
+    public static final String PATH = "/api/v1/inventory/icons";
 
     private static final Duration CACHE_TIME = Duration.ofDays(365);
 

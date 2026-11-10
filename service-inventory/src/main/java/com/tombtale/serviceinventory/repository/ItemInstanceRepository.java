@@ -4,6 +4,7 @@ import com.tombtale.serviceinventory.domain.Rarity;
 import com.tombtale.serviceinventory.entity.CharacterInventory;
 import com.tombtale.serviceinventory.entity.ItemInstance;
 import com.tombtale.serviceinventory.entity.ItemTemplate;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -38,4 +39,13 @@ public interface ItemInstanceRepository extends JpaRepository<ItemInstance, Long
     @Query("select i.bagPosition from ItemInstance i where i.characterInventory = :character "
             + "and i.bagPosition is not null")
     List<Integer> findBagPositions(@Param("character") CharacterInventory character);
+
+    /**
+     * Every item of the character, with its template and set in the same query.
+     *
+     * @param character the character that owns the items
+     * @return its items, equipped and in the bag
+     */
+    @EntityGraph(attributePaths = {"template", "template.itemSet"})
+    List<ItemInstance> findByCharacterInventory(CharacterInventory character);
 }

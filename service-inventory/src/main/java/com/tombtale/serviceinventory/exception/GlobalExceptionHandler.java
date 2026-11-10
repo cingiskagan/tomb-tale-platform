@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler extends PlatformExceptionHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final String NOT_FOUND = "Not Found";
 
     /**
      * @param ex the missing template
@@ -23,7 +24,17 @@ public class GlobalExceptionHandler extends PlatformExceptionHandler {
     @ExceptionHandler(ItemTemplateNotFoundException.class)
     public ProblemDetail handleItemTemplateNotFound(ItemTemplateNotFoundException ex) {
         LOG.warn("Item template not found: {}", ex.getMessage());
-        return problem(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
+        return problem(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage());
+    }
+
+    /**
+     * @param ex the character inventory doesn't know
+     * @return a 404 problem detail
+     */
+    @ExceptionHandler(CharacterNotFoundException.class)
+    public ProblemDetail handleCharacterNotFound(CharacterNotFoundException ex) {
+        LOG.warn("Character not found: {}", ex.getMessage());
+        return problem(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage());
     }
 
     /**
@@ -43,7 +54,7 @@ public class GlobalExceptionHandler extends PlatformExceptionHandler {
     @ExceptionHandler(ItemSetNotFoundException.class)
     public ProblemDetail handleItemSetNotFound(ItemSetNotFoundException ex) {
         LOG.warn("Item set not found: {}", ex.getMessage());
-        return problem(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
+        return problem(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage());
     }
 
     /**
@@ -73,7 +84,7 @@ public class GlobalExceptionHandler extends PlatformExceptionHandler {
     @ExceptionHandler(IconNotFoundException.class)
     public ProblemDetail handleIconNotFound(IconNotFoundException ex) {
         LOG.warn("Icon not found: {}", ex.getMessage());
-        return problem(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
+        return problem(HttpStatus.NOT_FOUND, NOT_FOUND, ex.getMessage());
     }
 
     /**
