@@ -62,6 +62,8 @@ export class InventoryDialogComponent {
   private dragged: InventoryItem | null = null;
   /** Moves when the dialog opens another character or closes, so a late answer for the old one is dropped. */
   private session = 0;
+  /** The last change sent. Inventory commits before it answers, so a load that waits for it sees the change. */
+  private pending: Promise<unknown> = Promise.resolve();
 
   @Input()
   set visible(value: boolean) {
@@ -156,9 +158,12 @@ export class InventoryDialogComponent {
     // A change still on its way belongs to the old session, which can no longer clear this.
     this.busy = false;
     this.show(null);
-    if (!this._character) return;
+    const character = this._character;
+    if (!character) return;
     try {
-      const inventory = await firstValueFrom(this.inventoryService.getInventory(this._character.publicId));
+      await this.pending;
+      if (session !== this.session) return;
+      const inventory = await firstValueFrom(this.inventoryService.getInventory(character.publicId));
       if (session === this.session) this.show(inventory);
     } catch (error) {
       if (session === this.session) this.showError(error, 'Failed to load the inventory');
@@ -169,8 +174,10 @@ export class InventoryDialogComponent {
     if (!this.inventory) return;
     const session = this.session;
     this.busy = true;
+    const answer = firstValueFrom(request(this.inventory.characterId));
+    this.pending = answer.catch(() => undefined);
     try {
-      const inventory = await firstValueFrom(request(this.inventory.characterId));
+      const inventory = await answer;
       if (session === this.session) this.show(inventory);
     } catch (error) {
       if (session === this.session) this.showError(error, fallback);

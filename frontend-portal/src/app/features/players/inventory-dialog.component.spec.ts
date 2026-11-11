@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MessageService } from 'primeng/api';
-import { NEVER, of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import {
   CharacterInventory,
   EquipmentSlot,
@@ -145,16 +145,25 @@ describe('InventoryDialogComponent', () => {
     expect(find('[data-cell="2"] [data-item="helmet"]')).not.toBeNull();
   });
 
-  it('takes drags again when it reopens while a change is on its way', async () => {
+  it('reopened while a change is on its way, loads after the change and takes drags again', async () => {
     await open(anInventory({}, [HELMET]));
-    inventoryService.equip.and.returnValue(NEVER);
+    const equipped = new Subject<CharacterInventory>();
+    inventoryService.equip.and.returnValue(equipped);
     await drag('helmet', '[data-slot="HEAD"]');
 
     dialog.close();
     await open(anInventory({}, [HELMET]));
+    expect(inventoryService.getInventory).toHaveBeenCalledTimes(1);
+    expect(find('[data-item="helmet"]')).toBeNull();
+
+    equipped.next(anInventory({}, [HELMET]));
+    // The load waits on a chain of promises, which one macrotask lets finish.
+    await new Promise((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
+    expect(inventoryService.getInventory).toHaveBeenCalledTimes(2);
+
     inventoryService.move.and.returnValue(of(anInventory({}, [{ ...HELMET, bagPosition: 6 }])));
     await drag('helmet', '[data-cell="6"]');
-
     expect(inventoryService.move).toHaveBeenCalledWith('c-1', 6, 'helmet');
   });
 
