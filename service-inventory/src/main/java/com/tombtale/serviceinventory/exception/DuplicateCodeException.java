@@ -1,7 +1,7 @@
 package com.tombtale.serviceinventory.exception;
 
 /**
- * A new template or item set names a code another one already has. Answers 409.
+ * A new template, item set or dealer names a code another one already has. Answers 409.
  */
 public class DuplicateCodeException extends RuntimeException {
 
@@ -12,6 +12,6 @@ public class DuplicateCodeException extends RuntimeException {
      * @param code the code the client sent
      */
     public DuplicateCodeException(String kind, String code) {
-        super("An " + kind + " already has the code " + code);
+        super("Another " + kind + " already has the code " + code);
     }
 }

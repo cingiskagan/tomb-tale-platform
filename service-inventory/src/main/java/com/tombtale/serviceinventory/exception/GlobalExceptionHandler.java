@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  * Inventory's domain exceptions, on top of the shared error contract (ADR 0015).
  */
 @RestControllerAdvice
+@SuppressWarnings("PMD.TooManyMethods") // one handler per domain exception, each with its own title
 public class GlobalExceptionHandler extends PlatformExceptionHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(GlobalExceptionHandler.class);
@@ -19,7 +20,7 @@ public class GlobalExceptionHandler extends PlatformExceptionHandler {
     /**
      * Each exception's message names what is missing.
      *
-     * @param ex a template, set, icon, character or item no row has
+     * @param ex a template, set, icon, character, item, dealer or stand entry no row has
      * @return a 404 problem detail
      */
     @ExceptionHandler({
@@ -27,7 +28,9 @@ public class GlobalExceptionHandler extends PlatformExceptionHandler {
             ItemSetNotFoundException.class,
             IconNotFoundException.class,
             CharacterNotFoundException.class,
-            ItemNotFoundException.class})
+            ItemNotFoundException.class,
+            DealerNotFoundException.class,
+            StandEntryNotFoundException.class})
     public ProblemDetail handleNotFound(RuntimeException ex) {
         LOG.warn("Not found: {}", ex.getMessage());
         return problem(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
@@ -81,6 +84,36 @@ public class GlobalExceptionHandler extends PlatformExceptionHandler {
     public ProblemDetail handleUnknownItemSet(UnknownItemSetException ex) {
         LOG.warn("Unknown item set: {}", ex.getMessage());
         return problem(HttpStatus.BAD_REQUEST, "Unknown Item Set", ex.getMessage());
+    }
+
+    /**
+     * @param ex the template a stand entry names
+     * @return a 400 problem detail
+     */
+    @ExceptionHandler(UnknownItemTemplateException.class)
+    public ProblemDetail handleUnknownItemTemplate(UnknownItemTemplateException ex) {
+        LOG.warn("Unknown item template: {}", ex.getMessage());
+        return problem(HttpStatus.BAD_REQUEST, "Unknown Item Template", ex.getMessage());
+    }
+
+    /**
+     * @param ex a retired template named for a stand
+     * @return a 409 problem detail
+     */
+    @ExceptionHandler(RetiredTemplateException.class)
+    public ProblemDetail handleRetiredTemplate(RetiredTemplateException ex) {
+        LOG.warn("Retired template: {}", ex.getMessage());
+        return problem(HttpStatus.CONFLICT, "Template Retired", ex.getMessage());
+    }
+
+    /**
+     * @param ex a custom stand entry while the setting is off
+     * @return a 403 problem detail
+     */
+    @ExceptionHandler(CustomStandItemsDisabledException.class)
+    public ProblemDetail handleCustomStandItemsDisabled(CustomStandItemsDisabledException ex) {
+        LOG.warn("Custom stand items disabled: {}", ex.getMessage());
+        return problem(HttpStatus.FORBIDDEN, "Custom Stand Items Disabled", ex.getMessage());
     }
 
     /**

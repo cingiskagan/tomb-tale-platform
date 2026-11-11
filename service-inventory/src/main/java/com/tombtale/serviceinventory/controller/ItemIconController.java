@@ -63,4 +63,12 @@ public class ItemIconController {
                 .header("X-Content-Type-Options", "nosniff")
                 .body(icon.getData());
     }
+
+    /**
+     * @param hash a template's icon hash, or null
+     * @return the icon's URL, or null for a generic icon
+     */
+    public static String urlOf(String hash) {
+        return hash == null ? null : PATH + "/" + hash;
+    }
 }

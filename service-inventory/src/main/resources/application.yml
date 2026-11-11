@@ -104,3 +104,7 @@ inventory:
   icons:
     # The largest icon an upload may send. The multipart limit, 1MB, stays above it.
     max-size: 256KB
+  custom-stand-items:
+    # Lets an admin put an item with a bonus they choose on a stand. Off unless
+    # .env turns it on, as .env.example does for the local stack.
+    enabled: ${INVENTORY_CUSTOM_STAND_ITEMS_ENABLED:false}

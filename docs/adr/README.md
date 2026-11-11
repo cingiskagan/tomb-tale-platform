@@ -99,3 +99,4 @@ in sequence here — a record written later can describe an earlier choice.
 | [0029](0029-service-audit-inserts-each-event-once-and-keeps-only-listed-fields.md) | service-audit inserts each event once, and keeps only listed fields | 2026-10-16 | accepted |
 | [0030](0030-the-game-is-a-public-client-with-offline-sessions-and-touches-only-its-own-data.md) | The game is a public client with offline sessions, and touches only its own data | 2026-10-27 | superseded by [0031](0031-the-game-acts-on-its-own-characters-inventory-directly.md) |
 | [0031](0031-the-game-acts-on-its-own-characters-inventory-directly.md) | The game acts on its own character's inventory directly | 2026-11-02 | accepted |
+| [0032](0032-a-stand-is-found-by-its-dealers-code.md) | A stand is found by its dealer's code | 2026-11-12 | accepted |

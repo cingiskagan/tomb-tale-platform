@@ -81,7 +81,7 @@ public class InventoryView {
                 template.getCode(),
                 template.getName(),
                 template.getItemType(),
-                template.getIconHash() == null ? null : ItemIconController.PATH + "/" + template.getIconHash(),
+                ItemIconController.urlOf(template.getIconHash()),
                 item.getRarity(),
                 item.getBonus(),
                 Stat.sum(List.of(template.getBaseStats(), item.getBonus())),
