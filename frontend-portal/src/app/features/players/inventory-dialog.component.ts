@@ -153,6 +153,8 @@ export class InventoryDialogComponent {
 
   private async open() {
     const session = ++this.session;
+    // A change still on its way belongs to the old session, which can no longer clear this.
+    this.busy = false;
     this.show(null);
     if (!this._character) return;
     try {

@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MessageService } from 'primeng/api';
-import { of, throwError } from 'rxjs';
+import { NEVER, of, throwError } from 'rxjs';
 import {
   CharacterInventory,
   EquipmentSlot,
@@ -143,6 +143,19 @@ describe('InventoryDialogComponent', () => {
 
     expect(messageService.add).toHaveBeenCalledWith(jasmine.objectContaining({ detail: 'RING_2 does not take HELMET' }));
     expect(find('[data-cell="2"] [data-item="helmet"]')).not.toBeNull();
+  });
+
+  it('takes drags again when it reopens while a change is on its way', async () => {
+    await open(anInventory({}, [HELMET]));
+    inventoryService.equip.and.returnValue(NEVER);
+    await drag('helmet', '[data-slot="HEAD"]');
+
+    dialog.close();
+    await open(anInventory({}, [HELMET]));
+    inventoryService.move.and.returnValue(of(anInventory({}, [{ ...HELMET, bagPosition: 6 }])));
+    await drag('helmet', '[data-cell="6"]');
+
+    expect(inventoryService.move).toHaveBeenCalledWith('c-1', 6, 'helmet');
   });
 
   it('shows a generic icon for an icon that does not load', async () => {
