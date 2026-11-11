@@ -99,6 +99,8 @@ app:
 inventory:
   # The coins every new character starts with, written with their history row.
   starting-coins: ${INVENTORY_STARTING_COINS}
+  # How many cells a bag has. A move stays inside them. Grants ignore it until Tier 2 limits the bag.
+  bag-cells: ${INVENTORY_BAG_CELLS}
   icons:
     # The largest icon an upload may send. The multipart limit, 1MB, stays above it.
     max-size: 256KB

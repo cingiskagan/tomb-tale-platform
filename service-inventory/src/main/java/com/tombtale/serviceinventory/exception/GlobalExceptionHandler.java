@@ -54,6 +54,16 @@ public class GlobalExceptionHandler extends PlatformExceptionHandler {
     }
 
     /**
+     * @param ex a cell past the bag's last one
+     * @return a 400 problem detail
+     */
+    @ExceptionHandler(CellOutsideBagException.class)
+    public ProblemDetail handleCellOutsideBag(CellOutsideBagException ex) {
+        LOG.warn("Cell outside the bag: {}", ex.getMessage());
+        return problem(HttpStatus.BAD_REQUEST, "Cell Outside Bag", ex.getMessage());
+    }
+
+    /**
      * @param ex the code that is taken
      * @return a 409 problem detail
      */

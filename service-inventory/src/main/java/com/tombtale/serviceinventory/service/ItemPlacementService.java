@@ -6,6 +6,7 @@ import com.tombtale.serviceinventory.domain.ItemType;
 import com.tombtale.serviceinventory.dto.CharacterInventoryResponse;
 import com.tombtale.serviceinventory.entity.CharacterInventory;
 import com.tombtale.serviceinventory.entity.ItemInstance;
+import com.tombtale.serviceinventory.exception.CellOutsideBagException;
 import com.tombtale.serviceinventory.exception.CharacterNotFoundException;
 import com.tombtale.serviceinventory.exception.ItemNotFoundException;
 import com.tombtale.serviceinventory.exception.ItemNotInBagException;
@@ -13,7 +14,7 @@ import com.tombtale.serviceinventory.exception.WrongSlotException;
 import com.tombtale.serviceinventory.repository.CharacterInventoryRepository;
 import com.tombtale.serviceinventory.repository.ItemInstanceRepository;
 import com.tombtale.serviceinventory.security.InventoryCaller;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,12 +28,24 @@ import java.util.stream.Stream;
  * on the items it loaded, so no query runs while an item is halfway between a slot and a cell.
  */
 @Service
-@RequiredArgsConstructor
 public class ItemPlacementService {
 
     private final CharacterInventoryRepository characterInventoryRepository;
     private final ItemInstanceRepository itemInstanceRepository;
     private final InventoryView inventoryView;
+    private final int bagCells;
+
+    /** The bag's size comes from {@code inventory.bag-cells} in application.yml. */
+    public ItemPlacementService(
+            CharacterInventoryRepository characterInventoryRepository,
+            ItemInstanceRepository itemInstanceRepository,
+            InventoryView inventoryView,
+            @Value("${inventory.bag-cells}") int bagCells) {
+        this.characterInventoryRepository = characterInventoryRepository;
+        this.itemInstanceRepository = itemInstanceRepository;
+        this.inventoryView = inventoryView;
+        this.bagCells = bagCells;
+    }
 
     /**
      * Steps 1 to 4 of the design. Step 5, telling the game server, waits until there is one.
@@ -97,10 +110,14 @@ public class ItemPlacementService {
      * @param itemId      an item in the character's bag
      * @param caller      who asks
      * @return the inventory after the change
-     * @throws ItemNotInBagException if the item is equipped
+     * @throws CellOutsideBagException if the cell is past the bag's last one
+     * @throws ItemNotInBagException   if the item is equipped
      */
     @Transactional
     public CharacterInventoryResponse move(UUID characterId, int cell, UUID itemId, InventoryCaller caller) {
+        if (cell >= bagCells) {
+            throw new CellOutsideBagException(cell, bagCells);
+        }
         CharacterInventory character = lock(characterId, caller);
         List<ItemInstance> items = itemInstanceRepository.findByCharacterInventory(character);
         ItemInstance item = find(items, itemId);

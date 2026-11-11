@@ -35,3 +35,5 @@ app:
 inventory:
   # Not .env's 100000, so a test fails if the code ignores the setting.
   starting-coins: 250
+  # Not .env's 1000, for the same reason.
+  bag-cells: 40

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -58,6 +59,9 @@ class BagControllerTest extends FixedAuthorTestBase {
 
     @Autowired
     private ItemTemplateRepository itemTemplateRepository;
+
+    @Value("${inventory.bag-cells}")
+    private int bagCells;
 
     private CharacterInventory character;
     private ItemTemplate ring;
@@ -114,6 +118,31 @@ class BagControllerTest extends FixedAuthorTestBase {
     @Test
     void aCellBelowZeroAnswers400() throws Exception {
         move(aRing(null, 0), -1, ownersToken()).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void aMoveStaysInsideTheBag() throws Exception {
+        ItemInstance item = aRing(null, 0);
+
+        move(item, bagCells, ownersToken())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Cell Outside Bag"));
+        move(item, bagCells - 1, ownersToken()).andExpect(status().isOk());
+    }
+
+    /** The player owns both characters, and a move still never takes an item from one to the other. */
+    @Test
+    void anotherCharactersItemAnswers404() throws Exception {
+        CharacterInventory other = characterInventoryRepository.save(
+                CharacterInventory.builder().playerId(OWNER).coins(0L).build());
+        ItemInstance theirs = itemInstanceRepository.save(ItemInstance.builder()
+                .characterInventory(other).template(ring).quantity(1).bagPosition(0).build());
+
+        move(theirs, 1, ownersToken())
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Not Found"));
+        assertThat(itemInstanceRepository.findById(theirs.getId()))
+                .hasValueSatisfying(stored -> assertThat(stored.getBagPosition()).isZero());
     }
 
     @Test
