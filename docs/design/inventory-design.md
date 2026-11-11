@@ -27,8 +27,9 @@ The inventory phase's decisions as of 2026-11-03. The other design documents giv
 - The game server sets it when a run starts, renews it for the party every 30 seconds and clears it when the run ends. If the server crashes, the renewals stop and the lock ends within about two minutes.
 - A renewal or a clear names its run, and inventory ignores one for another run, so one game server can't end a lock another server holds. Inventory sets the end time from its own clock.
 - Marketplace actions check the lock under the character lock, so a run can't start between the check and the action.
-- Inside a dungeon, party members may trade items with each other, because the party is isolated from the outer world.
-- What the lock blocks beyond NPCs and the marketplace is decided later.
+- Inside a dungeon, party members may trade items with each other, because the party is isolated from the outer world. Both characters must hold the lock for the same run, so a server can't trade between two dungeons.
+- The lock blocks what crosses the dungeon's border: the dealer, the marketplace, and any later stash or transfer. Equips and bag moves stay open to the player, because items only move within the character.
+- `platform_admin` changes nothing while the lock is on. In production, the portal warns an admin before they change a player's inventory.
 
 ### NPCs and the marketplace
 
@@ -129,6 +130,7 @@ Equipping runs in one transaction under the character lock, so two taps at once 
 - The character lock keeps two changes at once from taking the same cell.
 - Both unique constraints, on the slot and on the cell, are checked at the commit, so a swap of two items doesn't collide halfway.
 - The bag has no limit yet. When Tier 2 adds one, every path that adds an item needs an answer for a full bag: drops, purchases, dealer buys, unequipping and party trades.
+- `inventory.bag-cells` sets the bag's size. A move already stays inside it, so a client can't scatter items, and Tier 2 makes it that limit.
 
 ### Prices
 

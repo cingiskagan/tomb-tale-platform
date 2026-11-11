@@ -5,3 +5,5 @@ export * from './player.models';
 export * from './common.model';
 export * from './item-catalog.models';
 export * from './item-catalog.service';
+export * from './inventory.models';
+export * from './inventory.service';

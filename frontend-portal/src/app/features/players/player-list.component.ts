@@ -4,14 +4,16 @@ import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
-import { PlayerService, Player, PlayerFilterRequest } from '../../core/api';
+import { PlayerService, Player, PlayerFilterRequest, GameCharacter } from '../../core/api';
+import { AuthService, PlatformRole } from '../../core/auth';
 import { PlayerStatsDialogComponent } from './player-stats-dialog.component';
+import { InventoryDialogComponent } from './inventory-dialog.component';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
     selector: 'app-player-list',
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, ToastModule, PlayerStatsDialogComponent],
+    imports: [CommonModule, TableModule, ButtonModule, ToastModule, PlayerStatsDialogComponent, InventoryDialogComponent],
     providers: [MessageService],
     templateUrl: './player-list.component.html',
     styleUrl: './player-list.component.css'
@@ -20,11 +22,16 @@ export class PlayerListComponent {
     private readonly playerService = inject(PlayerService);
     private readonly messageService = inject(MessageService);
 
+    /** Only `platform_admin` opens an inventory, because inventory refuses everyone else's. */
+    readonly isAdmin = inject(AuthService).hasAnyRole([PlatformRole.PLATFORM_ADMIN]);
+
     players: Player[] = [];
     totalRecords = 0;
     loading = true;
     isDialogVisible = false;
     selectedPlayer: Player | null = null;
+    isInventoryVisible = false;
+    inventoryCharacter: GameCharacter | null = null;
     private lastEvent: TableLazyLoadEvent | null = null;
 
     async loadPlayers(event: TableLazyLoadEvent) {
@@ -55,6 +62,12 @@ export class PlayerListComponent {
     openEdit(player: Player) {
         this.selectedPlayer = player;
         this.isDialogVisible = true;
+    }
+
+    /** A player has one character for now, so the dialog opens the first. */
+    openInventory(player: Player) {
+        this.inventoryCharacter = player.characters?.[0] ?? null;
+        this.isInventoryVisible = true;
     }
 
     onSaved() {

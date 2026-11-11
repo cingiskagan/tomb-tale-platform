@@ -1,6 +1,9 @@
 package com.tombtale.serviceinventory.service;
 
 import com.tombtale.serviceinventory.config.JpaConfig;
+import com.tombtale.serviceinventory.domain.EquipmentSlot;
+import com.tombtale.serviceinventory.domain.ItemType;
+import com.tombtale.serviceinventory.dto.CharacterInventoryResponse;
 import com.tombtale.serviceinventory.dto.event.PurchaseCreatedPayload;
 import com.tombtale.serviceinventory.entity.CharacterInventory;
 import com.tombtale.serviceinventory.entity.ItemGrant;
@@ -10,6 +13,7 @@ import com.tombtale.serviceinventory.repository.CharacterInventoryRepository;
 import com.tombtale.serviceinventory.repository.ItemGrantRepository;
 import com.tombtale.serviceinventory.repository.ItemInstanceRepository;
 import com.tombtale.serviceinventory.repository.ItemTemplateRepository;
+import com.tombtale.serviceinventory.security.InventoryCaller;
 import com.tombtale.serviceinventory.support.ItemTemplates;
 import com.tombtale.serviceinventory.support.FixedAuthorTestBase;
 
@@ -43,7 +47,7 @@ import static org.assertj.core.api.Assertions.fail;
  */
 @DataJpaTest(showSql = false)
 @ActiveProfiles("test")
-@Import({ JpaConfig.class, ItemGrantService.class })
+@Import({ JpaConfig.class, ItemGrantService.class, ItemPlacementService.class, InventoryView.class })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class CharacterLockTest extends FixedAuthorTestBase {
 
@@ -53,11 +57,15 @@ class CharacterLockTest extends FixedAuthorTestBase {
     private static final int SECOND_QUANTITY = 5;
     private static final Duration WAIT = Duration.ofSeconds(10);
     private static final Duration POLL = Duration.ofMillis(20);
+    private static final InventoryCaller ADMIN = new InventoryCaller(null, true);
 
     private final UUID player = UUID.randomUUID();
 
     @Autowired
     private ItemGrantService itemGrantService;
+
+    @Autowired
+    private ItemPlacementService itemPlacementService;
 
     @Autowired
     private CharacterInventoryRepository characterInventoryRepository;
@@ -91,7 +99,7 @@ class CharacterLockTest extends FixedAuthorTestBase {
         itemInstanceRepository.deleteAllInBatch();
         itemGrantRepository.deleteAllInBatch();
         characterInventoryRepository.delete(character);
-        itemTemplateRepository.delete(potion);
+        itemTemplateRepository.deleteAllInBatch();
     }
 
     @Test
@@ -107,6 +115,37 @@ class CharacterLockTest extends FixedAuthorTestBase {
         second.get(WAIT.toSeconds(), TimeUnit.SECONDS);
         // The second grant filled the first one's stack, which no other transaction sees before the first commits.
         assertThat(stackSizes()).containsExactly(POTION_STACK, FIRST_QUANTITY + SECOND_QUANTITY - POTION_STACK);
+    }
+
+    /** Without the lock, both would find the head empty, and the second commit would break the slot's constraint. */
+    @Test
+    void aSecondEquipFindsTheFirstOnesItemInTheSlot() throws Exception {
+        ItemTemplate helmet = itemTemplateRepository.save(
+                ItemTemplates.aTemplate("HELMET_IRON").itemType(ItemType.HELMET).build());
+        ItemInstance first = aHelmetInCell(helmet, 0);
+        ItemInstance second = aHelmetInCell(helmet, 1);
+
+        CompletableFuture<CharacterInventoryResponse> waiting = new TransactionTemplate(transactionManager).execute(tx -> {
+            equip(first);
+            CompletableFuture<CharacterInventoryResponse> secondEquip = CompletableFuture.supplyAsync(() -> equip(second));
+            awaitALockWait();
+            return secondEquip;
+        });
+
+        CharacterInventoryResponse after = waiting.get(WAIT.toSeconds(), TimeUnit.SECONDS);
+        assertThat(after.equipment().get(EquipmentSlot.HEAD).publicId()).isEqualTo(second.getPublicId());
+        assertThat(after.bag()).singleElement()
+                .satisfies(item -> assertThat(item.publicId()).isEqualTo(first.getPublicId()))
+                .satisfies(item -> assertThat(item.bagPosition()).isEqualTo(1));
+    }
+
+    private ItemInstance aHelmetInCell(ItemTemplate helmet, int cell) {
+        return itemInstanceRepository.save(ItemInstance.builder()
+                .characterInventory(character).template(helmet).quantity(1).bagPosition(cell).build());
+    }
+
+    private CharacterInventoryResponse equip(ItemInstance helmet) {
+        return itemPlacementService.equip(character.getPublicId(), EquipmentSlot.HEAD, helmet.getPublicId(), ADMIN);
     }
 
     private PurchaseCreatedPayload aPurchase(int quantity) {

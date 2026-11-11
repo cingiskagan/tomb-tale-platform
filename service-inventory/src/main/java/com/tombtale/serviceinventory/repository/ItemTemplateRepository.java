@@ -1,11 +1,14 @@
 package com.tombtale.serviceinventory.repository;
 
+import com.tombtale.serviceinventory.entity.ItemSet;
 import com.tombtale.serviceinventory.entity.ItemTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -43,4 +46,12 @@ public interface ItemTemplateRepository extends JpaRepository<ItemTemplate, Long
      * @return the template, or empty when no template has the id
      */
     Optional<ItemTemplate> findByPublicId(UUID publicId);
+
+    /**
+     * The templates of these sets, retired ones too, because a retired template stays in its set.
+     *
+     * @param itemSets the sets
+     * @return every template that belongs to one of them
+     */
+    List<ItemTemplate> findByItemSetIn(Collection<ItemSet> itemSets);
 }

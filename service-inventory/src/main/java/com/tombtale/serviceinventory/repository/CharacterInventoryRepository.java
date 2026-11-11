@@ -25,6 +25,14 @@ public interface CharacterInventoryRepository extends JpaRepository<CharacterInv
     boolean existsByPublicId(UUID publicId);
 
     /**
+     * The character's row for a read, which takes no lock.
+     *
+     * @param publicId the character's {@code publicId}
+     * @return the row, or empty when inventory does not know the character
+     */
+    Optional<CharacterInventory> findByPublicId(UUID publicId);
+
+    /**
      * The ids of the player's characters. It loads no row, so the lock taken next is the row's first read.
      *
      * @param playerId the owner's {@code publicId}
