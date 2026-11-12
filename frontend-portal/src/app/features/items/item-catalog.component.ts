@@ -11,8 +11,8 @@ import { ItemCatalogService, ItemSetResponse, ItemTemplateResponse, Stats } from
 import { ItemTemplateFormComponent } from './item-template-form.component';
 import { ItemSetFormComponent } from './item-set-form.component';
 import { problemDetail } from './problem-detail';
+import { pageOf } from './page-of';
 
-const PAGE_SIZE = 20;
 /** Enough for every set in one page, so the template form can offer them all. */
 const ALL_SETS = 200;
 
@@ -182,12 +182,4 @@ export class ItemCatalogComponent implements OnInit {
     console.error(fallback, error);
     this.messageService.add({ severity: 'error', summary: 'Error', detail: problemDetail(error, fallback) });
   }
-}
-
-function pageOf(event: TableLazyLoadEvent): { page: number; size: number; sort?: string } {
-  const size = event.rows || PAGE_SIZE;
-  const page = event.first ? Math.floor(event.first / size) : 0;
-  const field = Array.isArray(event.sortField) ? event.sortField[0] : event.sortField;
-  const sort = field ? `${field},${event.sortOrder === -1 ? 'desc' : 'asc'}` : undefined;
-  return { page, size, sort };
 }

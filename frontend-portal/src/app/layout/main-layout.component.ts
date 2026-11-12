@@ -54,6 +54,12 @@ export class MainLayoutComponent {
       command: () => this.router.navigate(['/items']),
     },
     {
+      label: 'Dealers',
+      icon: 'pi pi-shop',
+      visible: this.authService.hasAnyRole([PlatformRole.PLATFORM_ADMIN]),
+      command: () => this.router.navigate(['/dealers']),
+    },
+    {
       label: 'My Profile',
       icon: 'pi pi-id-card',
       command: () => this.router.navigate(['/profile']),

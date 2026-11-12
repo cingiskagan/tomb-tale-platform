@@ -1,0 +1,33 @@
+<p-dialog
+  [header]="'Custom ' + (template?.name ?? 'item')"
+  [visible]="visible"
+  (visibleChange)="$event || close()"
+  [modal]="true"
+  [style]="{ width: '30rem' }"
+>
+  @if (error) {
+    <p-message severity="error" [text]="error" styleClass="mb-3" />
+  }
+
+  <p class="hint">Every copy a player buys carries exactly this bonus, so testers can try any scenario.</p>
+
+  <form [formGroup]="form" (ngSubmit)="save()">
+    <div class="field">
+      <label for="customRarity">Rarity</label>
+      <p-select inputId="customRarity" formControlName="rarity" [options]="rarities" appendTo="body" />
+    </div>
+
+    <app-stats-editor [rows]="form.controls.bonus" label="Bonus" />
+  </form>
+
+  <ng-template #footer>
+    <p-button label="Cancel" icon="pi pi-times" severity="secondary" [outlined]="true" (onClick)="close()" />
+    <p-button
+      label="Add to stand"
+      icon="pi pi-check"
+      [disabled]="form.invalid || saving"
+      [loading]="saving"
+      (onClick)="save()"
+    />
+  </ng-template>
+</p-dialog>
