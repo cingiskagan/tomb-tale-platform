@@ -26,6 +26,16 @@ public interface StandEntryRepository extends JpaRepository<StandEntry, Long> {
     List<StandEntry> findOnStand(@Param("dealer") Dealer dealer);
 
     /**
+     * The entry a buy names, while a stand still shows it.
+     *
+     * @param publicId the entry's id in the API
+     * @return the entry with its template, or empty when it is gone or its template or dealer is retired
+     */
+    @Query("select e from StandEntry e join fetch e.template t where e.publicId = :publicId "
+            + "and t.retired = false and e.dealer.retired = false")
+    Optional<StandEntry> findOnSale(@Param("publicId") UUID publicId);
+
+    /**
      * @param publicId the entry's id in the API
      * @param dealer   the dealer whose stand it must be on
      * @return the entry, or empty when that dealer has none with the id

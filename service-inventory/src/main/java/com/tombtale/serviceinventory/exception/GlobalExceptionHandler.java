@@ -47,6 +47,36 @@ public class GlobalExceptionHandler extends PlatformExceptionHandler {
     }
 
     /**
+     * @param ex a trade while the character holds a dungeon lock
+     * @return a 409 problem detail
+     */
+    @ExceptionHandler(CharacterInDungeonException.class)
+    public ProblemDetail handleCharacterInDungeon(CharacterInDungeonException ex) {
+        LOG.warn("Character in a dungeon: {}", ex.getMessage());
+        return problem(HttpStatus.CONFLICT, "Character In Dungeon", ex.getMessage());
+    }
+
+    /**
+     * @param ex a buy at a price the stand no longer asks
+     * @return a 409 problem detail
+     */
+    @ExceptionHandler(PriceChangedException.class)
+    public ProblemDetail handlePriceChanged(PriceChangedException ex) {
+        LOG.warn("Price changed: {}", ex.getMessage());
+        return problem(HttpStatus.CONFLICT, "Price Changed", ex.getMessage());
+    }
+
+    /**
+     * @param ex a buy the character can't pay for
+     * @return a 409 problem detail
+     */
+    @ExceptionHandler(NotEnoughCoinsException.class)
+    public ProblemDetail handleNotEnoughCoins(NotEnoughCoinsException ex) {
+        LOG.warn("Not enough coins: {}", ex.getMessage());
+        return problem(HttpStatus.CONFLICT, "Not Enough Coins", ex.getMessage());
+    }
+
+    /**
      * @param ex a slot that doesn't take the item's type
      * @return a 400 problem detail
      */
