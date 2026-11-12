@@ -1,0 +1,120 @@
+<p-dialog
+  [header]="'Stand — ' + (dealer?.name ?? '')"
+  [visible]="visible"
+  (visibleChange)="$event || close()"
+  [modal]="true"
+  [style]="{ width: '68rem' }"
+>
+  <div class="stand-editor">
+    <section class="catalog" aria-label="Catalog">
+      <h3>Catalog</h3>
+      <p-table
+        [value]="templates"
+        [lazy]="true"
+        (onLazyLoad)="loadTemplates($event)"
+        [paginator]="true"
+        [rows]="10"
+        [totalRecords]="templateTotal"
+        [loading]="templatesLoading"
+        sortField="code"
+        [sortOrder]="1"
+        styleClass="p-datatable-sm"
+      >
+        <ng-template #header>
+          <tr>
+            <th scope="col" class="icon-cell">Icon</th>
+            <th scope="col" pSortableColumn="code">Code <p-sortIcon field="code" /></th>
+            <th scope="col" pSortableColumn="name">Name <p-sortIcon field="name" /></th>
+            <th scope="col" pSortableColumn="price">Price <p-sortIcon field="price" /></th>
+            @if (customEnabled) {
+              <th scope="col">Custom</th>
+            }
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-template>
+          <tr
+            [class.retired]="template.retired"
+            [attr.data-template]="template.code"
+            [draggable]="!template.retired"
+            (dragstart)="onDragStart($event, template)"
+            (dragend)="onDragEnd()"
+          >
+            <td class="icon-cell">
+              @if (templateIconUrl(template); as src) {
+                <img [src]="src" [alt]="template.name" draggable="false" (error)="brokenIcons.add(template.iconHash)" />
+              } @else {
+                <i class="pi pi-image generic-icon" aria-hidden="true"></i>
+              }
+            </td>
+            <td>{{ template.code }}</td>
+            <td>{{ template.name }}</td>
+            <td>{{ template.price }}</td>
+            @if (customEnabled) {
+              <td>
+                <p-button
+                  icon="pi pi-sparkles"
+                  [rounded]="true"
+                  [text]="true"
+                  ariaLabel="Custom item"
+                  title="Custom item"
+                  [disabled]="template.retired"
+                  (onClick)="openCustom(template)"
+                />
+              </td>
+            }
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td [attr.colspan]="customEnabled ? 5 : 4">The catalog is empty.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </section>
+
+    <section class="stand" aria-label="Stand" (dragover)="allowDrop($event)" (drop)="dropOnStand($event)">
+      <div class="stand-header">
+        <h3>Stand</h3>
+        <label for="standRarity">Drop as</label>
+        <p-select inputId="standRarity" [formControl]="rarity" [options]="rarities" appendTo="body" />
+      </div>
+
+      @for (entry of entries; track entry.publicId) {
+        <div class="entry" [attr.data-entry]="entry.publicId">
+          @if (entryIconUrl(entry); as src) {
+            <img [src]="src" [alt]="entry.name" (error)="hideIcon(entry.iconUrl)" />
+          } @else {
+            <i class="pi pi-box generic-icon" aria-hidden="true"></i>
+          }
+          <span class="entry-name">
+            {{ entry.name }}
+            @if (entry.bonus) {
+              <span class="entry-bonus">Custom: {{ formatStats(entry.bonus) || 'no bonus' }}</span>
+            }
+          </span>
+          <p-tag [value]="entry.rarity" severity="secondary" />
+          <span class="entry-price">{{ entry.price }}</span>
+          <p-button
+            icon="pi pi-times"
+            [rounded]="true"
+            [text]="true"
+            severity="danger"
+            ariaLabel="Remove from stand"
+            (onClick)="remove(entry)"
+          />
+        </div>
+      } @empty {
+        <p class="hint">Drop a template here to sell it.</p>
+      }
+    </section>
+  </div>
+</p-dialog>
+
+<app-custom-entry-form
+  [dealerCode]="dealer?.code ?? null"
+  [template]="customTemplate"
+  [(visible)]="customVisible"
+  (saved)="onCustomSaved()"
+/>

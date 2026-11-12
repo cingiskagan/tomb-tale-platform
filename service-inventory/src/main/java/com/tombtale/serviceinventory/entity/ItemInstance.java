@@ -77,4 +77,11 @@ public class ItemInstance extends BaseEntity {
     @Version
     @Column(name = "version", nullable = false)
     private Integer version;
+
+    /**
+     * @return what the stack costs at a dealer: its template's price times its rarity's multiplier, for each copy
+     */
+    public long price() {
+        return template.getPrice() * rarity.priceMultiplier() * quantity;
+    }
 }

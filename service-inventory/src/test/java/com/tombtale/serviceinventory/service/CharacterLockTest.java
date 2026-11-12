@@ -3,16 +3,24 @@ package com.tombtale.serviceinventory.service;
 import com.tombtale.serviceinventory.config.JpaConfig;
 import com.tombtale.serviceinventory.domain.EquipmentSlot;
 import com.tombtale.serviceinventory.domain.ItemType;
+import com.tombtale.serviceinventory.domain.Rarity;
 import com.tombtale.serviceinventory.dto.CharacterInventoryResponse;
+import com.tombtale.serviceinventory.dto.DealerBuyRequest;
 import com.tombtale.serviceinventory.dto.event.PurchaseCreatedPayload;
 import com.tombtale.serviceinventory.entity.CharacterInventory;
+import com.tombtale.serviceinventory.entity.Dealer;
 import com.tombtale.serviceinventory.entity.ItemGrant;
 import com.tombtale.serviceinventory.entity.ItemInstance;
 import com.tombtale.serviceinventory.entity.ItemTemplate;
+import com.tombtale.serviceinventory.entity.StandEntry;
+import com.tombtale.serviceinventory.exception.NotEnoughCoinsException;
 import com.tombtale.serviceinventory.repository.CharacterInventoryRepository;
+import com.tombtale.serviceinventory.repository.CoinHistoryRepository;
+import com.tombtale.serviceinventory.repository.DealerRepository;
 import com.tombtale.serviceinventory.repository.ItemGrantRepository;
 import com.tombtale.serviceinventory.repository.ItemInstanceRepository;
 import com.tombtale.serviceinventory.repository.ItemTemplateRepository;
+import com.tombtale.serviceinventory.repository.StandEntryRepository;
 import com.tombtale.serviceinventory.security.InventoryCaller;
 import com.tombtale.serviceinventory.support.ItemTemplates;
 import com.tombtale.serviceinventory.support.FixedAuthorTestBase;
@@ -39,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 /**
@@ -47,14 +56,18 @@ import static org.assertj.core.api.Assertions.fail;
  */
 @DataJpaTest(showSql = false)
 @ActiveProfiles("test")
-@Import({ JpaConfig.class, ItemGrantService.class, ItemPlacementService.class, InventoryView.class })
+@Import({ JpaConfig.class, ItemGrantService.class, ItemPlacementService.class, DealerTradeService.class,
+        InventoryView.class })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
+// One test per write path the lock guards, and each brings its own service and rows.
+@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.TooManyMethods"})
 class CharacterLockTest extends FixedAuthorTestBase {
 
     private static final String POTION = "POTION_HEALTH";
     private static final int POTION_STACK = 10;
     private static final int FIRST_QUANTITY = 8;
     private static final int SECOND_QUANTITY = 5;
+    private static final long SWORD_PRICE = 100L;
     private static final Duration WAIT = Duration.ofSeconds(10);
     private static final Duration POLL = Duration.ofMillis(20);
     private static final InventoryCaller ADMIN = new InventoryCaller(null, true);
@@ -68,6 +81,9 @@ class CharacterLockTest extends FixedAuthorTestBase {
     private ItemPlacementService itemPlacementService;
 
     @Autowired
+    private DealerTradeService dealerTradeService;
+
+    @Autowired
     private CharacterInventoryRepository characterInventoryRepository;
 
     @Autowired
@@ -78,6 +94,15 @@ class CharacterLockTest extends FixedAuthorTestBase {
 
     @Autowired
     private ItemGrantRepository itemGrantRepository;
+
+    @Autowired
+    private CoinHistoryRepository coinHistoryRepository;
+
+    @Autowired
+    private DealerRepository dealerRepository;
+
+    @Autowired
+    private StandEntryRepository standEntryRepository;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -96,9 +121,12 @@ class CharacterLockTest extends FixedAuthorTestBase {
 
     @AfterEach
     void removeCommittedRows() {
+        coinHistoryRepository.deleteAllInBatch();
         itemInstanceRepository.deleteAllInBatch();
         itemGrantRepository.deleteAllInBatch();
-        characterInventoryRepository.delete(character);
+        standEntryRepository.deleteAllInBatch();
+        dealerRepository.deleteAllInBatch();
+        characterInventoryRepository.deleteById(character.getId());
         itemTemplateRepository.deleteAllInBatch();
     }
 
@@ -139,6 +167,36 @@ class CharacterLockTest extends FixedAuthorTestBase {
                 .satisfies(item -> assertThat(item.bagPosition()).isEqualTo(1));
     }
 
+    /** The coins pay for one sword and a half, so the second buy finds too few once the first commits. */
+    @Test
+    void twoBuysAtOnceCannotOverdraw() throws Exception {
+        character.setCoins(SWORD_PRICE + SWORD_PRICE / 2);
+        characterInventoryRepository.save(character);
+        ItemTemplate sword = itemTemplateRepository.save(
+                ItemTemplates.aTemplate("SWORD_IRON").itemType(ItemType.ONE_HANDED_WEAPON).price(SWORD_PRICE).build());
+        Dealer blacksmith = dealerRepository.save(Dealer.builder().code("TOWN_BLACKSMITH").name("Blacksmith").build());
+        StandEntry entry = standEntryRepository.save(
+                StandEntry.builder().dealer(blacksmith).template(sword).rarity(Rarity.GRAY).build());
+
+        CompletableFuture<CharacterInventoryResponse> second = new TransactionTemplate(transactionManager).execute(tx -> {
+            buy(entry);
+            CompletableFuture<CharacterInventoryResponse> secondBuy = CompletableFuture.supplyAsync(() -> buy(entry));
+            awaitALockWait();
+            return secondBuy;
+        });
+
+        assertThatThrownBy(() -> second.get(WAIT.toSeconds(), TimeUnit.SECONDS))
+                .hasCauseInstanceOf(NotEnoughCoinsException.class);
+        assertThat(characterInventoryRepository.findById(character.getId()))
+                .hasValueSatisfying(stored -> assertThat(stored.getCoins()).isEqualTo(SWORD_PRICE / 2));
+        assertThat(stackSizes()).containsExactly(1);
+    }
+
+    private CharacterInventoryResponse buy(StandEntry entry) {
+        return dealerTradeService.buy(character.getPublicId(),
+                new DealerBuyRequest(UUID.randomUUID(), entry.getPublicId(), SWORD_PRICE), ADMIN);
+    }
+
     private ItemInstance aHelmetInCell(ItemTemplate helmet, int cell) {
         return itemInstanceRepository.save(ItemInstance.builder()
                 .characterInventory(character).template(helmet).quantity(1).bagPosition(cell).build());
@@ -152,12 +210,12 @@ class CharacterLockTest extends FixedAuthorTestBase {
         return new PurchaseCreatedPayload(UUID.randomUUID(), player, POTION, quantity);
     }
 
-    /** Returns once some transaction waits for a lock another one holds, which here only the second grant can do. */
+    /** Returns once some transaction waits for a lock another one holds, which here only the second write can do. */
     private void awaitALockWait() {
         long deadline = System.nanoTime() + WAIT.toNanos();
         while (jdbcTemplate.queryForObject("select count(*) from pg_locks where not granted", Long.class) == 0) {
             if (System.nanoTime() > deadline) {
-                fail("The second grant never waited for the character lock");
+                fail("The second write never waited for the character lock");
             }
             LockSupport.parkNanos(POLL.toNanos());
         }

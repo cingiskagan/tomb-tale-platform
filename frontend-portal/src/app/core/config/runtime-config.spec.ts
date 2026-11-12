@@ -5,6 +5,7 @@ const VALID = {
   issuerUri: 'http://localhost:8080/realms/tombtale',
   clientId: 'tombtale-portal',
   apiBaseUrl: 'http://localhost:8080',
+  production: false,
 };
 
 describe('loadRuntimeConfig', () => {
@@ -27,9 +28,14 @@ describe('loadRuntimeConfig', () => {
     );
   }
 
-  it('returns the three settings', async () => {
+  it('returns the settings', async () => {
     answerWithBody(VALID);
     await expectAsync(loadRuntimeConfig()).toBeResolvedTo(VALID);
+  });
+
+  it('counts a file that does not say false as production', async () => {
+    answerWithBody({ ...VALID, production: undefined });
+    await expectAsync(loadRuntimeConfig()).toBeResolvedTo({ ...VALID, production: true });
   });
 
   it('rejects when the file is not there', async () => {

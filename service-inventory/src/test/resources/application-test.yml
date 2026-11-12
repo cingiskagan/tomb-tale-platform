@@ -37,3 +37,5 @@ inventory:
   starting-coins: 250
   # Not .env's 1000, for the same reason.
   bag-cells: 40
+  # Not .env's 25, for the same reason.
+  sell-share-percent: 30

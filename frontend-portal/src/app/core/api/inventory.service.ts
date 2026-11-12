@@ -32,6 +32,18 @@ export class InventoryService {
     return this.http.put<CharacterInventory>(`${this.baseUrl}/${characterId}/bag/${cell}`, { itemId });
   }
 
+  /**
+   * The copy goes to the lowest free cell. A trade id sent again buys nothing, and a changed price answers 409.
+   */
+  buy(characterId: string, tradeId: string, entryId: string, price: number): Observable<CharacterInventory> {
+    return this.http.post<CharacterInventory>(`${this.baseUrl}/${characterId}/dealer-buys`, { tradeId, entryId, price });
+  }
+
+  /** Every dealer pays the same share, so a sell names none. A trade id sent again pays nothing. */
+  sell(characterId: string, tradeId: string, itemId: string): Observable<CharacterInventory> {
+    return this.http.post<CharacterInventory>(`${this.baseUrl}/${characterId}/dealer-sells`, { tradeId, itemId });
+  }
+
   /** Inventory answers with the icon's path, which needs no token. */
   iconUrl(path: string): string {
     return `${this.apiBaseUrl}${path}`;

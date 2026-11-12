@@ -1,0 +1,34 @@
+<p-dialog
+  [header]="isEditMode ? 'Edit Dealer' : 'New Dealer'"
+  [visible]="visible"
+  (visibleChange)="$event || close()"
+  [modal]="true"
+  [style]="{ width: '28rem' }"
+>
+  @if (notice) {
+    <p-message [severity]="notice.severity" [text]="notice.text" styleClass="mb-3" />
+  }
+
+  <form [formGroup]="form" (ngSubmit)="save()">
+    <div class="field">
+      <label for="dealerCode">Code</label>
+      <input id="dealerCode" pInputText formControlName="code" class="w-full" placeholder="TOWN_BLACKSMITH" />
+    </div>
+
+    <div class="field">
+      <label for="dealerName">Name</label>
+      <input id="dealerName" pInputText formControlName="name" class="w-full" />
+    </div>
+  </form>
+
+  <ng-template #footer>
+    <p-button label="Cancel" icon="pi pi-times" severity="secondary" [outlined]="true" (onClick)="close()" />
+    <p-button
+      label="Save"
+      icon="pi pi-check"
+      [disabled]="form.invalid || !loaded || saving"
+      [loading]="saving"
+      (onClick)="save()"
+    />
+  </ng-template>
+</p-dialog>

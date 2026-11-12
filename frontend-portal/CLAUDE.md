@@ -12,4 +12,4 @@ npx ng test --watch=false --browsers=ChromeHeadless     # headless run (CHROME_B
 
 ## Runtime config
 
-`frontend-portal/public/config.json` holds the Keycloak issuer, client id and API base URL. It is tracked with the dev values, a deployment replaces it, and `main.ts` fetches it before the app bootstraps, so nothing reads these values at import time. `src/environments/environment*.ts` keep only the `production` flag. The values must stay consistent with `infrastructure/.env` and the realm file. See ADR 0020 and ADR 0024.
+`frontend-portal/public/config.json` holds the Keycloak issuer, client id and API base URL, and `production`, which makes the inventory dialog warn before an admin changes a live player's items. It is tracked with the dev values, a deployment replaces it, and `main.ts` fetches it before the app bootstraps, so nothing reads these values at import time. `src/environments/environment*.ts` keep only the `production` flag. The values must stay consistent with `infrastructure/.env` and the realm file. See ADR 0020 and ADR 0024.

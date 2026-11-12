@@ -6,5 +6,11 @@ package com.tombtale.serviceinventory.domain;
 public enum CoinReason {
 
     /** The coins every new character starts with. */
-    STARTING_COINS
+    STARTING_COINS,
+
+    /** The price of an item bought from a dealer, under the buy's trade id. */
+    DEALER_BUY,
+
+    /** What a dealer paid for an item, under the sell's trade id. */
+    DEALER_SELL
 }
