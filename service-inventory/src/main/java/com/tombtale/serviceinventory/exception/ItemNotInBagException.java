@@ -3,7 +3,7 @@ package com.tombtale.serviceinventory.exception;
 import java.util.UUID;
 
 /**
- * Only an item in the bag can be equipped or moved, and this one is equipped. Answers 409.
+ * Only an item in the bag can be equipped, moved or sold, and this one is equipped. Answers 409.
  */
 public class ItemNotInBagException extends RuntimeException {
 

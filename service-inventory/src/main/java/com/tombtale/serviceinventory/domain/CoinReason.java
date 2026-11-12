@@ -9,5 +9,8 @@ public enum CoinReason {
     STARTING_COINS,
 
     /** The price of an item bought from a dealer, under the buy's trade id. */
-    DEALER_BUY
+    DEALER_BUY,
+
+    /** What a dealer paid for an item, under the sell's trade id. */
+    DEALER_SELL
 }

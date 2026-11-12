@@ -2,15 +2,19 @@ package com.tombtale.serviceinventory.service;
 
 import com.tombtale.serviceinventory.domain.BagCells;
 import com.tombtale.serviceinventory.domain.CoinReason;
+import com.tombtale.serviceinventory.domain.SellShare;
 import com.tombtale.serviceinventory.domain.Stat;
 import com.tombtale.serviceinventory.dto.CharacterInventoryResponse;
 import com.tombtale.serviceinventory.dto.DealerBuyRequest;
+import com.tombtale.serviceinventory.dto.DealerSellRequest;
 import com.tombtale.serviceinventory.entity.CharacterInventory;
 import com.tombtale.serviceinventory.entity.CoinHistory;
 import com.tombtale.serviceinventory.entity.ItemInstance;
 import com.tombtale.serviceinventory.entity.StandEntry;
 import com.tombtale.serviceinventory.exception.CharacterInDungeonException;
 import com.tombtale.serviceinventory.exception.CharacterNotFoundException;
+import com.tombtale.serviceinventory.exception.ItemNotFoundException;
+import com.tombtale.serviceinventory.exception.ItemNotInBagException;
 import com.tombtale.serviceinventory.exception.NotEnoughCoinsException;
 import com.tombtale.serviceinventory.exception.PriceChangedException;
 import com.tombtale.serviceinventory.exception.StandEntryNotFoundException;
@@ -19,9 +23,9 @@ import com.tombtale.serviceinventory.repository.CoinHistoryRepository;
 import com.tombtale.serviceinventory.repository.ItemInstanceRepository;
 import com.tombtale.serviceinventory.repository.StandEntryRepository;
 import com.tombtale.serviceinventory.security.InventoryCaller;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +40,6 @@ import java.util.random.RandomGenerator;
  * trade id, so a trade sent twice happens once.
  */
 @Service
-@RequiredArgsConstructor
 public class DealerTradeService {
 
     private static final Logger LOG = LoggerFactory.getLogger(DealerTradeService.class);
@@ -46,9 +49,26 @@ public class DealerTradeService {
     private final StandEntryRepository standEntryRepository;
     private final ItemInstanceRepository itemInstanceRepository;
     private final InventoryView inventoryView;
+    private final SellShare sellShare;
 
     // A guessable sequence would let a player time a buy for a better roll.
     private final RandomGenerator random = new SecureRandom();
+
+    /** The sell share comes from {@code inventory.sell-share-percent} in application.yml. */
+    public DealerTradeService(
+            CharacterInventoryRepository characterInventoryRepository,
+            CoinHistoryRepository coinHistoryRepository,
+            StandEntryRepository standEntryRepository,
+            ItemInstanceRepository itemInstanceRepository,
+            InventoryView inventoryView,
+            @Value("${inventory.sell-share-percent}") int sellSharePercent) {
+        this.characterInventoryRepository = characterInventoryRepository;
+        this.coinHistoryRepository = coinHistoryRepository;
+        this.standEntryRepository = standEntryRepository;
+        this.itemInstanceRepository = itemInstanceRepository;
+        this.inventoryView = inventoryView;
+        this.sellShare = new SellShare(sellSharePercent);
+    }
 
     /**
      * Charges the entry's price and puts a new copy in the lowest free cell. A trade id sent again changes nothing.
@@ -89,6 +109,38 @@ public class DealerTradeService {
                 .build());
         LOG.info("Character {} bought {} {} for {} coins in trade {}",
                 characterId, entry.getRarity(), entry.getTemplate().getCode(), price, request.tradeId());
+        return inventoryOf(character);
+    }
+
+    /**
+     * Pays the sell share of the item's price and takes the item, every copy in its stack. A trade id sent again
+     * changes nothing.
+     *
+     * @param characterId the character
+     * @param request     the trade id and the bag item
+     * @param caller      who asks
+     * @return the inventory after the sell
+     * @throws CharacterInDungeonException if the character holds a dungeon lock
+     * @throws ItemNotFoundException       if the character owns no such item
+     * @throws ItemNotInBagException       if the item is equipped
+     */
+    @Transactional
+    public CharacterInventoryResponse sell(UUID characterId, DealerSellRequest request, InventoryCaller caller) {
+        CharacterInventory character = lock(characterId, caller);
+        if (coinHistoryRepository.existsByCharacterInventoryAndReference(character, request.tradeId())) {
+            return inventoryOf(character);
+        }
+        checkNotInDungeon(character);
+        ItemInstance item = itemInstanceRepository.findByPublicIdAndCharacterInventory(request.itemId(), character)
+                .orElseThrow(() -> new ItemNotFoundException(request.itemId()));
+        if (item.getBagPosition() == null) {
+            throw new ItemNotInBagException(request.itemId());
+        }
+        long payout = sellShare.payoutFor(item.price());
+        LOG.info("Character {} sold {} {} x{} for {} coins in trade {}", characterId, item.getRarity(),
+                item.getTemplate().getCode(), item.getQuantity(), payout, request.tradeId());
+        itemInstanceRepository.delete(item);
+        changeCoins(character, payout, CoinReason.DEALER_SELL, request.tradeId());
         return inventoryOf(character);
     }
 

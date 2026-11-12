@@ -3,6 +3,7 @@ package com.tombtale.serviceinventory.controller;
 import com.tombtale.commons.security.RoleConstants;
 import com.tombtale.serviceinventory.dto.CharacterInventoryResponse;
 import com.tombtale.serviceinventory.dto.DealerBuyRequest;
+import com.tombtale.serviceinventory.dto.DealerSellRequest;
 import com.tombtale.serviceinventory.security.InventoryCaller;
 import com.tombtale.serviceinventory.service.DealerTradeService;
 import jakarta.validation.Valid;
@@ -41,5 +42,19 @@ public class DealerTradeController {
     public CharacterInventoryResponse buy(
             @PathVariable UUID characterId, @Valid @RequestBody DealerBuyRequest request, JwtAuthenticationToken token) {
         return dealerTradeService.buy(characterId, request, InventoryCaller.from(token));
+    }
+
+    /**
+     * Every dealer pays the same share, so a sell names none. A dungeon lock or an equipped item answers 409.
+     *
+     * @param characterId the character
+     * @param request     the trade id and the bag item
+     * @param token       the caller's token
+     * @return the inventory after the sell
+     */
+    @PostMapping("/dealer-sells")
+    public CharacterInventoryResponse sell(
+            @PathVariable UUID characterId, @Valid @RequestBody DealerSellRequest request, JwtAuthenticationToken token) {
+        return dealerTradeService.sell(characterId, request, InventoryCaller.from(token));
     }
 }

@@ -101,6 +101,9 @@ inventory:
   starting-coins: ${INVENTORY_STARTING_COINS}
   # How many cells a bag has. A move stays inside them. Grants ignore it until Tier 2 limits the bag.
   bag-cells: ${INVENTORY_BAG_CELLS}
+  # The share of an item's price, in percent, that any dealer pays for it, rounded
+  # down. At most 100, so no route between dealers makes coins.
+  sell-share-percent: ${INVENTORY_SELL_SHARE_PERCENT}
   icons:
     # The largest icon an upload may send. The multipart limit, 1MB, stays above it.
     max-size: 256KB
