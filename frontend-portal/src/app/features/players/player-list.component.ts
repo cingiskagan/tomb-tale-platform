@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { TableModule, TableLazyLoadEvent } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { PlayerService, Player, PlayerFilterRequest, GameCharacter } from '../../core/api';
 import { AuthService, PlatformRole } from '../../core/auth';
 import { PlayerStatsDialogComponent } from './player-stats-dialog.component';
@@ -14,7 +14,7 @@ import { firstValueFrom } from 'rxjs';
     selector: 'app-player-list',
     standalone: true,
     imports: [CommonModule, TableModule, ButtonModule, ToastModule, PlayerStatsDialogComponent, InventoryDialogComponent],
-    providers: [MessageService],
+    providers: [ConfirmationService, MessageService],
     templateUrl: './player-list.component.html',
     styleUrl: './player-list.component.css'
 })

@@ -8,6 +8,7 @@ const CONFIG: RuntimeConfig = {
   issuerUri: 'http://localhost:8080/realms/tombtale',
   clientId: 'test-client',
   apiBaseUrl: 'http://localhost:8080',
+  production: false,
 };
 
 const INVENTORY = 'http://localhost:8080/api/v1/inventory';

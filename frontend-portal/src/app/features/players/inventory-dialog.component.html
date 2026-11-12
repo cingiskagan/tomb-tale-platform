@@ -3,7 +3,7 @@
   [visible]="visible"
   (visibleChange)="$event || close()"
   [modal]="true"
-  [style]="{ width: '52rem' }"
+  [style]="{ width: '76rem' }"
 >
   @if (inventory; as shown) {
     <div class="inventory" [class.busy]="busy">
@@ -32,7 +32,7 @@
             <div
               class="cell"
               [attr.data-cell]="$index"
-              (dragover)="allowDrop($event)"
+              (dragover)="allowBagDrop($event)"
               (drop)="dropOnCell($event, $index)"
             >
               @if (item) {
@@ -48,6 +48,50 @@
             }
           </ul>
         }
+      </section>
+
+      <section class="dealer" aria-label="Dealer">
+        <p-select
+          [formControl]="dealerCode"
+          [options]="dealers"
+          optionLabel="name"
+          optionValue="code"
+          placeholder="Pick a dealer"
+          ariaLabel="Dealer"
+          appendTo="body"
+          (onChange)="pickDealer()"
+        />
+        <div class="stand" (dragover)="allowDrop($event)" (drop)="dropOnStand($event)">
+          @if (stand; as shownStand) {
+            <div class="stand-grid">
+              @for (entry of shownStand.entries; track entry.publicId) {
+                <div class="stand-entry">
+                  <div
+                    class="tile"
+                    [class]="'rarity-' + entry.rarity"
+                    [attr.data-entry]="entry.publicId"
+                    [title]="describeEntry(entry)"
+                    draggable="true"
+                    (dragstart)="onEntryDragStart($event, entry)"
+                    (dragend)="onDragEnd()"
+                  >
+                    @if (iconUrl(entry); as src) {
+                      <img [src]="src" [alt]="entry.name" draggable="false" (error)="brokenIcons.add(entry.iconUrl!)" />
+                    } @else {
+                      <i class="pi pi-box generic-icon" aria-hidden="true"></i>
+                    }
+                  </div>
+                  <span class="price">{{ entry.price | number }}</span>
+                </div>
+              } @empty {
+                <p class="hint">This dealer sells nothing yet.</p>
+              }
+            </div>
+            <p class="hint">Drag from here to the bag to buy, and from the bag to here to sell.</p>
+          } @else {
+            <p class="hint">Pick a dealer to trade with.</p>
+          }
+        </div>
       </section>
     </div>
   } @else {
@@ -75,3 +119,5 @@
     </div>
   </ng-template>
 </p-dialog>
+
+<p-confirmDialog key="inventory" [style]="{ width: '450px' }" />

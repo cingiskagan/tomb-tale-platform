@@ -9,6 +9,7 @@ const CONFIG: RuntimeConfig = {
   issuerUri: 'http://localhost:8080/realms/tombtale',
   clientId: 'test-client',
   apiBaseUrl: 'http://localhost:8081',
+  production: false,
 };
 
 describe('AuthService', () => {
