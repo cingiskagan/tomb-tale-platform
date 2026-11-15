@@ -194,7 +194,7 @@ describe('StandEditorComponent', () => {
   });
 
   it('offers custom items only while inventory takes them', async () => {
-    await open([anEntry('e-1', Rarity.RED, 36450, { FIRE_DAMAGE: 40 })]);
+    await open([anEntry('e-1', Rarity.RED, 36450, [{ stat: 'FIRE_DAMAGE', value: 40 }])]);
     expect(find('[aria-label="Custom item"]')).toBeNull();
     expect(find('[data-entry="e-1"]')?.textContent).toContain('Custom: FIRE_DAMAGE 40');
     fixture.destroy();

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormArray, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
@@ -7,7 +7,7 @@ import { MessageModule } from 'primeng/message';
 import { firstValueFrom } from 'rxjs';
 import { DealerService, ItemTemplateResponse, Rarity, StandEntry } from '../../core/api';
 import { StatsEditorComponent } from '../items/stats-editor.component';
-import { statArray, statsOf } from '../items/stats-form';
+import { StatRow, linesOf } from '../items/stats-form';
 import { problemDetail } from '../items/problem-detail';
 
 export const RARITY_OPTIONS = Object.values(Rarity).map((rarity) => ({ label: rarity, value: rarity }));
@@ -44,7 +44,8 @@ export class CustomEntryFormComponent {
   readonly rarities = RARITY_OPTIONS;
   readonly form = new FormGroup({
     rarity: new FormControl(Rarity.RED, { nonNullable: true }),
-    bonus: statArray(),
+    // No unique-stat check, because a bonus may carry a stat more than once.
+    bonus: new FormArray<StatRow>([]),
   });
 
   saving = false;
@@ -60,7 +61,7 @@ export class CustomEntryFormComponent {
         this.dealerService.addEntry(this.dealerCode, {
           templateId: this.template.publicId,
           rarity: this.form.controls.rarity.value,
-          bonus: statsOf(this.form.controls.bonus),
+          bonus: linesOf(this.form.controls.bonus),
         }),
       );
       this.saved.emit(entry);

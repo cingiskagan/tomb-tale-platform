@@ -91,7 +91,7 @@
           <span class="entry-name">
             {{ entry.name }}
             @if (entry.bonus) {
-              <span class="entry-bonus">Custom: {{ formatStats(entry.bonus) || 'no bonus' }}</span>
+              <span class="entry-bonus">Custom: {{ formatBonus(entry.bonus) || 'no bonus' }}</span>
             }
           </span>
           <p-tag [value]="entry.rarity" severity="secondary" />

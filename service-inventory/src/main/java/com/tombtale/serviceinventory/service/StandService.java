@@ -1,7 +1,9 @@
 package com.tombtale.serviceinventory.service;
 
 import com.tombtale.serviceinventory.controller.ItemIconController;
+import com.tombtale.serviceinventory.domain.BonusLine;
 import com.tombtale.serviceinventory.domain.Stat;
+import com.tombtale.serviceinventory.dto.BonusLineRequest;
 import com.tombtale.serviceinventory.dto.StandEntryRequest;
 import com.tombtale.serviceinventory.dto.StandEntryResponse;
 import com.tombtale.serviceinventory.dto.StandResponse;
@@ -83,7 +85,7 @@ public class StandService {
                 .dealer(dealer)
                 .template(template)
                 .rarity(request.rarity())
-                .bonus(request.bonus() == null ? null : Stat.fromNames(request.bonus()))
+                .bonus(request.bonus() == null ? null : linesOf(request.bonus()))
                 .build());
         LOG.info("Added {} {} to the stand of {}{}", request.rarity(), template.getCode(), dealer.getCode(),
                 saved.getBonus() == null ? "" : " with a custom bonus");
@@ -124,6 +126,10 @@ public class StandService {
             throw new RetiredTemplateException(template.getCode());
         }
         return template;
+    }
+
+    private static List<BonusLine> linesOf(List<BonusLineRequest> lines) {
+        return lines.stream().map(line -> new BonusLine(Stat.named(line.stat()), line.value())).toList();
     }
 
     private static StandEntryResponse toResponse(StandEntry entry) {

@@ -27,7 +27,7 @@ public interface ItemInstanceRepository extends JpaRepository<ItemInstance, Long
      * @return the stacks that still have room
      */
     @Query("select i from ItemInstance i where i.characterInventory = :character and i.template = :template "
-            + "and i.rarity = :rarity and cast(i.bonus as String) = '{}' "
+            + "and i.rarity = :rarity and cast(i.bonus as String) = '[]' "
             + "and i.quantity < i.template.maxStackSize order by i.id")
     List<ItemInstance> findStacksWithRoom(
             @Param("character") CharacterInventory character,

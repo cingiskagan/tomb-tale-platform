@@ -75,15 +75,18 @@ class CustomStandEntryControllerTest extends FixedAuthorTestBase {
         itemTemplateRepository.deleteAllInBatch();
     }
 
+    /** The bonus repeats a stat, which a rolled one may do too. */
     @Test
     void aCustomEntryShowsTheBonusAnAdminChoseAtItsRaritysPrice() throws Exception {
         addCustomEntry("FIRE_DAMAGE")
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.bonus.FIRE_DAMAGE").value(FIRE_DAMAGE));
+                .andExpect(jsonPath("$.bonus.length()").value(2))
+                .andExpect(jsonPath("$.bonus[1].stat").value("FIRE_DAMAGE"))
+                .andExpect(jsonPath("$.bonus[1].value").value(FIRE_DAMAGE));
 
         mockMvc.perform(get(STAND_URL).with(tokenWithRoles(RoleConstants.PLAYER)))
                 .andExpect(jsonPath("$.entries[0].rarity").value("RED"))
-                .andExpect(jsonPath("$.entries[0].bonus.FIRE_DAMAGE").value(FIRE_DAMAGE))
+                .andExpect(jsonPath("$.entries[0].bonus[0].value").value(FIRE_DAMAGE))
                 .andExpect(jsonPath("$.entries[0].price").value(RED_RING_PRICE));
         mockMvc.perform(get("/api/v1/inventory/settings").with(tokenWithRoles(RoleConstants.PLATFORM_ADMIN)))
                 .andExpect(jsonPath("$.customStandItemsEnabled").value(true));
@@ -96,13 +99,28 @@ class CustomStandEntryControllerTest extends FixedAuthorTestBase {
                 .andExpect(jsonPath("$.title").value("Unknown Stat"));
     }
 
+    @Test
+    void aBonusLineWithoutAValueAnswers400NamingIt() throws Exception {
+        addEntry("""
+                {"templateId": "%s", "rarity": "RED", "bonus": [{"stat": "FIRE_DAMAGE"}]}
+                """.formatted(ring.getPublicId()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors['bonus[0].value']").exists());
+    }
+
+    /** Two lines of the stat, each worth {@link #FIRE_DAMAGE}. */
     private ResultActions addCustomEntry(String stat) throws Exception {
+        return addEntry("""
+                {"templateId": "%1$s", "rarity": "RED",
+                 "bonus": [{"stat": "%2$s", "value": %3$d}, {"stat": "%2$s", "value": %3$d}]}
+                """.formatted(ring.getPublicId(), stat, FIRE_DAMAGE));
+    }
+
+    private ResultActions addEntry(String body) throws Exception {
         return mockMvc.perform(post(STAND_URL + "/entries")
                 .with(tokenWithRoles(RoleConstants.PLATFORM_ADMIN))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {"templateId": "%s", "rarity": "RED", "bonus": {"%s": %d}}
-                        """.formatted(ring.getPublicId(), stat, FIRE_DAMAGE)));
+                .content(body));
     }
 
     private static JwtRequestPostProcessor tokenWithRoles(String... roles) {

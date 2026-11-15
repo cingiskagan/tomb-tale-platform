@@ -25,7 +25,7 @@ function anItem(publicId: string, overrides: Partial<InventoryItem>): InventoryI
     itemType: ItemType.RING,
     iconUrl: null,
     rarity: Rarity.GRAY,
-    bonus: {},
+    bonus: [],
     finalStats: {},
     quantity: 1,
     equipmentSlot: null,
@@ -34,7 +34,14 @@ function anItem(publicId: string, overrides: Partial<InventoryItem>): InventoryI
   };
 }
 
-const RING = anItem('ring', { equipmentSlot: EquipmentSlot.RING_1, rarity: Rarity.BLUE, bonus: { FIRE_DAMAGE: 4 } });
+const RING = anItem('ring', {
+  equipmentSlot: EquipmentSlot.RING_1,
+  rarity: Rarity.BLUE,
+  bonus: [
+    { stat: 'FIRE_DAMAGE', value: 4 },
+    { stat: 'FIRE_DAMAGE', value: 2 },
+  ],
+});
 const HELMET = anItem('helmet', { itemType: ItemType.HELMET, bagPosition: 2 });
 
 function anInventory(
@@ -151,7 +158,7 @@ describe('InventoryDialogComponent', () => {
   it('shows the bonus on hover', async () => {
     await open(anInventory({ RING_1: RING }, []));
 
-    expect(find('[data-item="ring"]')?.title).toContain('Bonus: FIRE_DAMAGE 4');
+    expect(find('[data-item="ring"]')?.title).toContain('Bonus: FIRE_DAMAGE 4, FIRE_DAMAGE 2');
   });
 
   it('equips a bag item dropped on a slot and redraws from the answer', async () => {

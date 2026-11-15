@@ -47,14 +47,24 @@ class BonusPoolTest {
 
     @ParameterizedTest
     @EnumSource(Rarity.class)
-    void anItemRollsAsManyDifferentStatsAsItsRarityAdds(Rarity rarity) {
+    void anItemRollsALineForEachBonusItsRarityAddsWithAStatsLinesTogether(Rarity rarity) {
         for (BonusPool pool : BonusPool.values()) {
             for (int roll = 0; roll < ROLLS; roll++) {
-                Map<Stat, Integer> bonus = pool.roll(rarity, random);
-                assertThat(bonus).as(pool.name()).hasSize(rarity.bonusCount());
-                assertThat(pool.ranges().keySet()).containsAll(bonus.keySet());
+                List<Stat> stats = pool.roll(rarity, random).stream().map(BonusLine::stat).toList();
+                assertThat(stats).as(pool.name()).hasSize(rarity.bonusCount()).isSorted();
+                assertThat(pool.ranges().keySet()).containsAll(stats);
             }
         }
+    }
+
+    /** A lucky red weapon draws the same stat five times. */
+    @Test
+    void aStatCanRollMoreThanOnce() {
+        RandomGenerator alwaysTheLowest = () -> 0L;
+
+        assertThat(BonusPool.WEAPON.roll(Rarity.RED, alwaysTheLowest))
+                .hasSize(Rarity.RED.bonusCount())
+                .containsOnly(new BonusLine(Stat.PHYSICAL_DAMAGE, BonusPool.WEAPON.ranges().get(Stat.PHYSICAL_DAMAGE).min()));
     }
 
     @ParameterizedTest
@@ -62,8 +72,8 @@ class BonusPoolTest {
     void eachValueFallsWithinItsRangeAndReachesBothEnds(BonusPool pool) {
         Map<Stat, IntSummaryStatistics> rolled = Stream.generate(() -> pool.roll(Rarity.RED, random))
                 .limit(ROLLS)
-                .flatMap(bonus -> bonus.entrySet().stream())
-                .collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.summarizingInt(Map.Entry::getValue)));
+                .flatMap(List::stream)
+                .collect(Collectors.groupingBy(BonusLine::stat, Collectors.summarizingInt(BonusLine::value)));
 
         assertThat(rolled.keySet()).isEqualTo(pool.ranges().keySet());
         pool.ranges().forEach((stat, range) -> {

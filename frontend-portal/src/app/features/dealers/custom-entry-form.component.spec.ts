@@ -26,19 +26,25 @@ describe('CustomEntryFormComponent', () => {
     form.visible = true;
   });
 
-  it('adds the template with the rarity and the exact bonus, then closes', async () => {
+  it('adds the template with the rarity and the exact bonus, a stat twice too, then closes', async () => {
     dealerService.addEntry.and.returnValue(of({ publicId: 'e-1' } as StandEntry));
     const saved = spyOn(form.saved, 'emit');
     form.form.controls.rarity.setValue(Rarity.ORANGE);
     form.form.controls.bonus.push(statRow('FIRE_DAMAGE', 40));
     form.form.controls.bonus.push(statRow('CRIT_CHANCE', 2));
+    form.form.controls.bonus.push(statRow('FIRE_DAMAGE', 40));
 
+    expect(form.form.valid).toBeTrue();
     await form.save();
 
     expect(dealerService.addEntry).toHaveBeenCalledWith('TOWN_JEWELER', {
       templateId: 't-ring',
       rarity: Rarity.ORANGE,
-      bonus: { FIRE_DAMAGE: 40, CRIT_CHANCE: 2 },
+      bonus: [
+        { stat: 'FIRE_DAMAGE', value: 40 },
+        { stat: 'CRIT_CHANCE', value: 2 },
+        { stat: 'FIRE_DAMAGE', value: 40 },
+      ],
     });
     expect(saved).toHaveBeenCalled();
     expect(form.visible).toBeFalse();

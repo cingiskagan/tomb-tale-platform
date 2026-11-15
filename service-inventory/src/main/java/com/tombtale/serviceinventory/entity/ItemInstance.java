@@ -1,9 +1,9 @@
 package com.tombtale.serviceinventory.entity;
 
 import com.tombtale.commons.entity.BaseEntity;
+import com.tombtale.serviceinventory.domain.BonusLine;
 import com.tombtale.serviceinventory.domain.EquipmentSlot;
 import com.tombtale.serviceinventory.domain.Rarity;
-import com.tombtale.serviceinventory.domain.Stat;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -21,7 +21,7 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  * One stack a character owns: copies of one template and rarity, up to the template's {@code maxStackSize}.
@@ -54,11 +54,11 @@ public class ItemInstance extends BaseEntity {
     @Builder.Default
     private Rarity rarity = Rarity.GRAY;
 
-    /** The stats the item rolled on top of its template's. A copy with a bonus never stacks. */
+    /** What the item rolled on top of its template's stats, one line per roll. A copy with a bonus never stacks. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "bonus", nullable = false, updatable = false)
     @Builder.Default
-    private Map<Stat, Integer> bonus = Map.of();
+    private List<BonusLine> bonus = List.of();
 
     /** How many copies the stack holds, from 1 to the template's {@code maxStackSize}. */
     @Column(name = "quantity", nullable = false)

@@ -8,6 +8,7 @@ import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { firstValueFrom } from 'rxjs';
 import {
+  BonusLine,
   DealerResponse,
   DealerService,
   InventoryService,
@@ -15,7 +16,6 @@ import {
   ItemTemplateResponse,
   Rarity,
   StandEntry,
-  Stats,
 } from '../../core/api';
 import { pageOf } from '../items/page-of';
 import { problemDetail } from '../items/problem-detail';
@@ -117,10 +117,8 @@ export class StandEditorComponent {
     if (path) this.brokenIcons.add(path);
   }
 
-  formatStats(stats: Stats): string {
-    return Object.entries(stats)
-      .map(([stat, value]) => `${stat} ${value}`)
-      .join(', ');
+  formatBonus(bonus: BonusLine[]): string {
+    return bonus.map((line) => `${line.stat} ${line.value}`).join(', ');
   }
 
   /** A retired template leaves every stand, so it can't be dragged onto one. */

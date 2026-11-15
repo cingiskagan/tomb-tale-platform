@@ -1,9 +1,9 @@
 package com.tombtale.serviceinventory.service;
 
 import com.tombtale.serviceinventory.domain.BagCells;
+import com.tombtale.serviceinventory.domain.BonusLine;
 import com.tombtale.serviceinventory.domain.CoinReason;
 import com.tombtale.serviceinventory.domain.SellShare;
-import com.tombtale.serviceinventory.domain.Stat;
 import com.tombtale.serviceinventory.dto.CharacterInventoryResponse;
 import com.tombtale.serviceinventory.dto.DealerBuyRequest;
 import com.tombtale.serviceinventory.dto.DealerSellRequest;
@@ -31,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 import java.util.random.RandomGenerator;
 
@@ -145,10 +145,10 @@ public class DealerTradeService {
     }
 
     /** A custom entry's every copy carries its bonus, and any other copy rolls its own. */
-    private Map<Stat, Integer> bonusOf(StandEntry entry) {
+    private List<BonusLine> bonusOf(StandEntry entry) {
         return entry.getBonus() == null
                 ? entry.getTemplate().getItemType().bonusPool().roll(entry.getRarity(), random)
-                : Map.copyOf(entry.getBonus());
+                : List.copyOf(entry.getBonus());
     }
 
     private void changeCoins(CharacterInventory character, long amount, CoinReason reason, UUID tradeId) {

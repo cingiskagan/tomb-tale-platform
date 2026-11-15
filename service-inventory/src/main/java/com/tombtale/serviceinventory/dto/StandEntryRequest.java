@@ -1,9 +1,10 @@
 package com.tombtale.serviceinventory.dto;
 
 import com.tombtale.serviceinventory.domain.Rarity;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -11,7 +12,8 @@ import java.util.UUID;
  *
  * @param templateId the template it sells
  * @param rarity     the rarity of every copy
- * @param bonus      stat names with the values every copy carries, or null for copies that roll their own
+ * @param bonus      the lines every copy carries, a stat more than once if need be, or null for copies that roll
+ *                   their own
  */
 public record StandEntryRequest(
         @NotNull(message = "templateId is required")
@@ -20,6 +22,6 @@ public record StandEntryRequest(
         @NotNull(message = "rarity is required")
         Rarity rarity,
 
-        Map<String, @NotNull(message = "a stat needs a value") Integer> bonus
+        List<@NotNull(message = "a bonus line is required") @Valid BonusLineRequest> bonus
 ) {
 }

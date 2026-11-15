@@ -1,5 +1,5 @@
 import { AbstractControl, FormArray, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
-import { Stat, Stats } from '../../core/api';
+import { BonusLine, Stat, Stats } from '../../core/api';
 
 /** One stat and its value, as the stats editor shows it. */
 export type StatRow = FormGroup<{
@@ -29,6 +29,13 @@ export function statsOf(rows: FormArray<StatRow>): Stats {
     }
   }
   return stats;
+}
+
+/** The rows as bonus lines, in their order. Unlike stats, a stat may repeat. */
+export function linesOf(rows: FormArray<StatRow>): BonusLine[] {
+  return rows.controls
+    .map((row) => row.getRawValue())
+    .filter((row): row is BonusLine => row.stat !== null && row.value !== null);
 }
 
 /** A stat may appear once, or the second row would silently replace the first. */

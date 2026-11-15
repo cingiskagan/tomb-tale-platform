@@ -3,6 +3,7 @@ package com.tombtale.serviceinventory.controller;
 import com.tombtale.commons.security.PublicIdClaim;
 import com.tombtale.commons.security.RoleClaimConverter;
 import com.tombtale.commons.security.RoleConstants;
+import com.tombtale.serviceinventory.domain.BonusLine;
 import com.tombtale.serviceinventory.domain.BonusPool;
 import com.tombtale.serviceinventory.domain.CoinReason;
 import com.tombtale.serviceinventory.domain.ItemType;
@@ -63,7 +64,8 @@ class DealerBuyControllerTest extends FixedAuthorTestBase {
     private static final long SWORD_PRICE = 150L;
     /** Blue is 9 times gray. */
     private static final long BLUE_SWORD_PRICE = 1350L;
-    private static final Map<Stat, Integer> CUSTOM_BONUS = Map.of(Stat.FIRE_DAMAGE, 40, Stat.CRIT_CHANCE, 2);
+    private static final List<BonusLine> CUSTOM_BONUS =
+            List.of(new BonusLine(Stat.FIRE_DAMAGE, 40), new BonusLine(Stat.FIRE_DAMAGE, 40));
     private static final Duration LOCK_TIME = Duration.ofMinutes(2);
 
     @Autowired
@@ -129,9 +131,8 @@ class DealerBuyControllerTest extends FixedAuthorTestBase {
 
         Map<Stat, BonusPool.Range> weaponRanges = BonusPool.WEAPON.ranges();
         assertThat(boughtSwords()).singleElement().satisfies(bought -> {
-            assertThat(bought.getBonus()).hasSize(Rarity.BLUE.bonusCount());
-            bought.getBonus().forEach((stat, value) -> assertThat(value)
-                    .isBetween(weaponRanges.get(stat).min(), weaponRanges.get(stat).max()));
+            assertThat(bought.getBonus()).hasSize(Rarity.BLUE.bonusCount()).allSatisfy(line -> assertThat(line.value())
+                    .isBetween(weaponRanges.get(line.stat()).min(), weaponRanges.get(line.stat()).max()));
         });
         assertThat(coinHistoryRepository.findAll()).singleElement().satisfies(change -> {
             assertThat(change.getAmount()).isEqualTo(-BLUE_SWORD_PRICE);
@@ -140,7 +141,7 @@ class DealerBuyControllerTest extends FixedAuthorTestBase {
         });
     }
 
-    /** A red copy would roll five stats, so two stats show the bonus was copied, not rolled. */
+    /** A red copy would roll five lines, so two show the bonus was copied, not rolled, a repeated stat too. */
     @Test
     void aCustomEntryCopiesItsBonusExactly() throws Exception {
         StandEntry custom = anEntry(sword, Rarity.RED, CUSTOM_BONUS);
@@ -254,7 +255,7 @@ class DealerBuyControllerTest extends FixedAuthorTestBase {
                 .andExpect(status().isUnauthorized());
     }
 
-    private StandEntry anEntry(ItemTemplate template, Rarity rarity, Map<Stat, Integer> bonus) {
+    private StandEntry anEntry(ItemTemplate template, Rarity rarity, List<BonusLine> bonus) {
         Dealer blacksmith = dealerRepository.findByCode("TOWN_BLACKSMITH").orElseGet(() ->
                 dealerRepository.save(Dealer.builder().code("TOWN_BLACKSMITH").name("Blacksmith").build()));
         return standEntryRepository.save(StandEntry.builder()

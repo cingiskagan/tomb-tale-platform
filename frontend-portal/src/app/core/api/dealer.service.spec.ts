@@ -51,12 +51,13 @@ describe('DealerService', () => {
   });
 
   it('adds a custom entry with its bonus, and removes an entry by its id', () => {
-    service.addEntry('TOWN_BLACKSMITH', { templateId: 't-1', rarity: Rarity.RED, bonus: { FIRE_DAMAGE: 40 } }).subscribe();
+    const bonus = [{ stat: 'FIRE_DAMAGE' as const, value: 40 }];
+    service.addEntry('TOWN_BLACKSMITH', { templateId: 't-1', rarity: Rarity.RED, bonus }).subscribe();
     service.removeEntry('TOWN_BLACKSMITH', 'e-1').subscribe();
 
     const add = http.expectOne(`${INVENTORY}/stands/TOWN_BLACKSMITH/entries`);
     expect(add.request.method).toBe('POST');
-    expect(add.request.body).toEqual({ templateId: 't-1', rarity: Rarity.RED, bonus: { FIRE_DAMAGE: 40 } });
+    expect(add.request.body).toEqual({ templateId: 't-1', rarity: Rarity.RED, bonus });
     expect(http.expectOne(`${INVENTORY}/stands/TOWN_BLACKSMITH/entries/e-1`).request.method).toBe('DELETE');
   });
 

@@ -7,6 +7,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Observable, firstValueFrom } from 'rxjs';
 import {
+  BonusLine,
   CharacterInventory,
   DealerResponse,
   DealerService,
@@ -124,7 +125,7 @@ export class InventoryDialogComponent {
   describe(item: InventoryItem): string {
     return [
       `${item.name} (${item.rarity.toLowerCase()})`,
-      `Bonus: ${formatStats(item.bonus) || 'none'}`,
+      `Bonus: ${formatBonus(item.bonus) || 'none'}`,
       `Stats: ${formatStats(item.finalStats) || 'none'}`,
     ].join('\n');
   }
@@ -134,7 +135,7 @@ export class InventoryDialogComponent {
     return [
       `${entry.name} (${entry.rarity.toLowerCase()})`,
       `Price: ${entry.price} coins`,
-      entry.bonus ? `Bonus: ${formatStats(entry.bonus) || 'none'}` : 'Bonus: rolled when bought',
+      entry.bonus ? `Bonus: ${formatBonus(entry.bonus) || 'none'}` : 'Bonus: rolled when bought',
     ].join('\n');
   }
 
@@ -365,6 +366,10 @@ export function bagCells(bag: InventoryItem[]): (InventoryItem | null)[] {
     if (item.bagPosition !== null) cells[item.bagPosition] = item;
   });
   return cells;
+}
+
+function formatBonus(bonus: BonusLine[]): string {
+  return bonus.map((line) => `${line.stat} ${line.value}`).join(', ');
 }
 
 function formatStats(stats: Stats): string {

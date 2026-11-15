@@ -32,7 +32,7 @@ export const STATS = [
 
 export type Stat = (typeof STATS)[number];
 
-/** Stat names with their values, as base stats or a bonus. */
+/** Stat names with their values, as base stats or a set's bonus. */
 export type Stats = Partial<Record<Stat, number>>;
 
 export interface ItemTemplateResponse {

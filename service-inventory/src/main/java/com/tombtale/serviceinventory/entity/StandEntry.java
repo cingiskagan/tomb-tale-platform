@@ -1,8 +1,8 @@
 package com.tombtale.serviceinventory.entity;
 
 import com.tombtale.commons.entity.BaseEntity;
+import com.tombtale.serviceinventory.domain.BonusLine;
 import com.tombtale.serviceinventory.domain.Rarity;
-import com.tombtale.serviceinventory.domain.Stat;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -18,7 +18,7 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  * One item a dealer sells, which never sells out. An admin adds and removes entries, and never edits one.
@@ -51,7 +51,7 @@ public class StandEntry extends BaseEntity {
     /** The bonus every copy of a custom entry carries, or null when each copy rolls its own. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "bonus", updatable = false)
-    private Map<Stat, Integer> bonus;
+    private List<BonusLine> bonus;
 
     /**
      * @return what a copy costs: its template's price times its rarity's multiplier

@@ -1,5 +1,5 @@
 import { ItemType, Stats } from './item-catalog.models';
-import { Rarity } from './inventory.models';
+import { BonusLine, Rarity } from './inventory.models';
 
 /** An NPC that sells the items on its stand. It is retired, never deleted. */
 export interface DealerResponse {
@@ -35,7 +35,7 @@ export interface StandEntry {
   baseStats: Stats;
   rarity: Rarity;
   /** The bonus every copy of a custom entry carries, or null when each copy rolls its own. */
-  bonus: Stats | null;
+  bonus: BonusLine[] | null;
   /** The template's price times the rarity's multiplier. */
   price: number;
 }
@@ -51,7 +51,7 @@ export interface Stand {
 export interface StandEntryRequest {
   templateId: string;
   rarity: Rarity;
-  bonus?: Stats;
+  bonus?: BonusLine[];
 }
 
 /** The settings inventory runs with, so the portal hides what inventory would refuse. */

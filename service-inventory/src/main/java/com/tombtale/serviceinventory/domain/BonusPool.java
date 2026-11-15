@@ -1,12 +1,10 @@
 package com.tombtale.serviceinventory.domain;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 
@@ -55,16 +53,17 @@ public enum BonusPool {
     }
 
     /**
-     * @param rarity the item's rarity, which says how many stats it rolls
-     * @param random where the picks come from
-     * @return that many different stats from the pool, each with a value within its range
+     * @param rarity the item's rarity, which says how many lines it rolls
+     * @param random where the draws come from
+     * @return one line per draw, any stat of the pool more than once, each value within its stat's range
      */
-    public Map<Stat, Integer> roll(Rarity rarity, RandomGenerator random) {
-        List<Stat> stats = new ArrayList<>(rangesByStat.keySet());
-        Collections.shuffle(stats, random);
-        return stats.subList(0, rarity.bonusCount()).stream().collect(Collectors.toMap(
-                Function.identity(), stat -> rangesByStat.get(stat).roll(random),
-                (first, second) -> first, () -> new EnumMap<>(Stat.class)));
+    public List<BonusLine> roll(Rarity rarity, RandomGenerator random) {
+        List<Stat> stats = List.copyOf(rangesByStat.keySet());
+        return random.ints(rarity.bonusCount(), 0, stats.size())
+                .mapToObj(stats::get)
+                .sorted()
+                .map(stat -> new BonusLine(stat, rangesByStat.get(stat).roll(random)))
+                .toList();
     }
 
     /**

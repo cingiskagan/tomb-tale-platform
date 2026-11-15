@@ -1,9 +1,11 @@
 package com.tombtale.serviceinventory.dto;
 
+import com.tombtale.serviceinventory.domain.BonusLine;
 import com.tombtale.serviceinventory.domain.ItemType;
 import com.tombtale.serviceinventory.domain.Rarity;
 import com.tombtale.serviceinventory.domain.Stat;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -28,7 +30,7 @@ public record StandEntryResponse(
         String iconUrl,
         Map<Stat, Integer> baseStats,
         Rarity rarity,
-        Map<Stat, Integer> bonus,
+        List<BonusLine> bonus,
         long price
 ) {
 }

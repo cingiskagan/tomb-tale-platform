@@ -166,7 +166,7 @@ class StandControllerTest extends FixedAuthorTestBase {
                         .with(tokenWithRoles(RoleConstants.PLATFORM_ADMIN))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"templateId": "%s", "rarity": "RED", "bonus": {"FIRE_DAMAGE": 40}}
+                                {"templateId": "%s", "rarity": "RED", "bonus": [{"stat": "FIRE_DAMAGE", "value": 40}]}
                                 """.formatted(sword.getPublicId())))
                 .andExpect(status().isForbidden())
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))

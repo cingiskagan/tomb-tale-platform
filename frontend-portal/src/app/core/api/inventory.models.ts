@@ -1,4 +1,4 @@
-import { ItemType, Stats } from './item-catalog.models';
+import { ItemType, Stat, Stats } from './item-catalog.models';
 
 /** A character's nine equipment slots. Mirrors `EquipmentSlot` in service-inventory. */
 export enum EquipmentSlot {
@@ -23,6 +23,12 @@ export enum Rarity {
   RED = 'RED',
 }
 
+/** One roll of an item's bonus. A stat can roll more than once, and each roll is a line of its own. */
+export interface BonusLine {
+  stat: Stat;
+  value: number;
+}
+
 /** One item or stack a character owns. It has a slot or a cell, never both. */
 export interface InventoryItem {
   publicId: string;
@@ -32,7 +38,7 @@ export interface InventoryItem {
   /** A path on the API's origin, or null for a generic icon. */
   iconUrl: string | null;
   rarity: Rarity;
-  bonus: Stats;
+  bonus: BonusLine[];
   finalStats: Stats;
   quantity: number;
   equipmentSlot: EquipmentSlot | null;

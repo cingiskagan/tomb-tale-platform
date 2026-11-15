@@ -3,6 +3,7 @@ package com.tombtale.serviceinventory.controller;
 import com.tombtale.commons.security.PublicIdClaim;
 import com.tombtale.commons.security.RoleClaimConverter;
 import com.tombtale.commons.security.RoleConstants;
+import com.tombtale.serviceinventory.domain.BonusLine;
 import com.tombtale.serviceinventory.domain.CoinReason;
 import com.tombtale.serviceinventory.domain.EquipmentSlot;
 import com.tombtale.serviceinventory.domain.ItemType;
@@ -32,7 +33,6 @@ import org.springframework.test.web.servlet.ResultActions;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,7 +64,8 @@ class DealerSellControllerTest extends FixedAuthorTestBase {
     private static final long POTION_PRICE = 10L;
     /** 30% of three potions' 30. */
     private static final long POTIONS_PAYOUT = 9L;
-    private static final Map<Stat, Integer> ROLLED_BONUS = Map.of(Stat.FIRE_DAMAGE, 4, Stat.CRIT_CHANCE, 1);
+    private static final List<BonusLine> ROLLED_BONUS =
+            List.of(new BonusLine(Stat.FIRE_DAMAGE, 4), new BonusLine(Stat.CRIT_CHANCE, 1));
 
     @Autowired
     private MockMvc mockMvc;
