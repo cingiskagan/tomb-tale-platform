@@ -251,6 +251,23 @@ describe('InventoryDialogComponent', () => {
     expect(find('[data-entry="e-1"]')?.classList).toContain('rarity-BLUE');
   });
 
+  it('offers the dealers from every page', async () => {
+    dealerService.listDealers.and.callFake((page = 0) =>
+      of({
+        content: [aDealer(page === 0 ? 'TOWN_BLACKSMITH' : 'TOWN_TAILOR')],
+        page: { number: page, size: 200, totalElements: 2, totalPages: 2 },
+      }),
+    );
+
+    await open(anInventory({}, []));
+
+    expect(dealerService.listDealers.calls.allArgs()).toEqual([
+      [0, 200, 'name,asc'],
+      [1, 200, 'name,asc'],
+    ]);
+    expect(dialog.dealers.map((dealer) => dealer.code)).toEqual(['TOWN_BLACKSMITH', 'TOWN_TAILOR']);
+  });
+
   it('buys a stand entry dropped on the bag, with a new trade id each time', async () => {
     await open(anInventory({}, []));
     await pickTheBlacksmith();

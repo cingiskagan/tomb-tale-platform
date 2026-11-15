@@ -25,8 +25,8 @@ import { problemDetail } from '../items/problem-detail';
 /** The bag is drawn this many cells wide. Inventory stores one number per cell, so the width is ours to pick. */
 export const BAG_COLUMNS = 8;
 const MIN_BAG_ROWS = 4;
-/** Enough for every dealer in one page, so the picker offers them all. */
-const ALL_DEALERS = 200;
+/** The picker reads the dealers this many at a time, page after page until it has them all. */
+const DEALER_PAGE = 200;
 
 /** The slots in the order the paper doll lists them. Each one's CSS grid area is its name. */
 export const SLOTS: readonly { slot: EquipmentSlot; label: string }[] = [
@@ -322,7 +322,7 @@ export class InventoryDialogComponent {
   /** Keeps the dealer picked last time while it still sells. */
   private async loadDealers(session: number) {
     try {
-      const dealers = (await firstValueFrom(this.dealerService.listDealers(0, ALL_DEALERS, 'name,asc'))).content;
+      const dealers = await this.allDealers();
       if (session !== this.session) return;
       this.dealers = dealers.filter((dealer) => !dealer.retired);
       if (!this.dealers.some((dealer) => dealer.code === this.dealerCode.value)) this.dealerCode.setValue(null);
@@ -330,6 +330,16 @@ export class InventoryDialogComponent {
     } catch (error) {
       if (session === this.session) this.showError(error, 'Failed to load the dealers');
     }
+  }
+
+  private async allDealers(): Promise<DealerResponse[]> {
+    const dealers: DealerResponse[] = [];
+    for (let page = 0, pages = 1; page < pages; page++) {
+      const answer = await firstValueFrom(this.dealerService.listDealers(page, DEALER_PAGE, 'name,asc'));
+      dealers.push(...answer.content);
+      pages = answer.page.totalPages;
+    }
+    return dealers;
   }
 
   private async loadStand(session: number) {
