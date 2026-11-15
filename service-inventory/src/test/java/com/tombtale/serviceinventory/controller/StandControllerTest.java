@@ -40,9 +40,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Stands and the settings read, with custom stand items off as they are by default, on a real Postgres.
+ * Stands and the settings read, with custom stand items off as they are by default, on a real Postgres. The
+ * setting is pinned here, because an exported INVENTORY_CUSTOM_STAND_ITEMS_ENABLED outranks the test profile.
  */
-@SpringBootTest
+@SpringBootTest(properties = "inventory.custom-stand-items.enabled=false")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 // MockMvc's andExpect is the assertion, which PMD does not see, and a matrix of cases needs many methods.
