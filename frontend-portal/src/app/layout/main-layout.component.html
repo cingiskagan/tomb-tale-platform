@@ -1,4 +1,9 @@
 <div class="layout-wrapper">
+  @if (loading$ | async) {
+    <div class="loading-bar">
+      <p-progressbar mode="indeterminate" [style]="{ height: '3px' }" />
+    </div>
+  }
   <p-menubar [model]="items" styleClass="main-menubar">
     <ng-template #start>
       <div class="logo-container">

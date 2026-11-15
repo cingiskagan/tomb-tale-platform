@@ -13,6 +13,7 @@ import Aura from '@primeuix/themes/aura';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth';
+import { loadingInterceptor } from './core/loading';
 
 /**
  * Custom PrimeNG theme preset for Tomb Tale.
@@ -63,7 +64,7 @@ const TombTalePreset = definePreset(Aura, {
  *
  * Registers all providers required for:
  * - Routing with lazy-loaded guards
- * - HTTP client with Bearer token interceptor
+ * - HTTP client with Bearer token and loading interceptors
  * - Browser animations for PrimeNG transitions
  * - OAuth2/OIDC client for Keycloak authentication
  * - PrimeNG component library with Tomb Tale dark theme
@@ -73,7 +74,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, loadingInterceptor])),
     provideAnimationsAsync(),
     provideOAuthClient(),
     providePrimeNG({

@@ -50,3 +50,12 @@
   flex-grow: 1;
   padding: 2rem;
 }
+
+/* Above dialogs and their masks, so a call a dialog makes shows too. */
+.loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2000;
+}
