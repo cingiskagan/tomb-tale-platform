@@ -127,6 +127,16 @@ public class GlobalExceptionHandler extends PlatformExceptionHandler {
     }
 
     /**
+     * @param ex a retired dealer named for a stand entry
+     * @return a 409 problem detail
+     */
+    @ExceptionHandler(RetiredDealerException.class)
+    public ProblemDetail handleRetiredDealer(RetiredDealerException ex) {
+        LOG.warn("Retired dealer: {}", ex.getMessage());
+        return problem(HttpStatus.CONFLICT, "Dealer Retired", ex.getMessage());
+    }
+
+    /**
      * @param ex a retired template named for a stand
      * @return a 409 problem detail
      */

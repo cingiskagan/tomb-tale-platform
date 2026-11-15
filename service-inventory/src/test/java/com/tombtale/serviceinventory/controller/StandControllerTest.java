@@ -130,14 +130,19 @@ class StandControllerTest extends FixedAuthorTestBase {
                 .andExpect(jsonPath(PROBLEM_TITLE).value("Template Retired"));
     }
 
+    /** Retiring can't be undone, so an entry added now would never show or sell. */
     @Test
-    void aRetiredDealerSellsNothing() throws Exception {
+    void aRetiredDealerSellsNothingAndTakesNoEntry() throws Exception {
         addEntry(sword, Rarity.GRAY);
 
         blacksmith.setRetired(true);
         dealerRepository.save(blacksmith);
 
         readStand().andExpect(status().isOk()).andExpect(jsonPath("$.entries").isEmpty());
+        addEntry(shield, Rarity.GREEN)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath(PROBLEM_TITLE).value("Dealer Retired"));
+        assertThat(standEntryRepository.count()).isOne();
     }
 
     @Test

@@ -10,6 +10,7 @@ import com.tombtale.serviceinventory.entity.ItemTemplate;
 import com.tombtale.serviceinventory.entity.StandEntry;
 import com.tombtale.serviceinventory.exception.CustomStandItemsDisabledException;
 import com.tombtale.serviceinventory.exception.DealerNotFoundException;
+import com.tombtale.serviceinventory.exception.RetiredDealerException;
 import com.tombtale.serviceinventory.exception.RetiredTemplateException;
 import com.tombtale.serviceinventory.exception.StandEntryNotFoundException;
 import com.tombtale.serviceinventory.exception.UnknownItemTemplateException;
@@ -68,6 +69,7 @@ public class StandService {
      * @param request    the template, the rarity and, for a custom entry, its bonus
      * @return the saved entry
      * @throws CustomStandItemsDisabledException if the request has a bonus while the setting is off
+     * @throws RetiredDealerException            if the dealer is retired
      * @throws RetiredTemplateException          if the template is retired
      */
     @Transactional
@@ -75,12 +77,8 @@ public class StandService {
         if (request.bonus() != null && !customStandItemsEnabled) {
             throw new CustomStandItemsDisabledException();
         }
-        Dealer dealer = findDealer(dealerCode);
-        ItemTemplate template = itemTemplateRepository.findByPublicId(request.templateId())
-                .orElseThrow(() -> new UnknownItemTemplateException(request.templateId()));
-        if (template.isRetired()) {
-            throw new RetiredTemplateException(template.getCode());
-        }
+        Dealer dealer = findActiveDealer(dealerCode);
+        ItemTemplate template = findActiveTemplate(request.templateId());
         StandEntry saved = standEntryRepository.save(StandEntry.builder()
                 .dealer(dealer)
                 .template(template)
@@ -108,6 +106,24 @@ public class StandService {
 
     private Dealer findDealer(String code) {
         return dealerRepository.findByCode(code).orElseThrow(() -> new DealerNotFoundException(code));
+    }
+
+    /** Retiring a dealer can't be undone, so an entry added to its stand would never show or sell. */
+    private Dealer findActiveDealer(String code) {
+        Dealer dealer = findDealer(code);
+        if (dealer.isRetired()) {
+            throw new RetiredDealerException(code);
+        }
+        return dealer;
+    }
+
+    private ItemTemplate findActiveTemplate(UUID templateId) {
+        ItemTemplate template = itemTemplateRepository.findByPublicId(templateId)
+                .orElseThrow(() -> new UnknownItemTemplateException(templateId));
+        if (template.isRetired()) {
+            throw new RetiredTemplateException(template.getCode());
+        }
+        return template;
     }
 
     private static StandEntryResponse toResponse(StandEntry entry) {
