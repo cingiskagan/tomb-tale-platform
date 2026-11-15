@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MessageService } from 'primeng/api';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import {
   DealerService,
   InventoryService,
@@ -10,6 +10,7 @@ import {
   ItemTemplateResponse,
   ItemType,
   Rarity,
+  Stand,
   StandEntry,
 } from '../../core/api';
 import { StandEditorComponent } from './stand-editor.component';
@@ -57,6 +58,10 @@ const BLACKSMITH = {
   updatedAt: '',
 };
 
+function standOf(entries: StandEntry[]): Stand {
+  return { code: BLACKSMITH.code, name: BLACKSMITH.name, entries };
+}
+
 describe('StandEditorComponent', () => {
   let dealerService: jasmine.SpyObj<DealerService>;
   let catalog: jasmine.SpyObj<ItemCatalogService>;
@@ -89,10 +94,14 @@ describe('StandEditorComponent', () => {
   });
 
   async function open(entries: StandEntry[], customEnabled = false) {
-    dealerService.getStand.and.returnValue(of({ code: BLACKSMITH.code, name: BLACKSMITH.name, entries }));
+    dealerService.getStand.and.returnValue(of(standOf(entries)));
     editor.customEnabled = customEnabled;
     editor.dealer = BLACKSMITH;
     editor.visible = true;
+    await settle();
+  }
+
+  async function settle() {
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -120,10 +129,11 @@ describe('StandEditorComponent', () => {
     expect(find('[data-entry="e-1"]')?.textContent).toContain('1350');
   });
 
-  it('adds a template dropped on the stand at the picked rarity', async () => {
+  it('adds a template dropped on the stand at the picked rarity, and reloads the stand', async () => {
     await open([]);
     editor.rarity.setValue(Rarity.PURPLE);
     dealerService.addEntry.and.returnValue(of(anEntry('e-2', Rarity.PURPLE, 4050)));
+    dealerService.getStand.and.returnValue(of(standOf([anEntry('e-2', Rarity.PURPLE, 4050)])));
 
     await dragOntoStand('SWORD_IRON');
 
@@ -131,6 +141,22 @@ describe('StandEditorComponent', () => {
       templateId: 'id-SWORD_IRON',
       rarity: Rarity.PURPLE,
     });
+    expect(find('[data-entry="e-2"]')).not.toBeNull();
+  });
+
+  it('keeps an entry added while the first read of the stand was still on its way', async () => {
+    const firstRead = new Subject<Stand>();
+    dealerService.getStand.and.returnValues(firstRead, of(standOf([anEntry('e-2', Rarity.GRAY, 150)])));
+    editor.dealer = BLACKSMITH;
+    editor.visible = true;
+    await settle();
+    dealerService.addEntry.and.returnValue(of(anEntry('e-2', Rarity.GRAY, 150)));
+
+    await dragOntoStand('SWORD_IRON');
+    firstRead.next(standOf([]));
+    firstRead.complete();
+    await settle();
+
     expect(find('[data-entry="e-2"]')).not.toBeNull();
   });
 
@@ -158,10 +184,10 @@ describe('StandEditorComponent', () => {
   it('takes an entry off the stand', async () => {
     await open([anEntry('e-1', Rarity.GRAY, 150)]);
     dealerService.removeEntry.and.returnValue(of(undefined));
+    dealerService.getStand.and.returnValue(of(standOf([])));
 
     find('[data-entry="e-1"] button')!.click();
-    await fixture.whenStable();
-    fixture.detectChanges();
+    await settle();
 
     expect(dealerService.removeEntry).toHaveBeenCalledWith('TOWN_BLACKSMITH', 'e-1');
     expect(find('[data-entry="e-1"]')).toBeNull();

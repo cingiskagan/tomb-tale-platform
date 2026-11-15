@@ -138,7 +138,9 @@ export class InventoryDialogComponent {
     ].join('\n');
   }
 
+  /** The old dealer's stand goes at once, so a failed load can't leave its entries under the new dealer. */
   pickDealer() {
+    this.stand = null;
     void this.loadStand(this.session);
   }
 
@@ -254,7 +256,10 @@ export class InventoryDialogComponent {
     }
   }
 
-  /** A refused trade means the picture was stale, so the dialog reloads the coins and the prices. */
+  /**
+   * A refused trade means the picture was stale, so the dialog reloads the coins and the prices. It stays busy until
+   * that reload ends, so the reload can't land on top of the next change.
+   */
   private async change(
     request: (characterId: string) => Observable<CharacterInventory>,
     fallback: string,
@@ -274,7 +279,7 @@ export class InventoryDialogComponent {
       } catch (error) {
         if (session !== this.session) return;
         this.showError(error, fallback);
-        if (reloadOnRefusal) void this.reload(session);
+        if (reloadOnRefusal) await this.reload(session);
       }
     } finally {
       if (session === this.session) this.busy = false;

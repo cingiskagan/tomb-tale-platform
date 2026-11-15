@@ -294,6 +294,37 @@ describe('InventoryDialogComponent', () => {
     expect(find('.stand-entry')?.textContent).toContain('1,500');
   });
 
+  it('takes no other change until the reload after a refused trade ends', async () => {
+    await open(anInventory({}, [HELMET]));
+    await pickTheBlacksmith();
+    inventoryService.buy.and.returnValue(throwError(() => new HttpErrorResponse({ status: 409 })));
+    const reload = new Subject<CharacterInventory>();
+    inventoryService.getInventory.and.returnValue(reload);
+
+    await dragFrom('[data-entry="e-1"]', '[data-cell="0"]');
+    await drag('helmet', '[data-cell="3"]');
+
+    expect(dialog.busy).toBeTrue();
+    expect(inventoryService.move).not.toHaveBeenCalled();
+    reload.next(anInventory({}, [HELMET], 900));
+    reload.complete();
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(dialog.busy).toBeFalse();
+  });
+
+  it("drops the old dealer's stand when another is picked, so a failed load leaves none", async () => {
+    await open(anInventory({}, []));
+    await pickTheBlacksmith();
+    dealerService.getStand.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+
+    dialog.dealerCode.setValue('TOWN_TAILOR');
+    dialog.pickDealer();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(find('[data-entry]')).toBeNull();
+  });
+
   it("in production, asks before the admin's first change to a character, and only then", async () => {
     config.production = true;
     const confirm = spyOn(confirmationService, 'confirm');

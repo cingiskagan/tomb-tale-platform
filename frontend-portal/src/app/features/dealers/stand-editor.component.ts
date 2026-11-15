@@ -57,6 +57,8 @@ export class StandEditorComponent {
   private _dealer: DealerResponse | null = null;
   /** Moves when the dialog opens another dealer or closes, so a late answer for the old one is dropped. */
   private session = 0;
+  /** Only the newest stand read fills the stand, so a read that started before a change can't undo it. */
+  private standRead = 0;
   private templateSeq = 0;
   private dragged: ItemTemplateResponse | null = null;
 
@@ -148,13 +150,14 @@ export class StandEditorComponent {
     if (!template || !dealer) return;
     const session = this.session;
     try {
-      const entry = await firstValueFrom(
+      await firstValueFrom(
         this.dealerService.addEntry(dealer.code, { templateId: template.publicId, rarity: this.rarity.value }),
       );
-      if (session === this.session) this.entries = [...this.entries, entry];
     } catch (error) {
       if (session === this.session) this.showError(error, 'Inventory refused the entry');
+      return;
     }
+    await this.loadStand(session);
   }
 
   openCustom(template: ItemTemplateResponse) {
@@ -162,7 +165,6 @@ export class StandEditorComponent {
     this.customVisible = true;
   }
 
-  /** Reloads rather than appends, because the stand may show another dealer by the time the form answers. */
   onCustomSaved() {
     void this.loadStand(this.session);
   }
@@ -173,10 +175,11 @@ export class StandEditorComponent {
     const session = this.session;
     try {
       await firstValueFrom(this.dealerService.removeEntry(dealer.code, entry.publicId));
-      if (session === this.session) this.entries = this.entries.filter((other) => other.publicId !== entry.publicId);
     } catch (error) {
       if (session === this.session) this.showError(error, 'Failed to remove the entry');
+      return;
     }
+    await this.loadStand(session);
   }
 
   private async open() {
@@ -185,14 +188,17 @@ export class StandEditorComponent {
     await this.loadStand(session);
   }
 
+  /** A change reloads the stand rather than patching it, and the read after it is the one that counts. */
   private async loadStand(session: number) {
     const dealer = this._dealer;
-    if (!dealer) return;
+    // A change for a dealer the dialog no longer shows must not drop the shown dealer's read.
+    if (!dealer || session !== this.session) return;
+    const read = ++this.standRead;
     try {
       const stand = await firstValueFrom(this.dealerService.getStand(dealer.code));
-      if (session === this.session) this.entries = stand.entries;
+      if (session === this.session && read === this.standRead) this.entries = stand.entries;
     } catch (error) {
-      if (session === this.session) this.showError(error, 'Failed to load the stand');
+      if (session === this.session && read === this.standRead) this.showError(error, 'Failed to load the stand');
     }
   }
 
