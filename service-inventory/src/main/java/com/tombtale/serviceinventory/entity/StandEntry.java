@@ -57,6 +57,6 @@ public class StandEntry extends BaseEntity {
      * @return what a copy costs: its template's price times its rarity's multiplier
      */
     public long price() {
-        return template.getPrice() * rarity.priceMultiplier();
+        return Math.multiplyExact(template.getPrice(), rarity.priceMultiplier());
     }
 }

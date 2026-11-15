@@ -13,6 +13,9 @@ import { StatsEditorComponent } from './stats-editor.component';
 import { statArray, statRows, statsOf } from './stats-form';
 import { problemDetail } from './problem-detail';
 
+/** Inventory's cap, so a red copy's price still fits its numbers. */
+const MAX_PRICE = 1_000_000_000;
+
 /** Creates a template, or edits one. A 409 on an edit reloads what someone else saved. */
 @Component({
   selector: 'app-item-template-form',
@@ -66,6 +69,7 @@ export class ItemTemplateFormComponent {
     return this._templatePublicId;
   }
 
+  readonly maxPrice = MAX_PRICE;
   readonly typeOptions = Object.values(ItemType).map((type) => ({ label: type, value: type }));
 
   readonly form = new FormGroup({
@@ -75,7 +79,7 @@ export class ItemTemplateFormComponent {
     }),
     name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100)] }),
     itemType: new FormControl<ItemType | null>(null, Validators.required),
-    price: new FormControl<number | null>(0, [Validators.required, Validators.min(0)]),
+    price: new FormControl<number | null>(0, [Validators.required, Validators.min(0), Validators.max(MAX_PRICE)]),
     assetKey: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(200)] }),
     itemSetId: new FormControl<string | null>(null),
     iconHash: new FormControl<string | null>(null),

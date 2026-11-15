@@ -82,6 +82,6 @@ public class ItemInstance extends BaseEntity {
      * @return what the stack costs at a dealer: its template's price times its rarity's multiplier, for each copy
      */
     public long price() {
-        return template.getPrice() * rarity.priceMultiplier() * quantity;
+        return Math.multiplyExact(Math.multiplyExact(template.getPrice(), rarity.priceMultiplier()), quantity);
     }
 }

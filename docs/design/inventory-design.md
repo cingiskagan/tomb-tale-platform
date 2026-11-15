@@ -134,7 +134,7 @@ Equipping runs in one transaction under the character lock, so two taps at once 
 
 ### Prices
 
-- One price per template. A dealer's stand only lists the items that dealer sells.
+- One price per template, at most a billion coins, so a red copy's price still fits a `bigint`. A dealer's stand only lists the items that dealer sells.
 - A stand can sell any rarity. A bought item rolls its rarity's bonuses from its item type's pool, like any other.
 - To test bonuses, an admin puts a custom item on a stand, with a rarity and a bonus they choose. It never sells out, and every copy a player buys carries exactly that bonus, so testers can try any scenario.
 - In production, admins don't add rare items. A setting, `inventory.custom-stand-items.enabled`, is off by default, and `.env.example` turns it on for the local stack. While it's off, the endpoint refuses the action and the portal hides the button.

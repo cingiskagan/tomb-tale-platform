@@ -22,6 +22,6 @@ public record SellShare(int percent) {
      * @return what a dealer pays for it
      */
     public long payoutFor(long price) {
-        return price * percent / WHOLE;
+        return Math.multiplyExact(price, percent) / WHOLE;
     }
 }

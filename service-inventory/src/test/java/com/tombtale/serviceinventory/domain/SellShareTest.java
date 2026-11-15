@@ -26,6 +26,12 @@ class SellShareTest {
         assertThat(new SellShare(WHOLE).payoutFor(PRICE)).isEqualTo(PRICE);
     }
 
+    @Test
+    void aPayoutThatWouldOverflowThrowsInsteadOfWrapping() {
+        assertThatThrownBy(() -> new SellShare(THIRTY_PERCENT).payoutFor(Long.MAX_VALUE))
+                .isInstanceOf(ArithmeticException.class);
+    }
+
     /** Above 100%, buying from one dealer and selling to another would make coins. */
     @ParameterizedTest
     @ValueSource(ints = {-1, 101})
