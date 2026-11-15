@@ -74,7 +74,13 @@
       </p-table>
     </section>
 
-    <section class="stand" aria-label="Stand" (dragover)="allowDrop($event)" (drop)="dropOnStand($event)">
+    <section
+      class="stand"
+      aria-label="Stand"
+      [class.busy]="busy"
+      (dragover)="allowDrop($event)"
+      (drop)="dropOnStand($event)"
+    >
       <div class="stand-header">
         <h3>Stand</h3>
         <label for="standRarity">Drop as</label>
@@ -102,6 +108,7 @@
             [text]="true"
             severity="danger"
             ariaLabel="Remove from stand"
+            [disabled]="busy"
             (onClick)="remove(entry)"
           />
         </div>

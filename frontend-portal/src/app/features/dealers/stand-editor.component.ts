@@ -6,7 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import {
   BonusLine,
   DealerResponse,
@@ -44,6 +44,8 @@ export class StandEditorComponent {
   readonly rarity = new FormControl(Rarity.GRAY, { nonNullable: true });
 
   entries: StandEntry[] = [];
+  /** Set from a change until the stand's reload ends, so no second change starts meanwhile (ADR 0034). */
+  busy = false;
   templates: ItemTemplateResponse[] = [];
   templateTotal = 0;
   templatesLoading = true;
@@ -137,7 +139,7 @@ export class StandEditorComponent {
   }
 
   allowDrop(event: DragEvent) {
-    if (this.dragged) event.preventDefault();
+    if (this.dragged && !this.busy) event.preventDefault();
   }
 
   async dropOnStand(event: DragEvent) {
@@ -145,17 +147,9 @@ export class StandEditorComponent {
     const template = this.dragged;
     this.dragged = null;
     const dealer = this._dealer;
-    if (!template || !dealer) return;
-    const session = this.session;
-    try {
-      await firstValueFrom(
-        this.dealerService.addEntry(dealer.code, { templateId: template.publicId, rarity: this.rarity.value }),
-      );
-    } catch (error) {
-      if (session === this.session) this.showError(error, 'Inventory refused the entry');
-      return;
-    }
-    await this.loadStand(session);
+    if (!template || !dealer || this.busy) return;
+    const entry = { templateId: template.publicId, rarity: this.rarity.value };
+    await this.change(this.dealerService.addEntry(dealer.code, entry), 'Inventory refused the entry');
   }
 
   openCustom(template: ItemTemplateResponse) {
@@ -169,21 +163,29 @@ export class StandEditorComponent {
 
   async remove(entry: StandEntry) {
     const dealer = this._dealer;
-    if (!dealer) return;
-    const session = this.session;
-    try {
-      await firstValueFrom(this.dealerService.removeEntry(dealer.code, entry.publicId));
-    } catch (error) {
-      if (session === this.session) this.showError(error, 'Failed to remove the entry');
-      return;
-    }
-    await this.loadStand(session);
+    if (!dealer || this.busy) return;
+    await this.change(this.dealerService.removeEntry(dealer.code, entry.publicId), 'Failed to remove the entry');
   }
 
   private async open() {
     const session = ++this.session;
+    // A change still on its way belongs to the old session, which can no longer clear this.
+    this.busy = false;
     this.entries = [];
     await this.loadStand(session);
+  }
+
+  private async change(request: Observable<unknown>, fallback: string) {
+    const session = this.session;
+    this.busy = true;
+    try {
+      await firstValueFrom(request);
+      await this.loadStand(session);
+    } catch (error) {
+      if (session === this.session) this.showError(error, fallback);
+    } finally {
+      if (session === this.session) this.busy = false;
+    }
   }
 
   /** A change reloads the stand rather than patching it, and the read after it is the one that counts. */

@@ -179,6 +179,27 @@ describe('StandEditorComponent', () => {
     expect(messageService.add).toHaveBeenCalledWith(
       jasmine.objectContaining({ detail: 'The item template SWORD_IRON is retired' }),
     );
+    expect(editor.busy).toBeFalse();
+  });
+
+  it('takes no other change until the reload after a change ends', async () => {
+    await open([anEntry('e-1', Rarity.GRAY, 150), anEntry('e-2', Rarity.GRAY, 150)]);
+    dealerService.removeEntry.and.returnValue(of(undefined));
+    const reload = new Subject<Stand>();
+    dealerService.getStand.and.returnValue(reload);
+
+    find('[data-entry="e-1"] button')!.click();
+    await settle();
+    find('[data-entry="e-2"] button')!.click();
+    await dragOntoStand('SWORD_IRON');
+
+    expect(dealerService.removeEntry).toHaveBeenCalledTimes(1);
+    expect(dealerService.addEntry).not.toHaveBeenCalled();
+    expect(find('section.stand')?.classList).toContain('busy');
+    reload.next(standOf([anEntry('e-2', Rarity.GRAY, 150)]));
+    reload.complete();
+    await settle();
+    expect(editor.busy).toBeFalse();
   });
 
   it('takes an entry off the stand', async () => {
