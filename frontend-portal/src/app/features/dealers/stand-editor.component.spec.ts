@@ -144,20 +144,25 @@ describe('StandEditorComponent', () => {
     expect(find('[data-entry="e-2"]')).not.toBeNull();
   });
 
-  it('keeps an entry added while the first read of the stand was still on its way', async () => {
+  /** The stand already sells an axe. A sword is added before the first read answers. */
+  it('shows the whole stand when an entry is added while the first read is still on its way', async () => {
+    const axe = anEntry('e-axe', Rarity.GRAY, 150);
+    const sword = anEntry('e-sword', Rarity.GRAY, 150);
     const firstRead = new Subject<Stand>();
-    dealerService.getStand.and.returnValues(firstRead, of(standOf([anEntry('e-2', Rarity.GRAY, 150)])));
+    dealerService.getStand.and.returnValues(firstRead, of(standOf([axe, sword])));
     editor.dealer = BLACKSMITH;
     editor.visible = true;
     await settle();
-    dealerService.addEntry.and.returnValue(of(anEntry('e-2', Rarity.GRAY, 150)));
+    dealerService.addEntry.and.returnValue(of(sword));
 
     await dragOntoStand('SWORD_IRON');
-    firstRead.next(standOf([]));
+    expect(dealerService.getStand).toHaveBeenCalledTimes(2);
+    firstRead.next(standOf([axe]));
     firstRead.complete();
     await settle();
 
-    expect(find('[data-entry="e-2"]')).not.toBeNull();
+    expect(find('[data-entry="e-axe"]')).not.toBeNull();
+    expect(find('[data-entry="e-sword"]')).not.toBeNull();
   });
 
   it('never adds a retired template', async () => {
