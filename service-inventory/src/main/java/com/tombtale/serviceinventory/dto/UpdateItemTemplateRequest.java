@@ -1,5 +1,6 @@
 package com.tombtale.serviceinventory.dto;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -27,6 +28,7 @@ public record UpdateItemTemplateRequest(
 
         @NotNull(message = "price is required")
         @PositiveOrZero(message = "price must not be negative")
+        @Max(value = 1_000_000_000L, message = "price is at most 1000000000")
         Long price,
 
         @NotNull(message = "baseStats is required")

@@ -3,6 +3,7 @@ package com.tombtale.serviceinventory.controller;
 import com.tombtale.commons.security.PublicIdClaim;
 import com.tombtale.commons.security.RoleClaimConverter;
 import com.tombtale.commons.security.RoleConstants;
+import com.tombtale.serviceinventory.domain.BonusLine;
 import com.tombtale.serviceinventory.domain.EquipmentSlot;
 import com.tombtale.serviceinventory.domain.ItemType;
 import com.tombtale.serviceinventory.domain.Rarity;
@@ -58,6 +59,8 @@ class CharacterInventoryControllerTest extends FixedAuthorTestBase {
     private static final int SWORD_DAMAGE = 12;
     private static final int ROLLED_DAMAGE = 3;
     private static final int ROLLED_FIRE = 4;
+    /** Physical damage once and fire damage twice. */
+    private static final int SWORD_LINES = 3;
     private static final int SET_ARMOR = 10;
     private static final int RING_CELL = 2;
     private static final String SWORD = "$.equipment.MAIN_HAND";
@@ -97,7 +100,8 @@ class CharacterInventoryControllerTest extends FixedAuthorTestBase {
                 .build());
         itemInstanceRepository.save(anItem(sword)
                 .rarity(Rarity.BLUE)
-                .bonus(Map.of(Stat.PHYSICAL_DAMAGE, ROLLED_DAMAGE, Stat.FIRE_DAMAGE, ROLLED_FIRE))
+                .bonus(List.of(new BonusLine(Stat.PHYSICAL_DAMAGE, ROLLED_DAMAGE),
+                        new BonusLine(Stat.FIRE_DAMAGE, ROLLED_FIRE), new BonusLine(Stat.FIRE_DAMAGE, ROLLED_FIRE)))
                 .equipmentSlot(EquipmentSlot.MAIN_HAND)
                 .build());
         helmet = itemInstanceRepository.save(
@@ -128,9 +132,11 @@ class CharacterInventoryControllerTest extends FixedAuthorTestBase {
                 .andExpect(jsonPath(SWORD + ".code").value("SWORD_IRON"))
                 .andExpect(jsonPath(SWORD + ".rarity").value("BLUE"))
                 .andExpect(jsonPath(SWORD + ".iconUrl").value("/api/v1/inventory/icons/" + ICON_HASH))
-                .andExpect(jsonPath(SWORD + ".bonus.FIRE_DAMAGE").value(ROLLED_FIRE))
+                .andExpect(jsonPath(SWORD + ".bonus.length()").value(SWORD_LINES))
+                .andExpect(jsonPath(SWORD + ".bonus[2].stat").value("FIRE_DAMAGE"))
+                .andExpect(jsonPath(SWORD + ".bonus[2].value").value(ROLLED_FIRE))
                 .andExpect(jsonPath(SWORD + ".finalStats.PHYSICAL_DAMAGE").value(SWORD_DAMAGE + ROLLED_DAMAGE))
-                .andExpect(jsonPath(SWORD + ".finalStats.FIRE_DAMAGE").value(ROLLED_FIRE))
+                .andExpect(jsonPath(SWORD + ".finalStats.FIRE_DAMAGE").value(2 * ROLLED_FIRE))
                 .andExpect(jsonPath("$.equipment.HEAD.code").value("HELMET_IRON"))
                 .andExpect(jsonPath("$.equipment.OFF_HAND").doesNotExist())
                 .andExpect(jsonPath("$.bag[0].code").value("RING_GOLD"))

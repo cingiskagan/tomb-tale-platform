@@ -52,7 +52,12 @@ public enum Stat {
                 Map.Entry::getKey, Map.Entry::getValue, Integer::sum, () -> new EnumMap<>(Stat.class)));
     }
 
-    private static Stat named(String name) {
+    /**
+     * @param name a stat's name as a client sent it, matched exactly
+     * @return the stat
+     * @throws UnknownStatException if the name is not one of the 15
+     */
+    public static Stat named(String name) {
         return Arrays.stream(values())
                 .filter(stat -> stat.name().equals(name))
                 .findFirst()

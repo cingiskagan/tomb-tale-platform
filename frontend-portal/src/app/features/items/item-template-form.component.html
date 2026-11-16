@@ -35,7 +35,7 @@
 
     <div class="field">
       <label for="price">Price (coins, gray rarity)</label>
-      <p-inputNumber inputId="price" formControlName="price" [min]="0" styleClass="w-full" />
+      <p-inputNumber inputId="price" formControlName="price" [min]="0" [max]="maxPrice" styleClass="w-full" />
     </div>
 
     <app-stats-editor [rows]="form.controls.baseStats" label="Base stats" />

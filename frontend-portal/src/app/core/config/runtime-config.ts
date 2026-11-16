@@ -10,6 +10,8 @@ export interface RuntimeConfig {
   readonly issuerUri: string;
   readonly clientId: string;
   readonly apiBaseUrl: string;
+  /** Whether admins here change live players' inventories, so the portal warns first. Anything but false is true. */
+  readonly production: boolean;
 }
 
 /** The loaded config. Provided in `main.ts`, before the app bootstraps. */
@@ -75,5 +77,7 @@ function validate(parsed: unknown): RuntimeConfig {
     issuerUri: values['issuerUri'] as string,
     clientId: values['clientId'] as string,
     apiBaseUrl: values['apiBaseUrl'] as string,
+    // A deployment that forgets the key still warns.
+    production: values['production'] !== false,
   };
 }

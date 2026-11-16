@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Reads and writes the stacks characters own.
@@ -25,7 +27,7 @@ public interface ItemInstanceRepository extends JpaRepository<ItemInstance, Long
      * @return the stacks that still have room
      */
     @Query("select i from ItemInstance i where i.characterInventory = :character and i.template = :template "
-            + "and i.rarity = :rarity and cast(i.bonus as String) = '{}' "
+            + "and i.rarity = :rarity and cast(i.bonus as String) = '[]' "
             + "and i.quantity < i.template.maxStackSize order by i.id")
     List<ItemInstance> findStacksWithRoom(
             @Param("character") CharacterInventory character,
@@ -48,4 +50,11 @@ public interface ItemInstanceRepository extends JpaRepository<ItemInstance, Long
      */
     @EntityGraph(attributePaths = {"template", "template.itemSet"})
     List<ItemInstance> findByCharacterInventory(CharacterInventory character);
+
+    /**
+     * @param publicId  the item's id in the API
+     * @param character the character that must own it
+     * @return the item, or empty when the character owns none with the id
+     */
+    Optional<ItemInstance> findByPublicIdAndCharacterInventory(UUID publicId, CharacterInventory character);
 }

@@ -1,6 +1,7 @@
 package com.tombtale.serviceinventory.service;
 
 import com.tombtale.serviceinventory.config.JpaConfig;
+import com.tombtale.serviceinventory.domain.BonusLine;
 import com.tombtale.serviceinventory.domain.ItemGrantOutcome;
 import com.tombtale.serviceinventory.domain.Rarity;
 import com.tombtale.serviceinventory.domain.Stat;
@@ -26,7 +27,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,8 +90,8 @@ class ItemGrantServiceTest extends FixedAuthorTestBase {
     @Test
     void fillsNoStackOfAnotherRarityOrWithABonus() {
         ItemTemplate potion = aTemplate(POTION, POTION_STACK);
-        aStack(character, potion, Rarity.GREEN, Map.of(), STACK_WITH_ROOM);
-        aStack(character, potion, Rarity.GRAY, Map.of(Stat.MAX_HP, BONUS_HP), 1);
+        aStack(character, potion, Rarity.GREEN, List.of(), STACK_WITH_ROOM);
+        aStack(character, potion, Rarity.GRAY, List.of(new BonusLine(Stat.MAX_HP, BONUS_HP)), 1);
 
         itemGrantService.findOrCreateItemGrant(aPurchase(POTION, QUANTITY));
 
@@ -199,11 +199,11 @@ class ItemGrantServiceTest extends FixedAuthorTestBase {
     }
 
     private ItemInstance aStack(CharacterInventory owner, ItemTemplate template, int quantity) {
-        return aStack(owner, template, Rarity.GRAY, Map.of(), quantity);
+        return aStack(owner, template, Rarity.GRAY, List.of(), quantity);
     }
 
     private ItemInstance aStack(
-            CharacterInventory owner, ItemTemplate template, Rarity rarity, Map<Stat, Integer> bonus, int quantity) {
+            CharacterInventory owner, ItemTemplate template, Rarity rarity, List<BonusLine> bonus, int quantity) {
         int cell = nextCell;
         nextCell++;
         return itemInstanceRepository.save(ItemInstance.builder()

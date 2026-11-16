@@ -1,8 +1,11 @@
 import { Component, inject } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
 import { RouterOutlet, Router } from '@angular/router';
 import { MenubarModule } from 'primeng/menubar';
+import { ProgressBarModule } from 'primeng/progressbar';
 import { MenuItem } from 'primeng/api';
 import { AuthService, PlatformRole } from '../core/auth';
+import { LoadingService } from '../core/loading';
 
 /**
  * Main layout component for authenticated views.
@@ -13,13 +16,16 @@ import { AuthService, PlatformRole } from '../core/auth';
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterOutlet, MenubarModule],
+  imports: [RouterOutlet, MenubarModule, ProgressBarModule, AsyncPipe],
   templateUrl: './main-layout.component.html',
   styleUrl: './main-layout.component.css'
 })
 export class MainLayoutComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+
+  /** A thin bar on top of everything while any API call is in flight (ADR 0034). */
+  readonly loading$ = inject(LoadingService).loading$;
 
   /** Roles that grant access to admin-only menu items. */
   private static readonly ADMIN_ROLES: PlatformRole[] = [
@@ -52,6 +58,12 @@ export class MainLayoutComponent {
       icon: 'pi pi-box',
       visible: this.authService.hasAnyRole([PlatformRole.PLATFORM_ADMIN]),
       command: () => this.router.navigate(['/items']),
+    },
+    {
+      label: 'Dealers',
+      icon: 'pi pi-shop',
+      visible: this.authService.hasAnyRole([PlatformRole.PLATFORM_ADMIN]),
+      command: () => this.router.navigate(['/dealers']),
     },
     {
       label: 'My Profile',

@@ -1,6 +1,7 @@
 package com.tombtale.serviceinventory.service;
 
 import com.tombtale.serviceinventory.controller.ItemIconController;
+import com.tombtale.serviceinventory.domain.BonusLine;
 import com.tombtale.serviceinventory.domain.EquipmentSlot;
 import com.tombtale.serviceinventory.domain.Stat;
 import com.tombtale.serviceinventory.dto.CharacterInventoryResponse;
@@ -81,10 +82,10 @@ public class InventoryView {
                 template.getCode(),
                 template.getName(),
                 template.getItemType(),
-                template.getIconHash() == null ? null : ItemIconController.PATH + "/" + template.getIconHash(),
+                ItemIconController.urlOf(template.getIconHash()),
                 item.getRarity(),
                 item.getBonus(),
-                Stat.sum(List.of(template.getBaseStats(), item.getBonus())),
+                Stat.sum(List.of(template.getBaseStats(), BonusLine.totals(item.getBonus()))),
                 item.getQuantity(),
                 item.getEquipmentSlot(),
                 item.getBagPosition());

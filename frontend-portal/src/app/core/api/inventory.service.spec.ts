@@ -9,6 +9,7 @@ const CONFIG: RuntimeConfig = {
   issuerUri: 'http://localhost:8080/realms/tombtale',
   clientId: 'test-client',
   apiBaseUrl: 'http://localhost:8080',
+  production: false,
 };
 
 const CHARACTER = 'http://localhost:8080/api/v1/inventory/characters/c-1';
@@ -48,6 +49,22 @@ describe('InventoryService', () => {
     const request = http.expectOne(`${CHARACTER}/bag/7`);
     expect(request.request.method).toBe('PUT');
     expect(request.request.body).toEqual({ itemId: 'i-1' });
+  });
+
+  it('buys with the trade id, the stand entry and the price the admin saw', () => {
+    service.buy('c-1', 'trade-1', 'e-1', 1350).subscribe();
+
+    const request = http.expectOne(`${CHARACTER}/dealer-buys`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ tradeId: 'trade-1', entryId: 'e-1', price: 1350 });
+  });
+
+  it('sells a bag item with the trade id', () => {
+    service.sell('c-1', 'trade-2', 'i-1').subscribe();
+
+    const request = http.expectOne(`${CHARACTER}/dealer-sells`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ tradeId: 'trade-2', itemId: 'i-1' });
   });
 
   it('puts the API origin before an icon path', () => {

@@ -1,10 +1,12 @@
 package com.tombtale.serviceinventory.dto;
 
+import com.tombtale.serviceinventory.domain.BonusLine;
 import com.tombtale.serviceinventory.domain.EquipmentSlot;
 import com.tombtale.serviceinventory.domain.ItemType;
 import com.tombtale.serviceinventory.domain.Rarity;
 import com.tombtale.serviceinventory.domain.Stat;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -17,7 +19,7 @@ import java.util.UUID;
  * @param itemType      its template's type, which decides the slot it fits
  * @param iconUrl       the path of its template's icon, or null for a generic one
  * @param rarity        its rarity
- * @param bonus         the stats it rolled
+ * @param bonus         what it rolled, one line per roll
  * @param finalStats    its template's base stats plus its bonus
  * @param quantity      how many copies the stack holds
  * @param equipmentSlot its slot, or null in the bag
@@ -30,7 +32,7 @@ public record InventoryItemResponse(
         ItemType itemType,
         String iconUrl,
         Rarity rarity,
-        Map<Stat, Integer> bonus,
+        List<BonusLine> bonus,
         Map<Stat, Integer> finalStats,
         Integer quantity,
         EquipmentSlot equipmentSlot,

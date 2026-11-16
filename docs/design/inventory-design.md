@@ -59,8 +59,8 @@ The inventory phase's decisions as of 2026-11-03. The other design documents giv
 
 ### Items
 
-- An item instance has a `rarity` and a `bonus`, the bonus stats it rolled, as JSON. The rarities, from lowest to highest, are gray, green, blue, purple, orange and red.
-- Each rarity adds one bonus: gray rolls none, green 1, blue 2, purple 3, orange 4 and red 5.
+- An item instance has a `rarity` and a `bonus`, the lines it rolled, as JSON. The rarities, from lowest to highest, are gray, green, blue, purple, orange and red.
+- Each rarity adds one bonus line: gray rolls none, green 1, blue 2, purple 3, orange 4 and red 5.
 - Copies stack only when they share the template and the rarity and have no bonus.
 - Every template has an `item_type`, such as helmet, so equipping can check that an item fits its slot.
 - Item sets with their set bonus are in this phase, as the pathway describes them.
@@ -95,7 +95,8 @@ The chart lives here, and the GDD points to it. Its multipliers are data in the 
   - Defense: armor, max HP, and fire, ice, dread and divine resistance.
   - Stamina: max stamina and stamina regeneration.
 - Each item type has one pool, with a range for each stat. Weapons roll damage and critical stats, armor pieces and shields roll armor, HP, resistances and stamina, and neck and rings roll any stat.
-- A bonus stores stat names with values, such as `{"FIRE_DAMAGE": 12, "CRIT_CHANCE": 3}`, and inventory refuses a stat it doesn't know.
+- Each line draws any stat of the pool, so a stat can roll more than once, and a lucky red weapon can roll critical chance five times. Each roll stays a line of its own, and the item's final stats add a stat's lines up.
+- A bonus stores one line per roll, such as `[{"stat": "FIRE_DAMAGE", "value": 12}, {"stat": "FIRE_DAMAGE", "value": 5}]`, and inventory refuses a stat it doesn't know.
 - Attack speed, cooldown reduction, gold find, HP regeneration and movement speed wait for later tiers.
 
 ### Equipment
@@ -134,13 +135,13 @@ Equipping runs in one transaction under the character lock, so two taps at once 
 
 ### Prices
 
-- One price per template. A dealer's stand only lists the items that dealer sells.
+- One price per template, at most a billion coins, so a red copy's price still fits a `bigint`. A dealer's stand only lists the items that dealer sells.
 - A stand can sell any rarity. A bought item rolls its rarity's bonuses from its item type's pool, like any other.
 - To test bonuses, an admin puts a custom item on a stand, with a rarity and a bonus they choose. It never sells out, and every copy a player buys carries exactly that bonus, so testers can try any scenario.
-- In production, admins don't add rare items. A setting, `inventory.custom-stand-items.enabled`, is off by default, and only the dev profile turns it on. While it's off, the endpoint refuses the action and the portal hides the button.
+- In production, admins don't add rare items. A setting, `inventory.custom-stand-items.enabled`, is off by default, and `.env.example` turns it on for the local stack. While it's off, the endpoint refuses the action and the portal hides the button.
 - A scheduled job puts random rare items on stands in production, through its own code, so the setting doesn't affect it.
 - Each rarity triples the price: green costs 3 times gray, blue 9, purple 27, orange 81 and red 243.
-- Selling to any dealer pays a fixed share of the item's price, rounded down to whole coins. So no route between dealers makes coins, and an item that no dealer sells still has a sell price.
+- Selling to any dealer pays a fixed share of the item's price, `inventory.sell-share-percent`, rounded down to whole coins. So no route between dealers makes coins, and an item that no dealer sells still has a sell price.
 
 ### Coins
 

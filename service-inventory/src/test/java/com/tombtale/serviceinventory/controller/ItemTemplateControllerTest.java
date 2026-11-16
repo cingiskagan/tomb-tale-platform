@@ -109,6 +109,15 @@ class ItemTemplateControllerTest extends PostgresTestBase {
                 .andExpect(jsonPath("$.errors.code").exists());
     }
 
+    /** Above it, a red copy's price could wrap a long. */
+    @Test
+    void aPriceAboveABillionAnswers400() throws Exception {
+        create(SWORD.replace("\"price\": 150", "\"price\": 1000000001"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.price").value("price is at most 1000000000"));
+        assertThat(itemTemplateRepository.count()).isZero();
+    }
+
     @Test
     void anEditFromTheCurrentVersionSavesAndAStaleOneAnswers409() throws Exception {
         String id = idOf(create(SWORD));

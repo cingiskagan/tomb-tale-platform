@@ -7,3 +7,5 @@ export * from './item-catalog.models';
 export * from './item-catalog.service';
 export * from './inventory.models';
 export * from './inventory.service';
+export * from './dealer.models';
+export * from './dealer.service';

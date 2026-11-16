@@ -1,0 +1,87 @@
+<div class="dealers-container">
+  <h2 class="page-title">Dealers</h2>
+
+  <div class="header-actions">
+    <span>Every dealer, retired ones grayed out. The town finds a dealer's stand by its code.</span>
+    <p-button label="New Dealer" icon="pi pi-plus" (onClick)="openForm(null)" />
+  </div>
+
+  <p-table
+    [value]="dealers"
+    [lazy]="true"
+    (onLazyLoad)="loadDealers($event)"
+    [paginator]="true"
+    [rows]="20"
+    [totalRecords]="total"
+    [loading]="loading"
+    sortField="code"
+    [sortOrder]="1"
+    styleClass="p-datatable-sm"
+  >
+    <ng-template #header>
+      <tr>
+        <th scope="col" pSortableColumn="code">Code <p-sortIcon field="code" /></th>
+        <th scope="col" pSortableColumn="name">Name <p-sortIcon field="name" /></th>
+        <th scope="col">Status</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-dealer>
+      <tr [class.retired]="dealer.retired">
+        <td>{{ dealer.code }}</td>
+        <td>{{ dealer.name }}</td>
+        <td>
+          @if (dealer.retired) {
+            <p-tag value="RETIRED" severity="secondary" />
+          } @else {
+            <p-tag value="ACTIVE" severity="success" />
+          }
+        </td>
+        <td>
+          <p-button
+            label="Store"
+            icon="pi pi-shop"
+            [text]="true"
+            [disabled]="dealer.retired"
+            (onClick)="openStand(dealer)"
+          />
+          <p-button
+            icon="pi pi-pencil"
+            [rounded]="true"
+            [text]="true"
+            severity="success"
+            ariaLabel="Edit"
+            (onClick)="openForm(dealer.publicId)"
+          />
+          <p-button
+            icon="pi pi-ban"
+            [rounded]="true"
+            [text]="true"
+            severity="danger"
+            ariaLabel="Retire"
+            [disabled]="dealer.retired"
+            (onClick)="confirmRetire(dealer)"
+          />
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="4">No dealers yet.</td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>
+
+<app-dealer-form [dealerPublicId]="selectedDealerId" [(visible)]="isFormVisible" (saved)="onSaved()" />
+
+<app-stand-editor
+  [dealer]="standDealer"
+  [customEnabled]="customStandItemsEnabled"
+  [(visible)]="isStandVisible"
+/>
+
+<p-confirmDialog [style]="{ width: '450px' }" />
+<p-toast />
