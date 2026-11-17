@@ -40,6 +40,8 @@ import com.tombtale.serviceaudit.support.MongoTestBase;
  */
 @SpringBootTest(properties = "spring.rabbitmq.listener.simple.auto-startup=true")
 @ActiveProfiles("test")
+// One test per delivery case, and the broker and the store need their helpers.
+@SuppressWarnings("PMD.TooManyMethods")
 class EventConsumerTest extends MongoTestBase {
 
     private static final long DELIVERY_TIMEOUT_MILLIS = 10_000L;
@@ -48,6 +50,8 @@ class EventConsumerTest extends MongoTestBase {
             {"playerPublicId": "3c9a6f10-0b44-4c8e-8f37-1d2a9c7b5e60",
              "characterPublicId": "77d2b381-5e19-4a6d-9c03-2f8ab41d7e55"}""";
     private static final String PURCHASE_ID = "5b2e7a1c-9d34-4f6b-8a21-0c3e5d7f9b14";
+    private static final String TEMPLATE_UPDATED = "item-template.updated";
+    private static final int PHYSICAL_DAMAGE = 14;
 
     @ServiceConnection
     static final RabbitMQContainer RABBITMQ = new RabbitMQContainer("rabbitmq:3.13-management-alpine");
@@ -120,6 +124,25 @@ class EventConsumerTest extends MongoTestBase {
                          "itemCode": "POTION_HEALTH", "quantity": 3}""".formatted(PURCHASE_ID)),
                 Arguments.of(RabbitMQConfig.ITEM_EVENTS_EXCHANGE, "item.grant-rejected", """
                         {"purchasePublicId": "%s", "reason": "UNKNOWN_ITEM_CODE"}""".formatted(PURCHASE_ID)));
+    }
+
+    /** A template change keeps the whole template, its stats as a nested map, and the admin who made it. */
+    @Test
+    void aTemplateChangeKeepsTheTemplateAndWhoChangedIt() throws InterruptedException {
+        String admin = "0b9b7c2e-5f4d-4c3a-8e1f-7a6b5c4d3e2f";
+
+        rabbitTemplate.send(RabbitMQConfig.ITEM_EVENTS_EXCHANGE, TEMPLATE_UPDATED, event(TEMPLATE_UPDATED, 1, """
+                {"itemTemplatePublicId": "6d0c1b2a-3e4f-4a5b-8c6d-7e8f9a0b1c2d", "code": "SWORD_IRON",
+                 "name": "Sharp Iron Sword", "itemType": "ONE_HANDED_WEAPON", "price": 200,
+                 "baseStats": {"PHYSICAL_DAMAGE": %d}, "assetKey": "Items/Weapons/SwordIron", "iconHash": null,
+                 "itemSetPublicId": null, "retired": false, "version": 1, "updatedBy": "%s"}""".formatted(PHYSICAL_DAMAGE, admin)));
+
+        assertThat(nextInvocation().getThrowable()).isNull();
+        assertThat(storedEvent(eventId)).extractingByKey("data", InstanceOfAssertFactories.MAP)
+                .containsEntry("updatedBy", admin)
+                .containsEntry("version", 1)
+                .extractingByKey("baseStats", InstanceOfAssertFactories.MAP)
+                .containsEntry("PHYSICAL_DAMAGE", PHYSICAL_DAMAGE);
     }
 
     @Test

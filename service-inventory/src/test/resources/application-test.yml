@@ -3,6 +3,12 @@ server:
   port: 0
 
 spring:
+  # Each cached test context keeps a pool on the one test Postgres. At Hikari's
+  # ten, eleven contexts pass its limit of 100. A lock test holds two at most.
+  datasource:
+    hikari:
+      maximum-pool-size: 5
+
   rabbitmq:
     host: localhost
     port: 5672
@@ -31,6 +37,16 @@ logging:
 app:
   publish:
     confirm-timeout: PT5S
+
+  # The outbox publisher calls out to RabbitMQ, so it stays off and its tests call it.
+  scheduling:
+    enabled: false
+
+  # Scheduling is off, so the interval and the cron are not needed.
+  outbox:
+    batch-size: 100
+    confirm-timeout: PT5S
+    retention: P30D
 
 inventory:
   # Not .env's 100000, so a test fails if the code ignores the setting.

@@ -12,11 +12,22 @@ import java.util.Set;
  */
 public final class EventAllowList {
 
+    private static final Set<String> ITEM_TEMPLATE_FIELDS = Set.of("itemTemplatePublicId", "code", "name", "itemType",
+            "price", "baseStats", "assetKey", "iconHash", "itemSetPublicId", "retired", "version", "updatedBy");
+
+    private static final Set<String> ITEM_SET_FIELDS =
+            Set.of("itemSetPublicId", "code", "name", "bonus", "version", "updatedBy");
+
     private static final Map<Key, Set<String>> FIELDS = Map.of(
             new Key("player.created", 1), Set.of("playerPublicId", "characterPublicId"),
             new Key("purchase.created", 1), Set.of("purchasePublicId", "playerPublicId", "itemCode", "quantity"),
             new Key("item.granted", 1), Set.of("purchasePublicId"),
-            new Key("item.grant-rejected", 1), Set.of("purchasePublicId", "reason"));
+            new Key("item.grant-rejected", 1), Set.of("purchasePublicId", "reason"),
+            new Key("item-template.created", 1), ITEM_TEMPLATE_FIELDS,
+            new Key("item-template.updated", 1), ITEM_TEMPLATE_FIELDS,
+            new Key("item-template.retired", 1), ITEM_TEMPLATE_FIELDS,
+            new Key("item-set.created", 1), ITEM_SET_FIELDS,
+            new Key("item-set.updated", 1), ITEM_SET_FIELDS);
 
     private EventAllowList() {
     }

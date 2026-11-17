@@ -95,6 +95,18 @@ app:
   publish:
     confirm-timeout: ${OUTBOX_CONFIRM_TIMEOUT}
 
+  # The outbox publisher. The test profile turns it off.
+  scheduling:
+    enabled: true
+
+  # From infrastructure/.env. .env.example says what each value does.
+  outbox:
+    publish-interval: ${OUTBOX_PUBLISH_INTERVAL}
+    batch-size: ${OUTBOX_BATCH_SIZE}
+    confirm-timeout: ${OUTBOX_CONFIRM_TIMEOUT}
+    retention: ${OUTBOX_RETENTION}
+    purge-cron: ${OUTBOX_PURGE_CRON}
+
 # --- Game rules ---
 inventory:
   # The coins every new character starts with, written with their history row.

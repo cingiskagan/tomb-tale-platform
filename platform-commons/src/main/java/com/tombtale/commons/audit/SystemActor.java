@@ -37,6 +37,9 @@ public enum SystemActor {
     /** service-inventory creating a new character's inventory from a consumed player event. */
     INVENTORY_PLAYER_EVENT_CONSUMER("00000000-0000-0000-0000-0000000000d2"),
 
+    /** service-inventory marking its outbox rows published once the broker confirms them. */
+    INVENTORY_OUTBOX_PUBLISHER("00000000-0000-0000-0000-0000000000d3"),
+
     /** service-player marking its outbox rows published once the broker confirms them. */
     PLAYER_OUTBOX_PUBLISHER("00000000-0000-0000-0000-0000000000b1");
 
