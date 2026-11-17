@@ -1,11 +1,11 @@
-package com.tombtale.servicecommerce.dto.event;
+package com.tombtale.commons.event;
 
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
 /**
- * An event on the wire, as commerce receives and sends it. docs/design/events.md fixes the shape.
+ * An event on the wire, as every service sends and receives it. docs/design/events.md fixes the shape.
  *
  * @param eventId      the same on every redelivery of one event
  * @param eventType    also the routing key

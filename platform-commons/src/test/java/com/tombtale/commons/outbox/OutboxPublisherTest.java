@@ -1,4 +1,4 @@
-package com.tombtale.servicecommerce.service;
+package com.tombtale.commons.outbox;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -31,35 +32,28 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
 import org.springframework.boot.micrometer.observation.autoconfigure.ObservationAutoConfiguration;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import jakarta.persistence.EntityManager;
 
-import com.tombtale.servicecommerce.config.JpaConfig;
-import com.tombtale.servicecommerce.config.QueryDslConfig;
-import com.tombtale.servicecommerce.config.RabbitMQConfig;
-import com.tombtale.servicecommerce.dto.event.PurchaseCreatedPayload;
-import com.tombtale.servicecommerce.entity.OutboxEvent;
-import com.tombtale.servicecommerce.repository.OutboxEventRepository;
-import com.tombtale.servicecommerce.support.FixedAuthorTestBase;
+import com.tombtale.commons.entity.OutboxEvent;
+import com.tombtale.commons.support.FixedAuthorTestBase;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * The publisher against a real Postgres and a mocked broker, ported from service-player.
- * The real broker, down and back up, is tested there, on the same code.
+ * The publisher against a real Postgres and a mocked broker. The real broker, down
+ * and back up, is {@link OutboxPublisherRetryTest}.
  */
 @DataJpaTest(showSql = false)
-@ActiveProfiles("test")
-@Import({ QueryDslConfig.class, JpaConfig.class, OutboxPublisher.class })
+@Import(OutboxPublisher.class)
 @ImportAutoConfiguration({ JacksonAutoConfiguration.class, ObservationAutoConfiguration.class })
 @SuppressWarnings("PMD.TooManyStaticImports")
 class OutboxPublisherTest extends FixedAuthorTestBase {
 
-    private static final String EXCHANGE = RabbitMQConfig.PURCHASE_EVENTS_EXCHANGE;
-    private static final String EVENT_TYPE = PurchaseCreatedPayload.EVENT_TYPE;
+    private static final String EXCHANGE = OutboxTestApplication.EXCHANGE;
+    private static final String EVENT_TYPE = "test.happened";
 
     @MockitoBean
     private RabbitTemplate rabbitTemplate;
@@ -91,13 +85,12 @@ class OutboxPublisherTest extends FixedAuthorTestBase {
     }
 
     private OutboxEvent aRow(Instant publishedAt) {
-        UUID purchasePublicId = UUID.randomUUID();
+        UUID aggregateId = UUID.randomUUID();
         return outboxEventRepository.save(OutboxEvent.builder()
                 .eventType(EVENT_TYPE)
-                .eventVersion(PurchaseCreatedPayload.EVENT_VERSION)
-                .aggregateId(purchasePublicId)
-                .payload(objectMapper.writeValueAsString(
-                        new PurchaseCreatedPayload(purchasePublicId, UUID.randomUUID(), "SWORD_IRON", 1)))
+                .eventVersion(1)
+                .aggregateId(aggregateId)
+                .payload(objectMapper.writeValueAsString(Map.of("characterPublicId", aggregateId)))
                 .publishedAt(publishedAt)
                 .build());
     }
@@ -134,7 +127,7 @@ class OutboxPublisherTest extends FixedAuthorTestBase {
         assertThat(reloaded(alreadySent).getPublishedAt()).isEqualTo(alreadySent.getPublishedAt());
     }
 
-    /** The envelope comes from the row's columns, with the stored payload as its data. */
+    /** The envelope comes from the row's columns and the owner, with the stored payload as its data. */
     @Test
     void shouldWrapThePayloadInTheEnvelope() {
         OutboxEvent row = aRow(null);
@@ -149,10 +142,10 @@ class OutboxPublisherTest extends FixedAuthorTestBase {
         JsonNode envelope = objectMapper.readTree(sent.getValue().getBody());
         assertThat(envelope.get("eventId").asString()).isEqualTo(row.getPublicId().toString());
         assertThat(envelope.get("eventType").asString()).isEqualTo(EVENT_TYPE);
-        assertThat(envelope.get("eventVersion").asInt()).isEqualTo(PurchaseCreatedPayload.EVENT_VERSION);
+        assertThat(envelope.get("eventVersion").asInt()).isEqualTo(1);
         assertThat(Instant.parse(envelope.get("occurredAt").asString())).isEqualTo(reloaded(row).getCreatedAt());
-        assertThat(envelope.get("producer").asString()).isEqualTo("service-commerce");
-        assertThat(envelope.get("data").get("purchasePublicId").asString())
+        assertThat(envelope.get("producer").asString()).isEqualTo(OutboxTestApplication.PRODUCER);
+        assertThat(envelope.get("data").get("characterPublicId").asString())
                 .isEqualTo(row.getAggregateId().toString());
     }
 

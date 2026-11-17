@@ -21,7 +21,7 @@ import org.springframework.test.context.ActiveProfiles;
 import com.tombtale.serviceplayer.dto.PlayerResponse;
 import com.tombtale.serviceplayer.entity.Player;
 import com.tombtale.serviceplayer.repository.CharacterRepository;
-import com.tombtale.serviceplayer.repository.OutboxEventRepository;
+import com.tombtale.commons.outbox.OutboxEventRepository;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
 import com.tombtale.serviceplayer.support.FixedAuthorTestBase;
 

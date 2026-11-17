@@ -1,9 +1,9 @@
 package com.tombtale.servicecommerce.service;
 
 import com.tombtale.commons.audit.SystemActor;
+import com.tombtale.commons.event.EventEnvelope;
 import com.tombtale.servicecommerce.config.RabbitMQConfig;
 import com.tombtale.servicecommerce.domain.PurchaseStatus;
-import com.tombtale.servicecommerce.dto.event.EventEnvelope;
 import com.tombtale.servicecommerce.dto.event.PlayerCreatedPayload;
 import com.tombtale.servicecommerce.entity.Purchase;
 import com.tombtale.servicecommerce.repository.PurchaseRepository;

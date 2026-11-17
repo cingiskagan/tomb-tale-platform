@@ -1,7 +1,7 @@
 package com.tombtale.serviceinventory.service;
 
+import com.tombtale.commons.event.EventEnvelope;
 import com.tombtale.serviceinventory.config.RabbitMQConfig;
-import com.tombtale.serviceinventory.dto.event.EventEnvelope;
 import com.tombtale.serviceinventory.dto.event.ItemGrantPayload;
 import com.tombtale.serviceinventory.entity.ItemGrant;
 import org.springframework.amqp.core.Message;

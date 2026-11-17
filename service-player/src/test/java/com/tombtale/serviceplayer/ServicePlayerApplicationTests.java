@@ -1,7 +1,7 @@
 package com.tombtale.serviceplayer;
 
 import com.jayway.jsonpath.JsonPath;
-import com.tombtale.serviceplayer.repository.OutboxEventRepository;
+import com.tombtale.commons.outbox.OutboxEventRepository;
 import com.tombtale.serviceplayer.repository.PlayerRepository;
 import com.tombtale.commons.security.PublicIdClaim;
 import com.tombtale.commons.security.RoleClaimConverter;

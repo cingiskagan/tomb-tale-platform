@@ -1,8 +1,8 @@
 package com.tombtale.servicecommerce.service;
 
 import com.tombtale.commons.audit.SystemActor;
+import com.tombtale.commons.event.EventEnvelope;
 import com.tombtale.servicecommerce.config.RabbitMQConfig;
-import com.tombtale.servicecommerce.dto.event.EventEnvelope;
 import com.tombtale.servicecommerce.dto.event.ItemGrantRejectedPayload;
 import com.tombtale.servicecommerce.dto.event.ItemGrantedPayload;
 import lombok.RequiredArgsConstructor;

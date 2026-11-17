@@ -1,10 +1,7 @@
-package com.tombtale.serviceplayer.service;
+package com.tombtale.commons.outbox;
 
-import com.tombtale.commons.audit.SystemActor;
-import com.tombtale.serviceplayer.config.RabbitMQConfig;
-import com.tombtale.serviceplayer.dto.event.EventEnvelope;
-import com.tombtale.serviceplayer.entity.OutboxEvent;
-import com.tombtale.serviceplayer.repository.OutboxEventRepository;
+import com.tombtale.commons.entity.OutboxEvent;
+import com.tombtale.commons.event.EventEnvelope;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.transport.ReceiverContext;
@@ -20,6 +17,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
@@ -27,31 +25,31 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Sends pending outbox rows to RabbitMQ and marks each one once the broker confirms it.
+ * Sends pending outbox rows to the owner's exchange and marks each one once the broker confirms it.
  * A failed send leaves that row, and every row behind it, pending for the next run.
  */
 @Slf4j
 @Component
 public class OutboxPublisher {
 
-    private static final String PRODUCER = "service-player";
-
     private final OutboxEventRepository outboxEventRepository;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
     private final ObservationRegistry observationRegistry;
+    private final OutboxOwner owner;
     private final int batchSize;
     private final Duration confirmTimeout;
     private final Duration retention;
 
-    /** The batch size, confirm timeout and retention come from {@code app.outbox} in application.yml. */
+    /** The owner comes from the service, and the batch size, confirm timeout and retention from {@code app.outbox}. */
     public OutboxPublisher(
             OutboxEventRepository outboxEventRepository,
             RabbitTemplate rabbitTemplate,
             ObjectMapper objectMapper,
             TransactionTemplate transactionTemplate,
             ObservationRegistry observationRegistry,
+            OutboxOwner owner,
             @Value("${app.outbox.batch-size}") int batchSize,
             @Value("${app.outbox.confirm-timeout}") Duration confirmTimeout,
             @Value("${app.outbox.retention}") Duration retention) {
@@ -60,6 +58,7 @@ public class OutboxPublisher {
         this.objectMapper = objectMapper;
         this.transactionTemplate = transactionTemplate;
         this.observationRegistry = observationRegistry;
+        this.owner = owner;
         this.batchSize = batchSize;
         this.confirmTimeout = confirmTimeout;
         this.retention = retention;
@@ -67,13 +66,13 @@ public class OutboxPublisher {
 
     /**
      * Publishes the oldest pending rows in id order and stops at the first failure.
-     * The rows sent before it still commit as published, by {@link SystemActor#PLAYER_OUTBOX_PUBLISHER}.
+     * The rows sent before it still commit as published, by the owner's actor.
      *
      * @return how many rows were published
      */
     @Scheduled(fixedDelayString = "${app.outbox.publish-interval}")
     public int publishPending() {
-        return SystemActor.PLAYER_OUTBOX_PUBLISHER.run(() -> transactionTemplate.execute(status -> publishBatch()));
+        return owner.actor().run(() -> transactionTemplate.execute(status -> publishBatch()));
     }
 
     private int publishBatch() {
@@ -105,12 +104,12 @@ public class OutboxPublisher {
     }
 
     private void send(OutboxEvent event) {
-        EventEnvelope envelope = new EventEnvelope(
+        EventEnvelope<JsonNode> envelope = new EventEnvelope<>(
                 event.getPublicId(),
                 event.getEventType(),
                 event.getEventVersion(),
                 event.getCreatedAt(),
-                PRODUCER,
+                owner.producer(),
                 objectMapper.readTree(event.getPayload()));
         Message message = MessageBuilder.withBody(objectMapper.writeValueAsBytes(envelope))
                 .setContentType(MessageProperties.CONTENT_TYPE_JSON)
@@ -125,7 +124,7 @@ public class OutboxPublisher {
         Observation.createNotStarted("outbox.publish", () -> trace, observationRegistry)
                 .lowCardinalityKeyValue("event.type", event.getEventType())
                 .observe(() -> rabbitTemplate.invoke(operations -> {
-                    operations.send(RabbitMQConfig.PLAYER_EVENTS_EXCHANGE, event.getEventType(), message);
+                    operations.send(owner.exchange(), event.getEventType(), message);
                     operations.waitForConfirmsOrDie(confirmTimeout.toMillis());
                     return null;
                 }));

@@ -1,13 +1,8 @@
-package com.tombtale.serviceplayer.service;
+package com.tombtale.commons.outbox;
 
-import com.tombtale.commons.audit.SystemActor;
+import com.tombtale.commons.entity.OutboxEvent;
 import com.tombtale.commons.security.PublicIdClaim;
-import com.tombtale.serviceplayer.config.JpaConfig;
-import com.tombtale.serviceplayer.config.QueryDslConfig;
-import com.tombtale.serviceplayer.dto.event.PlayerCreatedPayload;
-import com.tombtale.serviceplayer.entity.OutboxEvent;
-import com.tombtale.serviceplayer.repository.OutboxEventRepository;
-import com.tombtale.serviceplayer.support.PostgresTestBase;
+import com.tombtale.commons.support.PostgresTestBase;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +17,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,11 +30,10 @@ import static org.mockito.Mockito.when;
 
 /**
  * The real auditor and no test transaction, because Hibernate asks for the author when the publisher's own
- * transaction commits. If that commit falls outside {@code SystemActor.run}, the publish throws.
+ * transaction commits. If that commit falls outside the owner actor's {@code run}, the publish throws.
  */
 @DataJpaTest(showSql = false)
-@ActiveProfiles("test")
-@Import({ QueryDslConfig.class, JpaConfig.class, OutboxPublisher.class })
+@Import(OutboxPublisher.class)
 @ImportAutoConfiguration({ JacksonAutoConfiguration.class, ObservationAutoConfiguration.class })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class OutboxPublisherAuthorTest extends PostgresTestBase {
@@ -68,13 +61,13 @@ class OutboxPublisherAuthorTest extends PostgresTestBase {
     }
 
     @Test
-    void thePlayerWritesTheRowAndThePublisherMarksIt() {
+    void theCallerWritesTheRowAndTheOwnersActorMarksIt() {
         UUID player = UUID.randomUUID();
         SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(Jwt.withTokenValue("token")
                 .header("alg", "none").claim(PublicIdClaim.CLAIM, player.toString()).build(), List.of()));
         OutboxEvent row = outboxEventRepository.save(OutboxEvent.builder()
-                .eventType(PlayerCreatedPayload.EVENT_TYPE)
-                .eventVersion(PlayerCreatedPayload.EVENT_VERSION)
+                .eventType("test.happened")
+                .eventVersion(1)
                 .aggregateId(player)
                 .payload("{}")
                 .build());
@@ -84,6 +77,6 @@ class OutboxPublisherAuthorTest extends PostgresTestBase {
 
         OutboxEvent published = outboxEventRepository.findById(row.getId()).orElseThrow();
         assertThat(published.getCreatedBy()).isEqualTo(player);
-        assertThat(published.getUpdatedBy()).isEqualTo(SystemActor.PLAYER_OUTBOX_PUBLISHER.actorId());
+        assertThat(published.getUpdatedBy()).isEqualTo(OutboxTestApplication.ACTOR.actorId());
     }
 }

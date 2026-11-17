@@ -1,5 +1,6 @@
 package com.tombtale.serviceplayer.service;
 
+import com.tombtale.commons.outbox.OutboxService;
 import com.tombtale.serviceplayer.dto.PlayerFilterRequest;
 import com.tombtale.serviceplayer.dto.event.PlayerCreatedPayload;
 import com.tombtale.serviceplayer.dto.PlayerResponse;

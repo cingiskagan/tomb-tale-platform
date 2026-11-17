@@ -1,7 +1,9 @@
 package com.tombtale.servicecommerce;
 
+import com.tombtale.commons.outbox.OutboxPersistence;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 
 /**
@@ -12,6 +14,7 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
  */
 @SpringBootApplication
 @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
+@Import(OutboxPersistence.class)
 public class ServiceCommerceApplication {
 
     public static void main(String[] args) {

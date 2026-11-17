@@ -1,7 +1,6 @@
-package com.tombtale.serviceplayer.service;
+package com.tombtale.commons.outbox;
 
-import com.tombtale.serviceplayer.entity.OutboxEvent;
-import com.tombtale.serviceplayer.repository.OutboxEventRepository;
+import com.tombtale.commons.entity.OutboxEvent;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.transport.SenderContext;
