@@ -1,8 +1,8 @@
 package com.tombtale.serviceinventory.service;
 
 import com.tombtale.commons.audit.SystemActor;
+import com.tombtale.commons.event.EventEnvelope;
 import com.tombtale.serviceinventory.config.RabbitMQConfig;
-import com.tombtale.serviceinventory.dto.event.EventEnvelope;
 import com.tombtale.serviceinventory.dto.event.PurchaseCreatedPayload;
 import com.tombtale.serviceinventory.entity.ItemGrant;
 import lombok.RequiredArgsConstructor;

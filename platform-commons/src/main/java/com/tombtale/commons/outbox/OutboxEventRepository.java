@@ -1,6 +1,6 @@
-package com.tombtale.serviceplayer.repository;
+package com.tombtale.commons.outbox;
 
-import com.tombtale.serviceplayer.entity.OutboxEvent;
+import com.tombtale.commons.entity.OutboxEvent;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Limit;
@@ -14,7 +14,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.Instant;
 import java.util.List;
 
-/** Reads and writes the rows of the transactional outbox. */
+/** Reads and writes the rows of the transactional outbox, in the schema of the service that runs it. */
 public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> {
 
     /**

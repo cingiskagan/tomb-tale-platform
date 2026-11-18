@@ -1,4 +1,4 @@
-package com.tombtale.servicecommerce.service;
+package com.tombtale.commons.outbox;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,14 +19,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Import;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.rabbitmq.RabbitMQContainer;
 
-import com.tombtale.servicecommerce.dto.event.PurchaseCreatedPayload;
-import com.tombtale.servicecommerce.entity.OutboxEvent;
-import com.tombtale.servicecommerce.repository.OutboxEventRepository;
-import com.tombtale.servicecommerce.support.FixedAuthorTestBase;
+import com.tombtale.commons.entity.OutboxEvent;
+import com.tombtale.commons.support.FixedAuthorTestBase;
 
 import io.micrometer.tracing.Span;
 import io.micrometer.tracing.Tracer;
@@ -37,11 +35,11 @@ import io.micrometer.tracing.Tracer;
  */
 @SpringBootTest
 @AutoConfigureTracing
-@ActiveProfiles("test")
+@Import({ OutboxService.class, OutboxPublisher.class })
 class OutboxTraceTest extends FixedAuthorTestBase {
 
     private static final String QUEUE = "test.outbox-trace";
-    private static final String EVENT_TYPE = PurchaseCreatedPayload.EVENT_TYPE;
+    private static final String EVENT_TYPE = "test.happened";
     private static final long RECEIVE_TIMEOUT_MILLIS = 5000L;
 
     @ServiceConnection
@@ -78,8 +76,8 @@ class OutboxTraceTest extends FixedAuthorTestBase {
         }
 
         @Bean
-        Binding traceBinding(Queue traceQueue, TopicExchange purchaseEventsExchange) {
-            return BindingBuilder.bind(traceQueue).to(purchaseEventsExchange).with(EVENT_TYPE);
+        Binding traceBinding(Queue traceQueue, TopicExchange testEventsExchange) {
+            return BindingBuilder.bind(traceQueue).to(testEventsExchange).with(EVENT_TYPE);
         }
     }
 
@@ -94,7 +92,7 @@ class OutboxTraceTest extends FixedAuthorTestBase {
         Span request = tracer.nextSpan().name("request").start();
         try (Tracer.SpanInScope ignored = tracer.withSpan(request)) {
             transactionTemplate.executeWithoutResult(status ->
-                    outboxService.append(EVENT_TYPE, 1, UUID.randomUUID(), Map.of("itemCode", "SWORD")));
+                    outboxService.append(EVENT_TYPE, 1, UUID.randomUUID(), Map.of("level", 1)));
         } finally {
             request.end();
         }

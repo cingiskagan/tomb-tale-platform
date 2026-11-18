@@ -1,11 +1,13 @@
 package com.tombtale.serviceinventory.service;
 
+import com.tombtale.commons.outbox.OutboxService;
 import com.tombtale.commons.web.InvalidSortFieldException;
 import com.tombtale.serviceinventory.domain.ItemType;
 import com.tombtale.serviceinventory.domain.Stat;
 import com.tombtale.serviceinventory.dto.CreateItemTemplateRequest;
 import com.tombtale.serviceinventory.dto.ItemTemplateResponse;
 import com.tombtale.serviceinventory.dto.UpdateItemTemplateRequest;
+import com.tombtale.serviceinventory.dto.event.ItemTemplatePayload;
 import com.tombtale.serviceinventory.entity.ItemSet;
 import com.tombtale.serviceinventory.entity.ItemTemplate;
 import com.tombtale.serviceinventory.exception.DuplicateCodeException;
@@ -31,6 +33,7 @@ import java.util.UUID;
 
 /**
  * The item catalog as admins manage it: create, edit, retire and read templates.
+ * Each change also writes the template as it now stands into the outbox (ADR 0035).
  */
 @Service
 @RequiredArgsConstructor
@@ -46,6 +49,7 @@ public class ItemTemplateService {
     private final ItemIconRepository itemIconRepository;
     private final ItemSetRepository itemSetRepository;
     private final ItemTemplateMapper itemTemplateMapper;
+    private final OutboxService outboxService;
 
     /**
      * Creates a template with its type's stack size.
@@ -70,12 +74,14 @@ public class ItemTemplateService {
                 .iconHash(knownIcon(request.iconHash()))
                 .itemSet(knownSet(request.itemSetId()))
                 .build());
+        appendEvent(ItemTemplatePayload.CREATED, saved);
         LOG.info("Created item template code={} id={}", saved.getCode(), saved.getPublicId());
         return itemTemplateMapper.toResponse(saved);
     }
 
     /**
      * Replaces what may change on a template. A retired one can still be edited, since players see its copies.
+     * An edit that changes nothing moves no version, so it writes no event.
      *
      * @param publicId the template
      * @param request  its new fields and the version the edit started from
@@ -95,6 +101,9 @@ public class ItemTemplateService {
         template.setIconHash(knownIcon(request.iconHash()));
         template.setItemSet(knownSet(request.itemSetId()));
         ItemTemplate saved = itemTemplateRepository.saveAndFlush(template);
+        if (!Objects.equals(saved.getVersion(), request.version())) {
+            appendEvent(ItemTemplatePayload.UPDATED, saved);
+        }
         LOG.info("Updated item template code={} to version {}", saved.getCode(), saved.getVersion());
         return itemTemplateMapper.toResponse(saved);
     }
@@ -111,6 +120,7 @@ public class ItemTemplateService {
         if (!template.isRetired()) {
             template.setRetired(true);
             template = itemTemplateRepository.saveAndFlush(template);
+            appendEvent(ItemTemplatePayload.RETIRED, template);
             LOG.info("Retired item template code={}", template.getCode());
         }
         return itemTemplateMapper.toResponse(template);
@@ -135,6 +145,11 @@ public class ItemTemplateService {
     public Page<ItemTemplateResponse> listTemplates(Pageable pageable) {
         SortAllowList.check(pageable.getSort(), SORTABLE_FIELDS);
         return itemTemplateRepository.findAll(pageable).map(itemTemplateMapper::toResponse);
+    }
+
+    private void appendEvent(String eventType, ItemTemplate template) {
+        outboxService.append(eventType, ItemTemplatePayload.EVENT_VERSION, template.getPublicId(),
+                itemTemplateMapper.toPayload(template));
     }
 
     /** A template may have no icon, but one it names must have been uploaded. */

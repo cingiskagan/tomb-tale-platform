@@ -1,6 +1,5 @@
-package com.tombtale.servicecommerce.entity;
+package com.tombtale.commons.entity;
 
-import com.tombtale.commons.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -29,7 +28,7 @@ public class OutboxEvent extends BaseEntity {
     /** The W3C header that {@link #traceparent} holds. */
     public static final String TRACEPARENT = "traceparent";
 
-    /** Also the routing key, for example {@code purchase.created}. */
+    /** Also the routing key, for example {@code player.created}. */
     @Column(nullable = false, updatable = false, length = 100)
     private String eventType;
 

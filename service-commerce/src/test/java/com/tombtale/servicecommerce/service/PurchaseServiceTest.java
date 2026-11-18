@@ -1,5 +1,6 @@
 package com.tombtale.servicecommerce.service;
 
+import com.tombtale.commons.outbox.OutboxService;
 import com.tombtale.servicecommerce.domain.PurchaseStatus;
 import com.tombtale.servicecommerce.dto.CreatePurchaseRequest;
 import com.tombtale.servicecommerce.dto.PurchaseFilterRequest;

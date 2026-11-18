@@ -1,9 +1,11 @@
 package com.tombtale.serviceinventory.service;
 
+import com.tombtale.commons.outbox.OutboxService;
 import com.tombtale.serviceinventory.domain.Stat;
 import com.tombtale.serviceinventory.dto.CreateItemSetRequest;
 import com.tombtale.serviceinventory.dto.ItemSetResponse;
 import com.tombtale.serviceinventory.dto.UpdateItemSetRequest;
+import com.tombtale.serviceinventory.dto.event.ItemSetPayload;
 import com.tombtale.serviceinventory.entity.ItemSet;
 import com.tombtale.serviceinventory.exception.DuplicateCodeException;
 import com.tombtale.serviceinventory.exception.ItemSetNotFoundException;
@@ -24,6 +26,7 @@ import java.util.UUID;
 
 /**
  * Item sets as admins manage them. A template joins a set through its own edit.
+ * Each change also writes the set as it now stands into the outbox (ADR 0035).
  */
 @Service
 @RequiredArgsConstructor
@@ -36,6 +39,7 @@ public class ItemSetService {
 
     private final ItemSetRepository itemSetRepository;
     private final ItemSetMapper itemSetMapper;
+    private final OutboxService outboxService;
 
     /**
      * @param request the new set
@@ -52,11 +56,14 @@ public class ItemSetService {
                 .name(request.name())
                 .bonus(Stat.fromNames(request.bonus()))
                 .build());
+        appendEvent(ItemSetPayload.CREATED, saved);
         LOG.info("Created item set code={} id={}", saved.getCode(), saved.getPublicId());
         return itemSetMapper.toResponse(saved);
     }
 
     /**
+     * An edit that changes nothing moves no version, so it writes no event.
+     *
      * @param publicId the set
      * @param request  its new fields and the version the edit started from
      * @return the set after the edit
@@ -71,6 +78,9 @@ public class ItemSetService {
         itemSet.setName(request.name());
         itemSet.setBonus(Stat.fromNames(request.bonus()));
         ItemSet saved = itemSetRepository.saveAndFlush(itemSet);
+        if (!Objects.equals(saved.getVersion(), request.version())) {
+            appendEvent(ItemSetPayload.UPDATED, saved);
+        }
         LOG.info("Updated item set code={} to version {}", saved.getCode(), saved.getVersion());
         return itemSetMapper.toResponse(saved);
     }
@@ -91,6 +101,10 @@ public class ItemSetService {
     public Page<ItemSetResponse> listSets(Pageable pageable) {
         SortAllowList.check(pageable.getSort(), SORTABLE_FIELDS);
         return itemSetRepository.findAll(pageable).map(itemSetMapper::toResponse);
+    }
+
+    private void appendEvent(String eventType, ItemSet itemSet) {
+        outboxService.append(eventType, ItemSetPayload.EVENT_VERSION, itemSet.getPublicId(), itemSetMapper.toPayload(itemSet));
     }
 
     private ItemSet findEntity(UUID publicId) {

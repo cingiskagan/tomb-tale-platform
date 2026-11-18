@@ -44,9 +44,10 @@ Phase I builds these after Phase E.
   events, an event listener (a Keycloak plugin) next to `public-id-mapper`
   publishes them to RabbitMQ. It maps the Keycloak user id to `publicId` and
   drops `username`, which can be an email.
-- Admin changes as domain events. `CharacterController` records a stat change
-  with `log.info`, and nothing keeps that line. A change by an admin or a game
-  master is a fact a fraud case asks about.
+- Admin changes to players as domain events. Catalog changes already are
+  (ADR 0035), but `CharacterController` records a stat change with `log.info`,
+  and nothing keeps that line. A change by an admin or a game master is a fact
+  a fraud case asks about.
 
 ## Handed over
 

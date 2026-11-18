@@ -1,4 +1,4 @@
-package com.tombtale.servicecommerce.service;
+package com.tombtale.commons.outbox;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -11,11 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
 import org.springframework.boot.micrometer.observation.autoconfigure.ObservationAutoConfiguration;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
@@ -24,27 +22,23 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import jakarta.persistence.EntityManager;
 
-import com.tombtale.servicecommerce.config.JpaConfig;
-import com.tombtale.servicecommerce.config.QueryDslConfig;
-import com.tombtale.servicecommerce.dto.event.PurchaseCreatedPayload;
-import com.tombtale.servicecommerce.entity.OutboxEvent;
-import com.tombtale.servicecommerce.repository.OutboxEventRepository;
-import com.tombtale.servicecommerce.support.FixedAuthorTestBase;
+import com.tombtale.commons.entity.OutboxEvent;
+import com.tombtale.commons.support.FixedAuthorTestBase;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * The outbox write against a real Postgres, ported from service-player: the jsonb column, and the rule
- * that an event is only ever written inside the transaction that produced the fact.
+ * The outbox write against a real Postgres: the jsonb column, and the rule that
+ * an event is only ever written inside the transaction that produced the fact.
  */
 @DataJpaTest(showSql = false)
-@ActiveProfiles("test")
-@Import({ QueryDslConfig.class, JpaConfig.class, OutboxService.class })
-@ImportAutoConfiguration(ObservationAutoConfiguration.class)
+@Import(OutboxService.class)
+@ImportAutoConfiguration({ JacksonAutoConfiguration.class, ObservationAutoConfiguration.class })
 class OutboxServiceTest extends FixedAuthorTestBase {
 
-    private static final String ITEM_CODE = "SWORD_IRON";
+    private static final String EVENT_TYPE = "test.happened";
+    private static final int LEVEL = 7;
 
     @Autowired
     private OutboxService outboxService;
@@ -64,14 +58,8 @@ class OutboxServiceTest extends FixedAuthorTestBase {
     private TransactionTemplate transactionTemplate;
     private UUID aggregateId;
 
-    /** @DataJpaTest brings no Jackson, and the service serializes the payload with it. */
-    @TestConfiguration
-    static class JacksonBean {
-
-        @Bean
-        ObjectMapper objectMapper() {
-            return new ObjectMapper();
-        }
+    /** A payload shaped like a service's own event record. */
+    record Happened(UUID characterPublicId, int level) {
     }
 
     @BeforeEach
@@ -80,12 +68,8 @@ class OutboxServiceTest extends FixedAuthorTestBase {
         aggregateId = UUID.randomUUID();
     }
 
-    private OutboxEvent appendPurchaseCreated() {
-        return outboxService.append(
-                PurchaseCreatedPayload.EVENT_TYPE,
-                PurchaseCreatedPayload.EVENT_VERSION,
-                aggregateId,
-                new PurchaseCreatedPayload(aggregateId, UUID.randomUUID(), ITEM_CODE, 2));
+    private OutboxEvent appendEvent() {
+        return outboxService.append(EVENT_TYPE, 1, aggregateId, new Happened(aggregateId, LEVEL));
     }
 
     private List<OutboxEvent> committedRows() {
@@ -94,31 +78,38 @@ class OutboxServiceTest extends FixedAuthorTestBase {
                 .toList();
     }
 
+    /**
+     * The row the publisher will read: the envelope in columns, the data object
+     * in jsonb, and no publication time yet.
+     */
     @Test
     void shouldStoreTheEventAsPendingJson() {
-        OutboxEvent written = appendPurchaseCreated();
+        OutboxEvent written = appendEvent();
         entityManager.flush();
         entityManager.clear();
 
         OutboxEvent row = outboxEventRepository.findById(written.getId()).orElseThrow();
         assertThat(row.getPublicId()).isEqualTo(written.getPublicId());
-        assertThat(row.getEventType()).isEqualTo("purchase.created");
+        assertThat(row.getEventType()).isEqualTo(EVENT_TYPE);
         assertThat(row.getEventVersion()).isEqualTo(1);
         assertThat(row.getAggregateId()).isEqualTo(aggregateId);
         assertThat(row.getCreatedAt()).isNotNull();
         assertThat(row.getPublishedAt()).as("a fresh row is pending").isNull();
 
         JsonNode data = objectMapper.readTree(row.getPayload());
-        assertThat(data.get("purchasePublicId").asString()).isEqualTo(aggregateId.toString());
-        assertThat(data.get("itemCode").asString()).isEqualTo(ITEM_CODE);
-        assertThat(data.get("quantity").asInt()).isEqualTo(2);
+        assertThat(data.propertyNames()).containsExactlyInAnyOrder("characterPublicId", "level");
+        assertThat(data.get("characterPublicId").asString()).isEqualTo(aggregateId.toString());
+        assertThat(data.get("level").asInt()).isEqualTo(LEVEL);
     }
 
-    /** An event written in a transaction of its own is the dual write the outbox exists to prevent. */
+    /**
+     * MANDATORY is the whole point of the pattern. An event written in a
+     * transaction of its own is the dual write the outbox exists to prevent.
+     */
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void shouldRefuseAnEventWithNoTransactionToJoin() {
-        assertThatThrownBy(this::appendPurchaseCreated)
+        assertThatThrownBy(this::appendEvent)
                 .isInstanceOf(IllegalTransactionStateException.class);
 
         assertThat(committedRows()).isEmpty();
@@ -129,7 +120,7 @@ class OutboxServiceTest extends FixedAuthorTestBase {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void shouldLeaveNoRowWhenTheTransactionRollsBack() {
         assertThatThrownBy(() -> transactionTemplate.execute(status -> {
-            appendPurchaseCreated();
+            appendEvent();
             throw new IllegalStateException("the write after the event fails");
         })).isInstanceOf(IllegalStateException.class);
 
