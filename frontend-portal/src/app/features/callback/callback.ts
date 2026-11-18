@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../core/auth';
 
 /**
@@ -11,14 +11,10 @@ import { AuthService } from '../../core/auth';
 @Component({
   selector: 'app-callback',
   standalone: true,
-  imports: [ProgressSpinnerModule],
+  imports: [MatProgressSpinnerModule],
   template: `
     <div class="callback-container">
-      <p-progressSpinner
-        ariaLabel="Authenticating"
-        strokeWidth="3"
-        styleClass="callback-spinner"
-      />
+      <mat-progress-spinner mode="indeterminate" aria-label="Authenticating" [diameter]="64" [strokeWidth]="3" />
       <p class="callback-text">Entering the tomb...</p>
     </div>
   `,

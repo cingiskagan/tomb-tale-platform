@@ -1,8 +1,11 @@
 import {
   ApplicationConfig,
+  inject,
+  provideAppInitializer,
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
 } from '@angular/core';
+import { MatIconRegistry } from '@angular/material/icon';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
@@ -68,6 +71,7 @@ const TombTalePreset = definePreset(Aura, {
  * - Browser animations for PrimeNG transitions
  * - OAuth2/OIDC client for Keycloak authentication
  * - PrimeNG component library with Tomb Tale dark theme
+ * - PrimeIcons as mat-icon's font, so `<mat-icon fontIcon="pi-check" />` draws one
  */
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -77,6 +81,9 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withInterceptors([authInterceptor, loadingInterceptor])),
     provideAnimationsAsync(),
     provideOAuthClient(),
+    provideAppInitializer(() => {
+      inject(MatIconRegistry).setDefaultFontSetClass('pi');
+    }),
     providePrimeNG({
       theme: {
         preset: TombTalePreset,

@@ -43,15 +43,10 @@
 
     <!-- CTA Button -->
     <div class="login-card__action">
-      <p-button
-        id="login-enter-tomb-button"
-        label="Enter the Tomb"
-        icon="pi pi-sign-in"
-        severity="warn"
-        [raised]="true"
-        styleClass="enter-tomb-btn"
-        (onClick)="onEnterTomb()"
-      />
+      <button id="login-enter-tomb-button" mat-flat-button type="button" class="enter-tomb-btn" (click)="onEnterTomb()">
+        <mat-icon fontIcon="pi-sign-in" />
+        Enter the Tomb
+      </button>
     </div>
 
     <!-- Footer info -->

@@ -1,22 +1,24 @@
 <div class="layout-wrapper">
   @if (loading$ | async) {
-    <div class="loading-bar">
-      <p-progressbar mode="indeterminate" [style]="{ height: '3px' }" />
-    </div>
+    <mat-progress-bar class="loading-bar" mode="indeterminate" />
   }
-  <p-menubar [model]="items" styleClass="main-menubar">
-    <ng-template #start>
-      <div class="logo-container">
-        <span class="logo-text">Tomb Tale Online</span>
-      </div>
-    </ng-template>
-    <ng-template #end>
-      <span class="user-greeting">
-        Welcome, {{ username }}
-      </span>
-    </ng-template>
-  </p-menubar>
-  
+  <mat-toolbar class="main-toolbar">
+    <span class="logo-text">Tomb Tale Online</span>
+    <nav class="nav-links" aria-label="Main">
+      @for (item of items; track item.route) {
+        <a mat-button [routerLink]="item.route" routerLinkActive="active">
+          <mat-icon [fontIcon]="item.icon" />
+          {{ item.label }}
+        </a>
+      }
+      <button mat-button type="button" (click)="logout()">
+        <mat-icon fontIcon="pi-sign-out" />
+        Logout
+      </button>
+    </nav>
+    <span class="user-greeting">Welcome, {{ username }}</span>
+  </mat-toolbar>
+
   <main class="layout-content">
     <router-outlet />
   </main>

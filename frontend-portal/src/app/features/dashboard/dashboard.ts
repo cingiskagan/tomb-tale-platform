@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 import { AuthService, UserProfile } from '../../core/auth';
 
 /**
@@ -12,36 +13,32 @@ import { AuthService, UserProfile } from '../../core/auth';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [ButtonModule, CardModule],
+  imports: [MatButtonModule, MatCardModule, MatIconModule],
   template: `
     <div class="dashboard-container">
-      <p-card styleClass="dashboard-card">
-        <ng-template #header>
-          <div class="dashboard-header">
-            <h1 class="dashboard-title">Welcome, Adventurer</h1>
-            @if (userProfile) {
-              <p class="dashboard-username">
-                {{ userProfile.preferred_username || userProfile.name }}
-              </p>
-            }
-          </div>
-        </ng-template>
+      <mat-card class="dashboard-card" appearance="outlined">
+        <div class="dashboard-header">
+          <h1 class="dashboard-title">Welcome, Adventurer</h1>
+          @if (userProfile) {
+            <p class="dashboard-username">
+              {{ userProfile.preferred_username || userProfile.name }}
+            </p>
+          }
+        </div>
 
-        <p class="dashboard-message">
-          You have entered the tomb. The full dashboard is being forged...
-        </p>
+        <mat-card-content>
+          <p class="dashboard-message">
+            You have entered the tomb. The full dashboard is being forged...
+          </p>
+        </mat-card-content>
 
-        <ng-template #footer>
-          <p-button
-            id="dashboard-logout-button"
-            label="Leave the Tomb"
-            icon="pi pi-sign-out"
-            severity="secondary"
-            [outlined]="true"
-            (onClick)="onLogout()"
-          />
-        </ng-template>
-      </p-card>
+        <mat-card-actions>
+          <button id="dashboard-logout-button" mat-stroked-button type="button" (click)="onLogout()">
+            <mat-icon fontIcon="pi-sign-out" />
+            Leave the Tomb
+          </button>
+        </mat-card-actions>
+      </mat-card>
     </div>
   `,
   styles: [`
@@ -54,15 +51,15 @@ import { AuthService, UserProfile } from '../../core/auth';
       padding: 2rem;
     }
 
-    ::ng-deep .dashboard-card {
+    .dashboard-card {
+      --mat-card-outlined-container-color: rgba(15, 15, 25, 0.9);
+      --mat-card-outlined-outline-color: rgba(212, 162, 78, 0.2);
       max-width: 500px;
       width: 100%;
-      background: rgba(15, 15, 25, 0.9) !important;
-      border: 1px solid rgba(212, 162, 78, 0.2);
     }
 
     .dashboard-header {
-      padding: 1.5rem 1.5rem 0;
+      padding: 1.5rem 1rem 0.5rem;
     }
 
     .dashboard-title {
