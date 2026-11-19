@@ -39,12 +39,12 @@ tr.retired td {
   opacity: 0.45;
 }
 
-.field {
-  margin-bottom: 1rem;
+.stats-editor legend {
+  padding: 0 0.25rem;
+  color: #e8e0d4;
 }
 
-.field label,
-.stats-editor legend {
+.field-label {
   display: block;
   margin-bottom: 0.5rem;
   color: #e8e0d4;
@@ -76,10 +76,10 @@ tr.retired td {
   margin-bottom: 0.75rem;
 }
 
-:host ::ng-deep .stat-name {
+.stat-name {
   flex: 1;
 }
 
-:host ::ng-deep .stat-value input {
-  width: 6rem;
+.stat-value {
+  width: 7rem;
 }

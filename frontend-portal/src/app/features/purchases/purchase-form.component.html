@@ -1,92 +1,55 @@
-<p-dialog
-  [header]="isEditMode ? 'Edit Purchase' : 'New Purchase'"
-  [(visible)]="visible"
-  [modal]="true"
-  [style]="{ width: '400px' }"
-  (onHide)="close()"
-  styleClass="purchase-dialog"
->
-  <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-column gap-3 mt-3">
-    <div class="field">
-      <label for="playerId">Player ID</label>
-      <input
-        id="playerId"
-        pInputText
-        formControlName="playerId"
-        class="w-full"
-        [readonly]="isEditMode"
-      />
-    </div>
+<ng-template [appDialog]="visible" appDialogWidth="400px" (appDialogDismissed)="close()">
+  <h2 mat-dialog-title>{{ isEditMode ? 'Edit Purchase' : 'New Purchase' }}</h2>
 
-    <div class="field">
-      <label for="itemCode">Item Code</label>
-      <input
-        id="itemCode"
-        pInputText
-        formControlName="itemCode"
-        class="w-full"
-        [readonly]="isEditMode"
-      />
-    </div>
+  <mat-dialog-content>
+    <form [formGroup]="form" (ngSubmit)="save()" class="tt-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Player ID</mat-label>
+        <input id="playerId" matInput formControlName="playerId" [readonly]="isEditMode" />
+      </mat-form-field>
 
-    @if (!isEditMode) {
-      <div class="field">
-        <label for="quantity">Quantity</label>
-        <p-inputNumber
-          id="quantity"
-          formControlName="quantity"
-          class="w-full"
-          styleClass="w-full"
-          [min]="1"
-        ></p-inputNumber>
-      </div>
-    }
+      <mat-form-field appearance="outline">
+        <mat-label>Item Code</mat-label>
+        <input id="itemCode" matInput formControlName="itemCode" [readonly]="isEditMode" />
+      </mat-form-field>
 
-    <div class="field">
-      <label for="unitPrice">Unit Price</label>
-      <p-inputNumber
-        id="unitPrice"
-        formControlName="unitPrice"
-        class="w-full"
-        styleClass="w-full"
-        mode="decimal"
-        [minFractionDigits]="2"
-        [maxFractionDigits]="2"
-        [min]="0"
-        [readonly]="isEditMode"
-      ></p-inputNumber>
-    </div>
+      @if (!isEditMode) {
+        <mat-form-field appearance="outline">
+          <mat-label>Quantity</mat-label>
+          <input id="quantity" matInput type="number" formControlName="quantity" />
+        </mat-form-field>
+      }
 
-    @if (isEditMode) {
-      <div class="field">
-        <label for="status">Status</label>
-        <p-select
-          id="status"
-          formControlName="status"
-          [options]="statusOptions"
-          placeholder="Choose a new status"
-          class="w-full"
-          styleClass="w-full"
-          appendTo="body"
-        ></p-select>
-      </div>
-    }
-  </form>
+      <mat-form-field appearance="outline">
+        <mat-label>Unit Price</mat-label>
+        <input id="unitPrice" matInput type="number" step="0.01" formControlName="unitPrice" [readonly]="isEditMode" />
+      </mat-form-field>
 
-  <ng-template #footer>
-    <p-button
-      label="Cancel"
-      icon="pi pi-times"
-      severity="secondary"
-      [outlined]="true"
-      (onClick)="close()"
-    />
-    <p-button
-      label="Save"
-      icon="pi pi-check"
-      [disabled]="form.invalid || isSaving"
-      [loading]="isSaving"
-      (onClick)="save()"
-    />
-  </ng-template>
-</p-dialog>
+      @if (isEditMode) {
+        <mat-form-field appearance="outline">
+          <mat-label>Status</mat-label>
+          <mat-select id="status" formControlName="status" placeholder="Choose a new status">
+            @for (option of statusOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="close()">
+      <mat-icon fontIcon="pi-times" />
+      Cancel
+    </button>
+    <button mat-flat-button type="button" [disabled]="form.invalid || isSaving" (click)="save()">
+      @if (isSaving) {
+        <mat-progress-spinner class="tt-button-spinner" mode="indeterminate" [diameter]="18" />
+      } @else {
+        <mat-icon fontIcon="pi-check" />
+      }
+      Save
+    </button>
+  </mat-dialog-actions>
+</ng-template>

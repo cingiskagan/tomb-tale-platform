@@ -1,12 +1,15 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { DialogModule } from 'primeng/dialog';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { firstValueFrom } from 'rxjs';
 import { ItemCatalogService, ItemSetResponse } from '../../core/api';
+import { DialogDirective } from '../../core/ui';
 import { StatsEditorComponent } from './stats-editor.component';
 import { statArray, statRows, statsOf } from './stats-form';
 import { problemDetail } from './problem-detail';
@@ -15,7 +18,17 @@ import { problemDetail } from './problem-detail';
 @Component({
   selector: 'app-item-set-form',
   standalone: true,
-  imports: [ReactiveFormsModule, DialogModule, ButtonModule, InputTextModule, MessageModule, StatsEditorComponent],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    DialogDirective,
+    StatsEditorComponent,
+  ],
   templateUrl: './item-set-form.component.html',
   styleUrl: './items.css',
 })

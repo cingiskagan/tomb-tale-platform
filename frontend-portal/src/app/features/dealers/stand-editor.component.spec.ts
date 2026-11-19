@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { MessageService } from 'primeng/api';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { of, Subject, throwError } from 'rxjs';
 import {
   DealerService,
@@ -13,6 +12,7 @@ import {
   Stand,
   StandEntry,
 } from '../../core/api';
+import { NotificationService } from '../../core/ui';
 import { StandEditorComponent } from './stand-editor.component';
 
 function aTemplate(code: string, retired = false): ItemTemplateResponse {
@@ -65,7 +65,7 @@ function standOf(entries: StandEntry[]): Stand {
 describe('StandEditorComponent', () => {
   let dealerService: jasmine.SpyObj<DealerService>;
   let catalog: jasmine.SpyObj<ItemCatalogService>;
-  let messageService: jasmine.SpyObj<MessageService>;
+  let notifications: jasmine.SpyObj<NotificationService>;
   let fixture: ComponentFixture<StandEditorComponent>;
   let editor: StandEditorComponent;
 
@@ -78,15 +78,15 @@ describe('StandEditorComponent', () => {
         page: { number: 0, size: 10, totalElements: 2, totalPages: 1 },
       }),
     );
-    messageService = jasmine.createSpyObj<MessageService>('MessageService', ['add']);
+    notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['error', 'success']);
     TestBed.configureTestingModule({
       imports: [StandEditorComponent],
       providers: [
-        provideNoopAnimations(),
+        { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
         { provide: DealerService, useValue: dealerService },
         { provide: ItemCatalogService, useValue: catalog },
         { provide: InventoryService, useValue: jasmine.createSpyObj<InventoryService>('InventoryService', ['iconUrl']) },
-        { provide: MessageService, useValue: messageService },
+        { provide: NotificationService, useValue: notifications },
       ],
     });
     fixture = TestBed.createComponent(StandEditorComponent);
@@ -181,9 +181,7 @@ describe('StandEditorComponent', () => {
 
     await dragOntoStand('SWORD_IRON');
 
-    expect(messageService.add).toHaveBeenCalledWith(
-      jasmine.objectContaining({ detail: 'The item template SWORD_IRON is retired' }),
-    );
+    expect(notifications.error).toHaveBeenCalledWith('The item template SWORD_IRON is retired');
     expect(editor.busy).toBeFalse();
   });
 

@@ -19,16 +19,6 @@
   font-size: 1.5rem;
 }
 
-.field {
-  margin-bottom: 1rem;
-}
-
-.field label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #e8e0d4;
-}
-
 .form-error {
   display: block;
   color: #f87171;
@@ -77,6 +67,10 @@ tr.retired td {
 .stand-header h3 {
   margin: 0;
   flex: 1;
+}
+
+.rarity {
+  width: 9rem;
 }
 
 .entry {

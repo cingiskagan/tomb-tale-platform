@@ -1,12 +1,15 @@
 import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { DialogModule } from 'primeng/dialog';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { SelectModule } from 'primeng/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 import { PurchaseService, PurchaseStatus } from '../../core/api';
+import { DialogDirective } from '../../core/ui';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -15,14 +18,16 @@ import { firstValueFrom } from 'rxjs';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    DialogModule,
-    ButtonModule,
-    InputTextModule,
-    InputNumberModule,
-    SelectModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    DialogDirective,
   ],
   templateUrl: './purchase-form.component.html',
-  styleUrl: './purchase-form.component.css'
 })
 export class PurchaseFormComponent implements OnInit {
   private loadRequestSeq = 0;

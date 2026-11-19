@@ -1,14 +1,17 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { DialogModule } from 'primeng/dialog';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { SelectModule } from 'primeng/select';
-import { MessageModule } from 'primeng/message';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 import { firstValueFrom } from 'rxjs';
 import { ItemCatalogService, ItemSetResponse, ItemTemplateResponse, ItemType } from '../../core/api';
+import { DialogDirective } from '../../core/ui';
 import { StatsEditorComponent } from './stats-editor.component';
 import { statArray, statRows, statsOf } from './stats-form';
 import { problemDetail } from './problem-detail';
@@ -21,13 +24,16 @@ const MAX_PRICE = 1_000_000_000;
   selector: 'app-item-template-form',
   standalone: true,
   imports: [
+    DecimalPipe,
     ReactiveFormsModule,
-    DialogModule,
-    ButtonModule,
-    InputTextModule,
-    InputNumberModule,
-    SelectModule,
-    MessageModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    DialogDirective,
     StatsEditorComponent,
   ],
   templateUrl: './item-template-form.component.html',

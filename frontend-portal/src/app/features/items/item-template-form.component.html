@@ -1,108 +1,107 @@
-<p-dialog
-  [header]="isEditMode ? 'Edit Template' : 'New Template'"
-  [visible]="visible"
-  (visibleChange)="$event || close()"
-  [modal]="true"
-  [style]="{ width: '34rem' }"
-  styleClass="item-dialog"
->
-  @if (notice) {
-    <p-message [severity]="notice.severity" [text]="notice.text" styleClass="mb-3" />
-  }
+<ng-template [appDialog]="visible" appDialogWidth="34rem" (appDialogDismissed)="close()">
+  <h2 mat-dialog-title>{{ isEditMode ? 'Edit Template' : 'New Template' }}</h2>
 
-  <form [formGroup]="form" (ngSubmit)="save()">
-    <div class="field">
-      <label for="code">Code</label>
-      <input id="code" pInputText formControlName="code" class="w-full" placeholder="SWORD_IRON" />
-    </div>
-
-    <div class="field">
-      <label for="name">Name</label>
-      <input id="name" pInputText formControlName="name" class="w-full" />
-    </div>
-
-    <div class="field">
-      <label for="itemType">Type</label>
-      <p-select
-        inputId="itemType"
-        formControlName="itemType"
-        [options]="typeOptions"
-        placeholder="Choose a type"
-        appendTo="body"
-        styleClass="w-full"
-      />
-    </div>
-
-    <div class="field">
-      <label for="price">Price (coins, gray rarity)</label>
-      <p-inputNumber inputId="price" formControlName="price" [min]="0" [max]="maxPrice" styleClass="w-full" />
-    </div>
-
-    <app-stats-editor [rows]="form.controls.baseStats" label="Base stats" />
-
-    <div class="field">
-      <label for="itemSetId">Item set</label>
-      <p-select
-        inputId="itemSetId"
-        formControlName="itemSetId"
-        [options]="sets"
-        optionLabel="name"
-        optionValue="publicId"
-        placeholder="None"
-        [showClear]="true"
-        appendTo="body"
-        styleClass="w-full"
-      />
-    </div>
-
-    <div class="field">
-      <label for="assetKey">Asset key</label>
-      <input
-        id="assetKey"
-        pInputText
-        formControlName="assetKey"
-        class="w-full"
-        placeholder="Items/Weapons/SwordIron"
-      />
-    </div>
-
-    <div class="field">
-      <label for="icon">Icon (PNG or WebP)</label>
-      <div class="icon-preview">
-        @if (iconUrl && !iconBroken) {
-          <img [src]="iconUrl" alt="Icon preview" (error)="iconBroken = true" />
-        } @else {
-          <i class="pi pi-image generic-icon" aria-hidden="true"></i>
-        }
-        <input
-          id="icon"
-          type="file"
-          accept="image/png,image/webp"
-          [disabled]="uploading"
-          (change)="uploadIcon($event)"
-        />
-        @if (form.controls.iconHash.value) {
-          <p-button
-            icon="pi pi-times"
-            [text]="true"
-            severity="danger"
-            ariaLabel="Remove icon"
-            [disabled]="uploading"
-            (onClick)="removeIcon()"
-          />
-        }
+  <mat-dialog-content>
+    @if (notice) {
+      <div
+        class="tt-notice"
+        role="alert"
+        [class.tt-notice-warn]="notice.severity === 'warn'"
+        [class.tt-notice-error]="notice.severity === 'error'"
+      >
+        {{ notice.text }}
       </div>
-    </div>
-  </form>
+    }
 
-  <ng-template #footer>
-    <p-button label="Cancel" icon="pi pi-times" severity="secondary" [outlined]="true" (onClick)="close()" />
-    <p-button
-      label="Save"
-      icon="pi pi-check"
-      [disabled]="form.invalid || !loaded || saving || uploading"
-      [loading]="saving"
-      (onClick)="save()"
-    />
-  </ng-template>
-</p-dialog>
+    <form [formGroup]="form" (ngSubmit)="save()" class="tt-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Code</mat-label>
+        <input id="code" matInput formControlName="code" placeholder="SWORD_IRON" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Name</mat-label>
+        <input id="name" matInput formControlName="name" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Type</mat-label>
+        <mat-select id="itemType" formControlName="itemType" placeholder="Choose a type">
+          @for (option of typeOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Price (coins, gray rarity)</mat-label>
+        <input id="price" matInput type="number" formControlName="price" />
+        @if (form.controls.price.invalid) {
+          <mat-error>Between 0 and {{ maxPrice | number }} coins.</mat-error>
+        }
+      </mat-form-field>
+
+      <app-stats-editor [rows]="form.controls.baseStats" label="Base stats" />
+
+      <mat-form-field appearance="outline">
+        <mat-label>Item set</mat-label>
+        <mat-select id="itemSetId" formControlName="itemSetId" placeholder="None">
+          <mat-option [value]="null">None</mat-option>
+          @for (itemSet of sets; track itemSet.publicId) {
+            <mat-option [value]="itemSet.publicId">{{ itemSet.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Asset key</mat-label>
+        <input id="assetKey" matInput formControlName="assetKey" placeholder="Items/Weapons/SwordIron" />
+      </mat-form-field>
+
+      <div>
+        <label for="icon" class="field-label">Icon (PNG or WebP)</label>
+        <div class="icon-preview">
+          @if (iconUrl && !iconBroken) {
+            <img [src]="iconUrl" alt="Icon preview" (error)="iconBroken = true" />
+          } @else {
+            <i class="pi pi-image generic-icon" aria-hidden="true"></i>
+          }
+          <input
+            id="icon"
+            type="file"
+            accept="image/png,image/webp"
+            [disabled]="uploading"
+            (change)="uploadIcon($event)"
+          />
+          @if (form.controls.iconHash.value) {
+            <button
+              mat-icon-button
+              type="button"
+              class="tt-action-danger"
+              aria-label="Remove icon"
+              [disabled]="uploading"
+              (click)="removeIcon()"
+            >
+              <mat-icon fontIcon="pi-times" />
+            </button>
+          }
+        </div>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="close()">
+      <mat-icon fontIcon="pi-times" />
+      Cancel
+    </button>
+    <button mat-flat-button type="button" [disabled]="form.invalid || !loaded || saving || uploading" (click)="save()">
+      @if (saving) {
+        <mat-progress-spinner class="tt-button-spinner" mode="indeterminate" [diameter]="18" />
+      } @else {
+        <mat-icon fontIcon="pi-check" />
+      }
+      Save
+    </button>
+  </mat-dialog-actions>
+</ng-template>

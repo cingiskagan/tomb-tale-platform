@@ -1,7 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { Confirmation, ConfirmationService, MessageService } from 'primeng/api';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { Subject, of, throwError } from 'rxjs';
 import {
   CharacterInventory,
@@ -15,6 +14,7 @@ import {
   StandEntry,
 } from '../../core/api';
 import { RUNTIME_CONFIG } from '../../core/config';
+import { ConfirmService, NotificationService } from '../../core/ui';
 import { BAG_COLUMNS, InventoryDialogComponent, bagCells } from './inventory-dialog.component';
 
 function anItem(publicId: string, overrides: Partial<InventoryItem>): InventoryItem {
@@ -71,8 +71,8 @@ const BLUE_SWORD: StandEntry = {
 describe('InventoryDialogComponent', () => {
   let inventoryService: jasmine.SpyObj<InventoryService>;
   let dealerService: jasmine.SpyObj<DealerService>;
-  let messageService: jasmine.SpyObj<MessageService>;
-  let confirmationService: ConfirmationService;
+  let notifications: jasmine.SpyObj<NotificationService>;
+  let confirm: jasmine.SpyObj<ConfirmService>;
   let config: { issuerUri: string; clientId: string; apiBaseUrl: string; production: boolean };
   let fixture: ComponentFixture<InventoryDialogComponent>;
   let dialog: InventoryDialogComponent;
@@ -96,23 +96,25 @@ describe('InventoryDialogComponent', () => {
       }),
     );
     dealerService.getStand.and.returnValue(of({ code: 'TOWN_BLACKSMITH', name: 'Blacksmith', entries: [BLUE_SWORD] }));
-    messageService = jasmine.createSpyObj<MessageService>('MessageService', ['add']);
+    notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['error', 'success']);
+    confirm = jasmine.createSpyObj<ConfirmService>('ConfirmService', ['ask']);
     config = { issuerUri: 'http://issuer.test', clientId: 'portal', apiBaseUrl: 'http://api.test', production: false };
     TestBed.configureTestingModule({
       imports: [InventoryDialogComponent],
       providers: [
-        provideNoopAnimations(),
-        ConfirmationService,
+        { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
         { provide: InventoryService, useValue: inventoryService },
         { provide: DealerService, useValue: dealerService },
-        { provide: MessageService, useValue: messageService },
+        { provide: NotificationService, useValue: notifications },
+        { provide: ConfirmService, useValue: confirm },
         { provide: RUNTIME_CONFIG, useValue: config },
       ],
     });
-    confirmationService = TestBed.inject(ConfirmationService);
     fixture = TestBed.createComponent(InventoryDialogComponent);
     dialog = fixture.componentInstance;
   });
+
+  afterEach(() => fixture.destroy());
 
   async function open(inventory: CharacterInventory) {
     inventoryService.getInventory.and.returnValue(of(inventory));
@@ -122,8 +124,9 @@ describe('InventoryDialogComponent', () => {
     fixture.detectChanges();
   }
 
+  /** The dialog draws in Material's overlay, outside the component's element. */
   function find(selector: string): HTMLElement | null {
-    return fixture.nativeElement.querySelector(selector);
+    return document.querySelector(selector);
   }
 
   async function pickTheBlacksmith() {
@@ -201,7 +204,7 @@ describe('InventoryDialogComponent', () => {
 
     await drag('helmet', '[data-slot="RING_2"]');
 
-    expect(messageService.add).toHaveBeenCalledWith(jasmine.objectContaining({ detail: 'RING_2 does not take HELMET' }));
+    expect(notifications.error).toHaveBeenCalledWith('RING_2 does not take HELMET');
     expect(find('[data-cell="2"] [data-item="helmet"]')).not.toBeNull();
   });
 
@@ -311,9 +314,7 @@ describe('InventoryDialogComponent', () => {
     await new Promise((resolve) => setTimeout(resolve));
     fixture.detectChanges();
 
-    expect(messageService.add).toHaveBeenCalledWith(
-      jasmine.objectContaining({ detail: 'The price is now 1500 coins, not 1350' }),
-    );
+    expect(notifications.error).toHaveBeenCalledWith('The price is now 1500 coins, not 1350');
     expect(find('.coins')?.textContent).toContain('900');
     expect(find('.stand-entry')?.textContent).toContain('1,500');
   });
@@ -351,36 +352,28 @@ describe('InventoryDialogComponent', () => {
 
   it("in production, asks before the admin's first change to a character, and only then", async () => {
     config.production = true;
-    const confirm = spyOn(confirmationService, 'confirm');
     await open(anInventory({}, [HELMET]));
     inventoryService.move.and.returnValue(of(anInventory({}, [{ ...HELMET, bagPosition: 6 }])));
 
-    confirm.and.callFake((confirmation: Confirmation) => {
-      confirmation.reject?.();
-      return confirmationService;
-    });
+    confirm.ask.and.resolveTo(false);
     await drag('helmet', '[data-cell="6"]');
     expect(inventoryService.move).not.toHaveBeenCalled();
 
-    confirm.and.callFake((confirmation: Confirmation) => {
-      confirmation.accept?.();
-      return confirmationService;
-    });
+    confirm.ask.and.resolveTo(true);
     await drag('helmet', '[data-cell="6"]');
     await drag('helmet', '[data-cell="7"]');
 
-    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(confirm.ask).toHaveBeenCalledTimes(2);
     expect(inventoryService.move).toHaveBeenCalledTimes(2);
   });
 
   it('never asks outside production', async () => {
-    const confirm = spyOn(confirmationService, 'confirm');
     await open(anInventory({}, [HELMET]));
     inventoryService.move.and.returnValue(of(anInventory({}, [{ ...HELMET, bagPosition: 6 }])));
 
     await drag('helmet', '[data-cell="6"]');
 
-    expect(confirm).not.toHaveBeenCalled();
+    expect(confirm.ask).not.toHaveBeenCalled();
     expect(inventoryService.move).toHaveBeenCalled();
   });
 

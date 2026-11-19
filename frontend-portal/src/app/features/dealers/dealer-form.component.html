@@ -1,34 +1,43 @@
-<p-dialog
-  [header]="isEditMode ? 'Edit Dealer' : 'New Dealer'"
-  [visible]="visible"
-  (visibleChange)="$event || close()"
-  [modal]="true"
-  [style]="{ width: '28rem' }"
->
-  @if (notice) {
-    <p-message [severity]="notice.severity" [text]="notice.text" styleClass="mb-3" />
-  }
+<ng-template [appDialog]="visible" appDialogWidth="28rem" (appDialogDismissed)="close()">
+  <h2 mat-dialog-title>{{ isEditMode ? 'Edit Dealer' : 'New Dealer' }}</h2>
 
-  <form [formGroup]="form" (ngSubmit)="save()">
-    <div class="field">
-      <label for="dealerCode">Code</label>
-      <input id="dealerCode" pInputText formControlName="code" class="w-full" placeholder="TOWN_BLACKSMITH" />
-    </div>
+  <mat-dialog-content>
+    @if (notice) {
+      <div
+        class="tt-notice"
+        role="alert"
+        [class.tt-notice-warn]="notice.severity === 'warn'"
+        [class.tt-notice-error]="notice.severity === 'error'"
+      >
+        {{ notice.text }}
+      </div>
+    }
 
-    <div class="field">
-      <label for="dealerName">Name</label>
-      <input id="dealerName" pInputText formControlName="name" class="w-full" />
-    </div>
-  </form>
+    <form [formGroup]="form" (ngSubmit)="save()" class="tt-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Code</mat-label>
+        <input id="dealerCode" matInput formControlName="code" placeholder="TOWN_BLACKSMITH" />
+      </mat-form-field>
 
-  <ng-template #footer>
-    <p-button label="Cancel" icon="pi pi-times" severity="secondary" [outlined]="true" (onClick)="close()" />
-    <p-button
-      label="Save"
-      icon="pi pi-check"
-      [disabled]="form.invalid || !loaded || saving"
-      [loading]="saving"
-      (onClick)="save()"
-    />
-  </ng-template>
-</p-dialog>
+      <mat-form-field appearance="outline">
+        <mat-label>Name</mat-label>
+        <input id="dealerName" matInput formControlName="name" />
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="close()">
+      <mat-icon fontIcon="pi-times" />
+      Cancel
+    </button>
+    <button mat-flat-button type="button" [disabled]="form.invalid || !loaded || saving" (click)="save()">
+      @if (saving) {
+        <mat-progress-spinner class="tt-button-spinner" mode="indeterminate" [diameter]="18" />
+      } @else {
+        <mat-icon fontIcon="pi-check" />
+      }
+      Save
+    </button>
+  </mat-dialog-actions>
+</ng-template>

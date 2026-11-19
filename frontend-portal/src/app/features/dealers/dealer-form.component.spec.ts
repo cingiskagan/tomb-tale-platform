@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { of, throwError } from 'rxjs';
 import { DealerResponse, DealerService } from '../../core/api';
 import { DealerFormComponent } from './dealer-form.component';
@@ -18,7 +18,7 @@ describe('DealerFormComponent', () => {
     dealerService = jasmine.createSpyObj<DealerService>('DealerService', ['getDealer', 'createDealer', 'updateDealer']);
     TestBed.configureTestingModule({
       imports: [DealerFormComponent],
-      providers: [provideNoopAnimations(), { provide: DealerService, useValue: dealerService }],
+      providers: [{ provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } }, { provide: DealerService, useValue: dealerService }],
     });
     fixture = TestBed.createComponent(DealerFormComponent);
     form = fixture.componentInstance;

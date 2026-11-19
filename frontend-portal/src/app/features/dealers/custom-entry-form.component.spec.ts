@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { of, throwError } from 'rxjs';
 import { DealerService, ItemTemplateResponse, ItemType, Rarity, StandEntry } from '../../core/api';
 import { statRow } from '../items/stats-form';
@@ -17,7 +17,7 @@ describe('CustomEntryFormComponent', () => {
     dealerService = jasmine.createSpyObj<DealerService>('DealerService', ['addEntry']);
     TestBed.configureTestingModule({
       imports: [CustomEntryFormComponent],
-      providers: [provideNoopAnimations(), { provide: DealerService, useValue: dealerService }],
+      providers: [{ provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } }, { provide: DealerService, useValue: dealerService }],
     });
     fixture = TestBed.createComponent(CustomEntryFormComponent);
     form = fixture.componentInstance;

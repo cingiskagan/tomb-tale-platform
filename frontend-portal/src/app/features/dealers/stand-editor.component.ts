@@ -1,11 +1,12 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { DialogModule } from 'primeng/dialog';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { TagModule } from 'primeng/tag';
-import { SelectModule } from 'primeng/select';
-import { MessageService } from 'primeng/api';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSelectModule } from '@angular/material/select';
 import { Observable, firstValueFrom } from 'rxjs';
 import {
   BonusLine,
@@ -17,6 +18,7 @@ import {
   Rarity,
   StandEntry,
 } from '../../core/api';
+import { DialogDirective, NotificationService } from '../../core/ui';
 import { pageOf } from '../items/page-of';
 import { problemDetail } from '../items/problem-detail';
 import { CustomEntryFormComponent, RARITY_OPTIONS } from './custom-entry-form.component';
@@ -25,7 +27,18 @@ import { CustomEntryFormComponent, RARITY_OPTIONS } from './custom-entry-form.co
 @Component({
   selector: 'app-stand-editor',
   standalone: true,
-  imports: [DialogModule, TableModule, ButtonModule, TagModule, SelectModule, ReactiveFormsModule, CustomEntryFormComponent],
+  imports: [
+    TableModule,
+    ButtonModule,
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatSelectModule,
+    DialogDirective,
+    CustomEntryFormComponent,
+  ],
   templateUrl: './stand-editor.component.html',
   styleUrl: './dealers.css',
 })
@@ -33,7 +46,7 @@ export class StandEditorComponent {
   private readonly dealerService = inject(DealerService);
   private readonly catalog = inject(ItemCatalogService);
   private readonly inventoryService = inject(InventoryService);
-  private readonly messageService = inject(MessageService);
+  private readonly notifications = inject(NotificationService);
 
   /** Whether inventory takes custom entries. The page reads it from inventory's settings. */
   @Input() customEnabled = false;
@@ -204,6 +217,6 @@ export class StandEditorComponent {
 
   private showError(error: unknown, fallback: string) {
     console.error(fallback, error);
-    this.messageService.add({ severity: 'error', summary: 'Error', detail: problemDetail(error, fallback) });
+    this.notifications.error(problemDetail(error, fallback));
   }
 }

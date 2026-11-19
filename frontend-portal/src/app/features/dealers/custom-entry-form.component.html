@@ -1,33 +1,39 @@
-<p-dialog
-  [header]="'Custom ' + (template?.name ?? 'item')"
-  [visible]="visible"
-  (visibleChange)="$event || close()"
-  [modal]="true"
-  [style]="{ width: '30rem' }"
->
-  @if (error) {
-    <p-message severity="error" [text]="error" styleClass="mb-3" />
-  }
+<ng-template [appDialog]="visible" appDialogWidth="30rem" (appDialogDismissed)="close()">
+  <h2 mat-dialog-title>Custom {{ template?.name ?? 'item' }}</h2>
 
-  <p class="hint">Every copy a player buys carries exactly this bonus, so testers can try any scenario.</p>
+  <mat-dialog-content>
+    @if (error) {
+      <div class="tt-notice tt-notice-error" role="alert">{{ error }}</div>
+    }
 
-  <form [formGroup]="form" (ngSubmit)="save()">
-    <div class="field">
-      <label for="customRarity">Rarity</label>
-      <p-select inputId="customRarity" formControlName="rarity" [options]="rarities" appendTo="body" />
-    </div>
+    <p class="hint">Every copy a player buys carries exactly this bonus, so testers can try any scenario.</p>
 
-    <app-stats-editor [rows]="form.controls.bonus" label="Bonus" />
-  </form>
+    <form [formGroup]="form" (ngSubmit)="save()" class="tt-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Rarity</mat-label>
+        <mat-select id="customRarity" formControlName="rarity">
+          @for (option of rarities; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
 
-  <ng-template #footer>
-    <p-button label="Cancel" icon="pi pi-times" severity="secondary" [outlined]="true" (onClick)="close()" />
-    <p-button
-      label="Add to stand"
-      icon="pi pi-check"
-      [disabled]="form.invalid || saving"
-      [loading]="saving"
-      (onClick)="save()"
-    />
-  </ng-template>
-</p-dialog>
+      <app-stats-editor [rows]="form.controls.bonus" label="Bonus" />
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="close()">
+      <mat-icon fontIcon="pi-times" />
+      Cancel
+    </button>
+    <button mat-flat-button type="button" [disabled]="form.invalid || saving" (click)="save()">
+      @if (saving) {
+        <mat-progress-spinner class="tt-button-spinner" mode="indeterminate" [diameter]="18" />
+      } @else {
+        <mat-icon fontIcon="pi-check" />
+      }
+      Add to stand
+    </button>
+  </mat-dialog-actions>
+</ng-template>

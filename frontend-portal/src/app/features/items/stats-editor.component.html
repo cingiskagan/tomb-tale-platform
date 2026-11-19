@@ -2,27 +2,26 @@
   <legend>{{ label }}</legend>
   @for (row of rows.controls; track row; let i = $index) {
     <div class="stat-row" [formGroup]="row">
-      <p-select
-        formControlName="stat"
-        [options]="statOptions"
-        placeholder="Stat"
-        ariaLabel="Stat"
-        appendTo="body"
-        styleClass="stat-name"
-      />
-      <p-inputNumber formControlName="value" ariaLabel="Value" styleClass="stat-value" />
-      <p-button
-        icon="pi pi-times"
-        [rounded]="true"
-        [text]="true"
-        severity="danger"
-        ariaLabel="Remove stat"
-        (onClick)="remove(i)"
-      />
+      <mat-form-field class="stat-name" appearance="outline" subscriptSizing="dynamic">
+        <mat-select formControlName="stat" placeholder="Stat" aria-label="Stat">
+          @for (option of statOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field class="stat-value" appearance="outline" subscriptSizing="dynamic">
+        <input matInput type="number" formControlName="value" aria-label="Value" />
+      </mat-form-field>
+      <button mat-icon-button type="button" class="tt-action-danger" aria-label="Remove stat" (click)="remove(i)">
+        <mat-icon fontIcon="pi-times" />
+      </button>
     </div>
   }
   @if (rows.hasError('duplicateStat')) {
     <small class="form-error">Each stat may appear once.</small>
   }
-  <p-button label="Add stat" icon="pi pi-plus" [text]="true" size="small" (onClick)="add()" />
+  <button mat-button type="button" (click)="add()">
+    <mat-icon fontIcon="pi-plus" />
+    Add stat
+  </button>
 </fieldset>
