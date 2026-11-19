@@ -1,33 +1,69 @@
-<div class="p-4 player-container">
+<div class="player-container">
   <h2 class="page-title">Player Management</h2>
-  <p-table [value]="players" [lazy]="true" (onLazyLoad)="loadPlayers($event)" [paginator]="true" [rows]="20"
-    [totalRecords]="totalRecords" [loading]="loading" styleClass="p-datatable-sm">
-    <ng-template pTemplate="header">
-      <tr>
-        <th scope="col">ID</th>
-        <th scope="col" pSortableColumn="displayName">Display Name <p-sortIcon field="displayName" /></th>
-        <th scope="col">Level</th>
-        <th scope="col">XP</th>
-        <th scope="col">Actions</th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-player>
-      <tr>
-        <td class="text-sm text-gray-400 font-mono">{{ player.publicId }}</td>
-        <td class="font-bold text-primary">{{ player.displayName }}</td>
-        <td>{{ player.characters?.length ? player.characters[0].level : '-' }}</td>
-        <td>{{ player.characters?.length ? (player.characters[0].experiencePoints | number) : '-' }}</td>
-        <td>
-          <p-button icon="pi pi-sliders-h" [rounded]="true" [text]="true" severity="warn" (onClick)="openEdit(player)" />
+  <div class="tt-table">
+    @if (loading) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+    <table
+      mat-table
+      [dataSource]="players"
+      matSort
+      matSortDisableClear
+      [matSortActive]="query.sort.active"
+      [matSortDirection]="query.sort.direction"
+      (matSortChange)="sortPlayers($event)"
+    >
+      <ng-container matColumnDef="publicId">
+        <th mat-header-cell *matHeaderCellDef scope="col">ID</th>
+        <td mat-cell *matCellDef="let player" class="public-id">{{ player.publicId }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="displayName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Display Name</th>
+        <td mat-cell *matCellDef="let player" class="display-name">{{ player.displayName }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="level">
+        <th mat-header-cell *matHeaderCellDef scope="col">Level</th>
+        <td mat-cell *matCellDef="let player">{{ player.characters?.length ? player.characters[0].level : '-' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="xp">
+        <th mat-header-cell *matHeaderCellDef scope="col">XP</th>
+        <td mat-cell *matCellDef="let player">
+          {{ player.characters?.length ? (player.characters[0].experiencePoints | number) : '-' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef scope="col">Actions</th>
+        <td mat-cell *matCellDef="let player">
+          <button mat-icon-button type="button" class="tt-action-warn" aria-label="Edit stats" (click)="openEdit(player)">
+            <mat-icon fontIcon="pi-sliders-h" />
+          </button>
           @if (isAdmin) {
-            <p-button icon="pi pi-briefcase" [rounded]="true" [text]="true" ariaLabel="Inventory" title="Inventory"
-              [disabled]="!player.characters?.length" (onClick)="openInventory(player)" />
+            <button
+              mat-icon-button
+              type="button"
+              aria-label="Inventory"
+              title="Inventory"
+              [disabled]="!player.characters?.length"
+              (click)="openInventory(player)"
+            >
+              <mat-icon fontIcon="pi-briefcase" />
+            </button>
           }
         </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let player; columns: columns"></tr>
+      <tr class="mat-mdc-row" *matNoDataRow>
+        <td class="mat-mdc-cell" [attr.colspan]="columns.length">No players yet.</td>
       </tr>
-    </ng-template>
-  </p-table>
+    </table>
+  </div>
+  <mat-paginator [length]="totalRecords" [pageIndex]="query.page" [pageSize]="query.size" (page)="pagePlayers($event)" />
 </div>
 <app-player-stats-dialog [(visible)]="isDialogVisible" [player]="selectedPlayer" (saved)="onSaved()" />
 <app-inventory-dialog [(visible)]="isInventoryVisible" [character]="inventoryCharacter" />
-<p-toast />

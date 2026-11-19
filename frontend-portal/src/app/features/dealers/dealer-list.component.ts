@@ -1,13 +1,13 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { TableLazyLoadEvent, TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { TagModule } from 'primeng/tag';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToastModule } from 'primeng/toast';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSortModule, Sort } from '@angular/material/sort';
+import { MatTableModule } from '@angular/material/table';
 import { firstValueFrom } from 'rxjs';
 import { DealerResponse, DealerService } from '../../core/api';
-import { pageOf } from '../items/page-of';
+import { ConfirmService, NotificationService, PageQuery, firstPage, pageOf, sortBy, turnPage } from '../../core/ui';
 import { problemDetail } from '../items/problem-detail';
 import { DealerFormComponent } from './dealer-form.component';
 import { StandEditorComponent } from './stand-editor.component';
@@ -17,27 +17,29 @@ import { StandEditorComponent } from './stand-editor.component';
   selector: 'app-dealer-list',
   standalone: true,
   imports: [
-    TableModule,
-    ButtonModule,
-    TagModule,
-    ConfirmDialogModule,
-    ToastModule,
+    MatButtonModule,
+    MatIconModule,
+    MatPaginatorModule,
+    MatProgressBarModule,
+    MatSortModule,
+    MatTableModule,
     DealerFormComponent,
     StandEditorComponent,
   ],
-  providers: [ConfirmationService, MessageService],
   templateUrl: './dealer-list.component.html',
   styleUrl: './dealers.css',
 })
 export class DealerListComponent implements OnInit {
   private readonly dealerService = inject(DealerService);
-  private readonly confirmationService = inject(ConfirmationService);
-  private readonly messageService = inject(MessageService);
+  private readonly confirm = inject(ConfirmService);
+  private readonly notifications = inject(NotificationService);
+
+  readonly columns = ['code', 'name', 'status', 'actions'];
 
   dealers: DealerResponse[] = [];
   total = 0;
   loading = true;
-  private lastEvent: TableLazyLoadEvent | null = null;
+  query: PageQuery = firstPage(20, 'code', 'asc');
   /** Only the newest request fills the table, so a slow answer for an old page never replaces the current one. */
   private seq = 0;
 
@@ -51,14 +53,23 @@ export class DealerListComponent implements OnInit {
 
   ngOnInit() {
     void this.loadSettings();
+    void this.loadDealers(this.query);
   }
 
-  async loadDealers(event: TableLazyLoadEvent) {
-    this.lastEvent = event;
+  sortDealers(sort: Sort) {
+    void this.loadDealers(sortBy(this.query, sort));
+  }
+
+  pageDealers(event: PageEvent) {
+    void this.loadDealers(turnPage(this.query, event));
+  }
+
+  async loadDealers(query: PageQuery) {
+    this.query = query;
     const seq = ++this.seq;
     this.loading = true;
     try {
-      const { page, size, sort } = pageOf(event);
+      const { page, size, sort } = pageOf(query);
       const response = await firstValueFrom(this.dealerService.listDealers(page, size, sort));
       if (seq !== this.seq) return;
       this.dealers = response.content;
@@ -81,31 +92,25 @@ export class DealerListComponent implements OnInit {
   }
 
   onSaved() {
-    this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Dealer saved' });
-    this.reload();
+    this.notifications.success('Dealer saved');
+    void this.loadDealers(this.query);
   }
 
-  confirmRetire(dealer: DealerResponse) {
-    this.confirmationService.confirm({
-      header: 'Retire dealer',
+  async confirmRetire(dealer: DealerResponse) {
+    const accepted = await this.confirm.ask({
+      title: 'Retire dealer',
       message: `Retire ${dealer.code}? Its stand shows nothing from then on, and no new dealer takes its code.`,
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Retire',
-      rejectLabel: 'Cancel',
-      accept: async () => {
-        try {
-          await firstValueFrom(this.dealerService.retireDealer(dealer.publicId));
-          this.messageService.add({ severity: 'success', summary: 'Retired', detail: `${dealer.code} is retired` });
-          this.reload();
-        } catch (error) {
-          this.showError(error, 'Failed to retire the dealer');
-        }
-      },
+      accept: 'Retire',
+      reject: 'Cancel',
     });
-  }
-
-  private reload() {
-    if (this.lastEvent) void this.loadDealers(this.lastEvent);
+    if (!accepted) return;
+    try {
+      await firstValueFrom(this.dealerService.retireDealer(dealer.publicId));
+      this.notifications.success(`${dealer.code} is retired`);
+      void this.loadDealers(this.query);
+    } catch (error) {
+      this.showError(error, 'Failed to retire the dealer');
+    }
   }
 
   private async loadSettings() {
@@ -118,6 +123,6 @@ export class DealerListComponent implements OnInit {
 
   private showError(error: unknown, fallback: string) {
     console.error(fallback, error);
-    this.messageService.add({ severity: 'error', summary: 'Error', detail: problemDetail(error, fallback) });
+    this.notifications.error(problemDetail(error, fallback));
   }
 }

@@ -1,156 +1,191 @@
 <div class="items-container">
   <h2 class="page-title">Items</h2>
 
-  <p-tabs value="templates">
-    <p-tablist>
-      <p-tab value="templates">Templates</p-tab>
-      <p-tab value="sets">Sets</p-tab>
-    </p-tablist>
+  <mat-tab-group>
+    <mat-tab label="Templates">
+      <div class="header-actions">
+        <span>Every template, retired ones grayed out.</span>
+        <button mat-flat-button type="button" (click)="openTemplate(null)">
+          <mat-icon fontIcon="pi-plus" />
+          New Template
+        </button>
+      </div>
 
-    <p-tabpanels>
-      <p-tabpanel value="templates">
-        <div class="header-actions">
-          <span>Every template, retired ones grayed out.</span>
-          <p-button label="New Template" icon="pi pi-plus" (onClick)="openTemplate(null)" />
-        </div>
-
-        <p-table
-          [value]="templates"
-          [lazy]="true"
-          (onLazyLoad)="loadTemplates($event)"
-          [paginator]="true"
-          [rows]="20"
-          [totalRecords]="templateTotal"
-          [loading]="templatesLoading"
-          [rowsPerPageOptions]="[10, 20, 50]"
-          sortField="code"
-          [sortOrder]="1"
-          styleClass="p-datatable-sm"
+      <div class="tt-table">
+        @if (templatesLoading) {
+          <mat-progress-bar mode="indeterminate" />
+        }
+        <table
+          mat-table
+          [dataSource]="templates"
+          matSort
+          matSortDisableClear
+          [matSortActive]="templateQuery.sort.active"
+          [matSortDirection]="templateQuery.sort.direction"
+          (matSortChange)="sortTemplates($event)"
         >
-          <ng-template #header>
-            <tr>
-              <th scope="col" class="icon-cell">Icon</th>
-              <th scope="col" pSortableColumn="code">Code <p-sortIcon field="code" /></th>
-              <th scope="col" pSortableColumn="name">Name <p-sortIcon field="name" /></th>
-              <th scope="col" pSortableColumn="itemType">Type <p-sortIcon field="itemType" /></th>
-              <th scope="col" pSortableColumn="price">Price <p-sortIcon field="price" /></th>
-              <th scope="col">Base stats</th>
-              <th scope="col">Set</th>
-              <th scope="col">Status</th>
-              <th scope="col">Actions</th>
-            </tr>
-          </ng-template>
+          <ng-container matColumnDef="icon">
+            <th mat-header-cell *matHeaderCellDef scope="col" class="icon-cell">Icon</th>
+            <td mat-cell *matCellDef="let template" class="icon-cell">
+              @if (template.iconHash && !brokenIcons.has(template.iconHash)) {
+                <img [src]="iconUrl(template.iconHash)" [alt]="template.name" (error)="brokenIcons.add(template.iconHash)" />
+              } @else {
+                <i class="pi pi-image generic-icon" aria-hidden="true"></i>
+              }
+            </td>
+          </ng-container>
 
-          <ng-template #body let-template>
-            <tr [class.retired]="template.retired">
-              <td class="icon-cell">
-                @if (template.iconHash && !brokenIcons.has(template.iconHash)) {
-                  <img
-                    [src]="iconUrl(template.iconHash)"
-                    [alt]="template.name"
-                    (error)="brokenIcons.add(template.iconHash)"
-                  />
-                } @else {
-                  <i class="pi pi-image generic-icon" aria-hidden="true"></i>
-                }
-              </td>
-              <td>{{ template.code }}</td>
-              <td>{{ template.name }}</td>
-              <td>{{ template.itemType }}</td>
-              <td>{{ template.price }}</td>
-              <td>{{ formatStats(template.baseStats) }}</td>
-              <td>{{ setName(template.itemSetId) }}</td>
-              <td>
-                @if (template.retired) {
-                  <p-tag value="RETIRED" severity="secondary" />
-                } @else {
-                  <p-tag value="ACTIVE" severity="success" />
-                }
-              </td>
-              <td>
-                <p-button
-                  icon="pi pi-pencil"
-                  [rounded]="true"
-                  [text]="true"
-                  severity="success"
-                  ariaLabel="Edit"
-                  (onClick)="openTemplate(template.publicId)"
-                />
-                <p-button
-                  icon="pi pi-ban"
-                  [rounded]="true"
-                  [text]="true"
-                  severity="danger"
-                  ariaLabel="Retire"
-                  [disabled]="template.retired"
-                  (onClick)="confirmRetire(template)"
-                />
-              </td>
-            </tr>
-          </ng-template>
+          <ng-container matColumnDef="code">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Code</th>
+            <td mat-cell *matCellDef="let template">{{ template.code }}</td>
+          </ng-container>
 
-          <ng-template #emptymessage>
-            <tr>
-              <td colspan="9">No templates yet.</td>
-            </tr>
-          </ng-template>
-        </p-table>
-      </p-tabpanel>
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Name</th>
+            <td mat-cell *matCellDef="let template">{{ template.name }}</td>
+          </ng-container>
 
-      <p-tabpanel value="sets">
-        <div class="header-actions">
-          <span>A character with every template of a set equipped gets its bonus.</span>
-          <p-button label="New Set" icon="pi pi-plus" (onClick)="openSet(null)" />
-        </div>
+          <ng-container matColumnDef="itemType">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Type</th>
+            <td mat-cell *matCellDef="let template">{{ template.itemType }}</td>
+          </ng-container>
 
-        <p-table
-          [value]="sets"
-          [lazy]="true"
-          (onLazyLoad)="loadSets($event)"
-          [paginator]="true"
-          [rows]="20"
-          [totalRecords]="setTotal"
-          [loading]="setsLoading"
-          sortField="code"
-          [sortOrder]="1"
-          styleClass="p-datatable-sm"
+          <ng-container matColumnDef="price">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Price</th>
+            <td mat-cell *matCellDef="let template">{{ template.price }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="baseStats">
+            <th mat-header-cell *matHeaderCellDef scope="col">Base stats</th>
+            <td mat-cell *matCellDef="let template">{{ formatStats(template.baseStats) }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="set">
+            <th mat-header-cell *matHeaderCellDef scope="col">Set</th>
+            <td mat-cell *matCellDef="let template">{{ setName(template.itemSetId) }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef scope="col">Status</th>
+            <td mat-cell *matCellDef="let template">
+              @if (template.retired) {
+                <span class="tt-tag">RETIRED</span>
+              } @else {
+                <span class="tt-tag tt-tag-success">ACTIVE</span>
+              }
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef scope="col">Actions</th>
+            <td mat-cell *matCellDef="let template">
+              <button
+                mat-icon-button
+                type="button"
+                class="tt-action-success"
+                aria-label="Edit"
+                (click)="openTemplate(template.publicId)"
+              >
+                <mat-icon fontIcon="pi-pencil" />
+              </button>
+              <button
+                mat-icon-button
+                type="button"
+                class="tt-action-danger"
+                aria-label="Retire"
+                [disabled]="template.retired"
+                (click)="confirmRetire(template)"
+              >
+                <mat-icon fontIcon="pi-ban" />
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="templateColumns"></tr>
+          <tr mat-row *matRowDef="let template; columns: templateColumns" [class.retired]="template.retired"></tr>
+          <tr class="mat-mdc-row" *matNoDataRow>
+            <td class="mat-mdc-cell" [attr.colspan]="templateColumns.length">No templates yet.</td>
+          </tr>
+        </table>
+      </div>
+      <mat-paginator
+        [length]="templateTotal"
+        [pageIndex]="templateQuery.page"
+        [pageSize]="templateQuery.size"
+        [pageSizeOptions]="[10, 20, 50]"
+        showFirstLastButtons
+        (page)="pageTemplates($event)"
+      />
+    </mat-tab>
+
+    <mat-tab label="Sets">
+      <div class="header-actions">
+        <span>A character with every template of a set equipped gets its bonus.</span>
+        <button mat-flat-button type="button" (click)="openSet(null)">
+          <mat-icon fontIcon="pi-plus" />
+          New Set
+        </button>
+      </div>
+
+      <div class="tt-table">
+        @if (setsLoading) {
+          <mat-progress-bar mode="indeterminate" />
+        }
+        <table
+          mat-table
+          [dataSource]="sets"
+          matSort
+          matSortDisableClear
+          [matSortActive]="setQuery.sort.active"
+          [matSortDirection]="setQuery.sort.direction"
+          (matSortChange)="sortSets($event)"
         >
-          <ng-template #header>
-            <tr>
-              <th scope="col" pSortableColumn="code">Code <p-sortIcon field="code" /></th>
-              <th scope="col" pSortableColumn="name">Name <p-sortIcon field="name" /></th>
-              <th scope="col">Bonus</th>
-              <th scope="col">Actions</th>
-            </tr>
-          </ng-template>
+          <ng-container matColumnDef="code">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Code</th>
+            <td mat-cell *matCellDef="let itemSet">{{ itemSet.code }}</td>
+          </ng-container>
 
-          <ng-template #body let-itemSet>
-            <tr>
-              <td>{{ itemSet.code }}</td>
-              <td>{{ itemSet.name }}</td>
-              <td>{{ formatStats(itemSet.bonus) }}</td>
-              <td>
-                <p-button
-                  icon="pi pi-pencil"
-                  [rounded]="true"
-                  [text]="true"
-                  severity="success"
-                  ariaLabel="Edit"
-                  (onClick)="openSet(itemSet.publicId)"
-                />
-              </td>
-            </tr>
-          </ng-template>
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Name</th>
+            <td mat-cell *matCellDef="let itemSet">{{ itemSet.name }}</td>
+          </ng-container>
 
-          <ng-template #emptymessage>
-            <tr>
-              <td colspan="4">No item sets yet.</td>
-            </tr>
-          </ng-template>
-        </p-table>
-      </p-tabpanel>
-    </p-tabpanels>
-  </p-tabs>
+          <ng-container matColumnDef="bonus">
+            <th mat-header-cell *matHeaderCellDef scope="col">Bonus</th>
+            <td mat-cell *matCellDef="let itemSet">{{ formatStats(itemSet.bonus) }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef scope="col">Actions</th>
+            <td mat-cell *matCellDef="let itemSet">
+              <button
+                mat-icon-button
+                type="button"
+                class="tt-action-success"
+                aria-label="Edit"
+                (click)="openSet(itemSet.publicId)"
+              >
+                <mat-icon fontIcon="pi-pencil" />
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="setColumns"></tr>
+          <tr mat-row *matRowDef="let itemSet; columns: setColumns"></tr>
+          <tr class="mat-mdc-row" *matNoDataRow>
+            <td class="mat-mdc-cell" [attr.colspan]="setColumns.length">No item sets yet.</td>
+          </tr>
+        </table>
+      </div>
+      <mat-paginator
+        [length]="setTotal"
+        [pageIndex]="setQuery.page"
+        [pageSize]="setQuery.size"
+        showFirstLastButtons
+        (page)="pageSets($event)"
+      />
+    </mat-tab>
+  </mat-tab-group>
 </div>
 
 <app-item-template-form
@@ -160,11 +195,4 @@
   (saved)="onTemplateSaved()"
 />
 
-<app-item-set-form
-  [setPublicId]="selectedSetId"
-  [(visible)]="isSetFormVisible"
-  (saved)="onSetSaved()"
-/>
-
-<p-confirmDialog [style]="{ width: '450px' }" />
-<p-toast />
+<app-item-set-form [setPublicId]="selectedSetId" [(visible)]="isSetFormVisible" (saved)="onSetSaved()" />
