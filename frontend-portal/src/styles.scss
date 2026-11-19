@@ -162,6 +162,15 @@ a {
 
 /* --- Shared pieces the pages use in place of a component library's --- */
 
+/* A dialog stands out from the dark pages behind it. */
+.cdk-overlay-dark-backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.mat-mdc-dialog-surface {
+  border: 1px solid rgba(212, 162, 78, 0.25);
+}
+
 /* PrimeIcons glyphs centred in mat-icon's box. */
 .mat-icon.pi {
   display: inline-flex;
