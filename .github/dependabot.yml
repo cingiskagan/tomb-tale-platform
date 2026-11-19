@@ -89,16 +89,12 @@ updates:
     groups:
       # The Angular packages pin each other to an exact version, so they can
       # only ever move together. Splitting them produces PRs that cannot merge.
+      # Material and the CDK are @angular/* too, so they move with the rest.
       angular:
         patterns:
           - "@angular/*"
           - "@angular-devkit/*"
           - "angular-eslint"
-      primeng:
-        patterns:
-          - "primeng"
-          - "primeicons"
-          - "@primeuix/*"
       # Build and test tooling never ships to a browser, so these updates are
       # low risk and are better reviewed in bulk than one at a time.
       dev-tooling:
@@ -115,9 +111,6 @@ updates:
           - "*"
         exclude-patterns:
           - "@angular/*"
-          - "primeng"
-          - "primeicons"
-          - "@primeuix/*"
 
   # ----- Java services --------------------------------------------------
   # One entry per service, so each PR carries its service's label.

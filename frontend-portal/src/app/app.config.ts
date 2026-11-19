@@ -8,59 +8,11 @@ import {
 import { MatIconRegistry } from '@angular/material/icon';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideOAuthClient } from 'angular-oauth2-oidc';
-import { providePrimeNG } from 'primeng/config';
-import { definePreset } from '@primeuix/themes';
-import Aura from '@primeuix/themes/aura';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth';
 import { loadingInterceptor } from './core/loading';
-
-/**
- * Custom PrimeNG theme preset for Tomb Tale.
- *
- * Extends the Aura base preset with dark RPG-inspired colors:
- * - Gold/amber primary palette (ancient treasure)
- * - Deep obsidian surface colors
- * - Emerald secondary accents
- */
-const TombTalePreset = definePreset(Aura, {
-  semantic: {
-    primary: {
-      50: '{amber.50}',
-      100: '{amber.100}',
-      200: '{amber.200}',
-      300: '{amber.300}',
-      400: '{amber.400}',
-      500: '{amber.500}',
-      600: '{amber.600}',
-      700: '{amber.700}',
-      800: '{amber.800}',
-      900: '{amber.900}',
-      950: '{amber.950}',
-    },
-    colorScheme: {
-      dark: {
-        surface: {
-          0: '#ffffff',
-          50: '#e8e0d4',
-          100: '#c4b9a8',
-          200: '#8a8078',
-          300: '#5a524a',
-          400: '#3a3430',
-          500: '#252220',
-          600: '#1a1818',
-          700: '#141214',
-          800: '#0f0f19',
-          900: '#0a0a0f',
-          950: '#050508',
-        },
-      },
-    },
-  },
-});
 
 /**
  * Root application configuration.
@@ -68,10 +20,10 @@ const TombTalePreset = definePreset(Aura, {
  * Registers all providers required for:
  * - Routing with lazy-loaded guards
  * - HTTP client with Bearer token and loading interceptors
- * - Browser animations for PrimeNG transitions
  * - OAuth2/OIDC client for Keycloak authentication
- * - PrimeNG component library with Tomb Tale dark theme
  * - PrimeIcons as mat-icon's font, so `<mat-icon fontIcon="pi-check" />` draws one
+ *
+ * Angular Material needs no provider. Its theme lives in styles.scss.
  */
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -79,18 +31,9 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor, loadingInterceptor])),
-    provideAnimationsAsync(),
     provideOAuthClient(),
     provideAppInitializer(() => {
       inject(MatIconRegistry).setDefaultFontSetClass('pi');
-    }),
-    providePrimeNG({
-      theme: {
-        preset: TombTalePreset,
-        options: {
-          darkModeSelector: '.tomb-tale-dark',
-        },
-      },
     }),
   ],
 };
