@@ -20,7 +20,7 @@ Components come from Angular Material. Its theme is `mat.theme` in `src/styles.s
 
 ## Loading
 
-`loadingInterceptor` shows a bar for every API call, so a component adds nothing for it. A table waiting on its own call shows a progress bar over it too, and a button a spinner in place of its icon. While `busy`, a component disables and refuses the controls that start a change, and dims that area. Reads block nothing. See ADR 0034.
+`loadingInterceptor` shows a bar for every API call, so a component adds nothing for it. A table waiting on its own call shows a progress bar over it too, and a button a spinner in place of its icon. Every call but a GET is a change, and from its start until no call is left, `ChangeBlockerComponent` covers the portal, dialogs included, and swallows Enter, Space and Escape. A component therefore needs no `busy` flag of its own, but each `save()` still refuses while saving. Reads block nothing. See ADR 0037.
 
 ## Runtime config
 

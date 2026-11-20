@@ -45,8 +45,6 @@ export class ItemCatalogComponent implements OnInit {
   templates: ItemTemplateResponse[] = [];
   templateTotal = 0;
   templatesLoading = true;
-  /** Set from a retirement until its reload ends, so no second one starts meanwhile (ADR 0034). */
-  busy = false;
   templateQuery: PageQuery = initQuery(20, 'code', 'asc');
   /** Only the newest request fills a table, so a slow answer for an old page never replaces the current one. */
   private templateSeq = 0;
@@ -167,23 +165,19 @@ export class ItemCatalogComponent implements OnInit {
   }
 
   async confirmRetire(template: ItemTemplateResponse) {
-    if (this.busy) return;
     const accepted = await this.confirm.ask({
       title: 'Retire template',
       message: `Retire ${template.code}? It is never sold or granted again. Copies players own stay.`,
       accept: 'Retire',
       reject: 'Cancel',
     });
-    if (!accepted || this.busy) return;
-    this.busy = true;
+    if (!accepted) return;
     try {
       await firstValueFrom(this.catalog.retireTemplate(template.publicId));
       this.notifications.success(`${template.code} is retired`);
-      await this.loadTemplates(this.templateQuery);
+      void this.loadTemplates(this.templateQuery);
     } catch (error) {
       this.showError(error, 'Failed to retire the template');
-    } finally {
-      this.busy = false;
     }
   }
 

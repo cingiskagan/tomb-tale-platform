@@ -11,7 +11,7 @@
         </button>
       </div>
 
-      <div class="tt-table" [class.busy]="busy">
+      <div class="tt-table">
         @if (templatesLoading) {
           <mat-progress-bar mode="indeterminate" />
         }
@@ -84,7 +84,6 @@
                 type="button"
                 class="tt-action-success"
                 aria-label="Edit"
-                [disabled]="busy"
                 (click)="openTemplate(template.publicId)"
               >
                 <mat-icon fontIcon="pi-pencil" />
@@ -94,7 +93,7 @@
                 type="button"
                 class="tt-action-danger"
                 aria-label="Retire"
-                [disabled]="template.retired || busy"
+                [disabled]="template.retired"
                 (click)="confirmRetire(template)"
               >
                 <mat-icon fontIcon="pi-ban" />

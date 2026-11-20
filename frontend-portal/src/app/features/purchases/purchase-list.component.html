@@ -18,7 +18,7 @@
     </mat-form-field>
   </form>
 
-  <div class="tt-table" [class.busy]="busy">
+  <div class="tt-table">
     @if (loading) {
       <mat-progress-bar mode="indeterminate" />
     }
@@ -85,7 +85,7 @@
             type="button"
             class="tt-action-success"
             aria-label="Edit"
-            [disabled]="isPending(purchase.status) || busy"
+            [disabled]="isPending(purchase.status)"
             (click)="openEditPurchase(purchase.publicId)"
           >
             <mat-icon fontIcon="pi-pencil" />
@@ -95,7 +95,7 @@
             type="button"
             class="tt-action-danger"
             aria-label="Delete"
-            [disabled]="isPending(purchase.status) || busy"
+            [disabled]="isPending(purchase.status)"
             (click)="confirmDelete(purchase.publicId)"
           >
             <mat-icon fontIcon="pi-trash" />

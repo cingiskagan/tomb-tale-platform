@@ -269,11 +269,6 @@ a {
   position: relative;
   overflow-x: auto;
 
-  /* A change and its reload are on their way, so the rows start no other (ADR 0034). */
-  &.busy {
-    opacity: 0.6;
-  }
-
   mat-progress-bar {
     position: absolute;
     top: 0;

@@ -168,7 +168,7 @@ export class ItemTemplateFormComponent {
   }
 
   async save() {
-    if (this.form.invalid || !this.loaded) return;
+    if (this.form.invalid || !this.loaded || this.saving) return;
     const session = this.session;
     this.saving = true;
     this.notice = null;

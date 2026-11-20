@@ -54,8 +54,6 @@ export class PurchaseListComponent implements OnInit {
   purchases: PurchaseResponse[] = [];
   totalRecords = 0;
   loading = true;
-  /** Set from a cancellation until its reload ends, so no second one starts meanwhile (ADR 0034). */
-  busy = false;
   query: PageQuery = initQuery(20);
 
   // Dialog state
@@ -124,24 +122,20 @@ export class PurchaseListComponent implements OnInit {
   }
 
   async confirmDelete(publicId: string) {
-    if (this.busy) return;
     const accepted = await this.confirm.ask({
       title: 'Confirm Deletion',
       message: 'Are you sure you want to cancel this purchase?',
       accept: 'Yes',
       reject: 'No',
     });
-    if (!accepted || this.busy) return;
-    this.busy = true;
+    if (!accepted) return;
     try {
       await firstValueFrom(this.purchaseService.deletePurchase(publicId));
       this.notifications.success('Purchase Deleted');
-      await this.loadPurchases(this.query);
+      void this.loadPurchases(this.query);
     } catch (error) {
       console.error('Failed to delete purchase', error);
       this.notifications.error('Failed to delete purchase');
-    } finally {
-      this.busy = false;
     }
   }
 

@@ -2,6 +2,7 @@
   @if (loading$ | async) {
     <mat-progress-bar class="loading-bar" mode="indeterminate" />
   }
+  <app-change-blocker />
   <mat-toolbar class="main-toolbar">
     <span class="logo-text">Tomb Tale Online</span>
     <nav class="nav-links" aria-label="Main">

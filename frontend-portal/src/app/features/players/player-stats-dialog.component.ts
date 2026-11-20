@@ -72,7 +72,7 @@ export class PlayerStatsDialogComponent {
     }
 
     async save() {
-        if (this.form.invalid || !this.player?.characters || this.player.characters.length === 0) return;
+        if (this.form.invalid || this.saving || !this.player?.characters || this.player.characters.length === 0) return;
         const session = this.session;
         this.saving = true;
 

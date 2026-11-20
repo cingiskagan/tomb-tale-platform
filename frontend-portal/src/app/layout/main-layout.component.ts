@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { AuthService, PlatformRole } from '../core/auth';
-import { LoadingService } from '../core/loading';
+import { ChangeBlockerComponent, LoadingService } from '../core/loading';
 
 /** A link in the top bar, shown only to the roles that may open its page. */
 interface NavItem {
@@ -34,6 +34,7 @@ interface NavItem {
     MatIconModule,
     MatProgressBarModule,
     AsyncPipe,
+    ChangeBlockerComponent,
   ],
   templateUrl: './main-layout.component.html',
   styleUrl: './main-layout.component.css',

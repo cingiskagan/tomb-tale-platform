@@ -132,7 +132,7 @@ export class PurchaseFormComponent implements OnInit {
   }
 
   async save() {
-    if (this.form.invalid) return;
+    if (this.form.invalid || this.isSaving) return;
 
     const session = this.session;
     this.isSaving = true;

@@ -39,8 +39,6 @@ export class DealerListComponent implements OnInit {
   dealers: DealerResponse[] = [];
   total = 0;
   loading = true;
-  /** Set from a retirement until its reload ends, so no second one starts meanwhile (ADR 0034). */
-  busy = false;
   query: PageQuery = initQuery(20, 'code', 'asc');
   /** Only the newest request fills the table, so a slow answer for an old page never replaces the current one. */
   private seq = 0;
@@ -99,23 +97,19 @@ export class DealerListComponent implements OnInit {
   }
 
   async confirmRetire(dealer: DealerResponse) {
-    if (this.busy) return;
     const accepted = await this.confirm.ask({
       title: 'Retire dealer',
       message: `Retire ${dealer.code}? Its stand shows nothing from then on, and no new dealer takes its code.`,
       accept: 'Retire',
       reject: 'Cancel',
     });
-    if (!accepted || this.busy) return;
-    this.busy = true;
+    if (!accepted) return;
     try {
       await firstValueFrom(this.dealerService.retireDealer(dealer.publicId));
       this.notifications.success(`${dealer.code} is retired`);
-      await this.loadDealers(this.query);
+      void this.loadDealers(this.query);
     } catch (error) {
       this.showError(error, 'Failed to retire the dealer');
-    } finally {
-      this.busy = false;
     }
   }
 

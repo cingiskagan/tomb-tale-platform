@@ -63,7 +63,7 @@ export class MyProfileComponent implements OnInit {
   }
 
   onSubmit() {
-    if (this.profileForm.invalid) {
+    if (this.profileForm.invalid || this.isSaving) {
       return;
     }
 

@@ -65,7 +65,7 @@ export class CustomEntryFormComponent {
   error: string | null = null;
 
   async save() {
-    if (this.form.invalid || !this.dealerCode || !this.template) return;
+    if (this.form.invalid || !this.dealerCode || !this.template || this.saving) return;
     const session = this.session;
     this.saving = true;
     this.error = null;
