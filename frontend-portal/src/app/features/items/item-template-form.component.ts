@@ -137,7 +137,11 @@ export class ItemTemplateFormComponent {
   async uploadIcon(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (!file) return;
+    // A save on its way already took the icon, so a new one would be lost.
+    if (!file || this.saving) {
+      input.value = '';
+      return;
+    }
     const session = this.session;
     this.uploading = true;
     this.notice = null;
@@ -159,6 +163,7 @@ export class ItemTemplateFormComponent {
   }
 
   removeIcon() {
+    if (this.saving) return;
     this.form.controls.iconHash.setValue(null);
   }
 

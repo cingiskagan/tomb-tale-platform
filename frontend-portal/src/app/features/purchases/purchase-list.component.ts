@@ -11,7 +11,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { PurchaseService, PurchaseResponse, PurchaseFilterRequest, PurchaseStatus } from '../../core/api';
-import { ConfirmService, NotificationService, PageQuery, firstPage, pageOf, sortBy, turnPage } from '../../core/ui';
+import { ConfirmService, NotificationService, PageQuery, initQuery, pageOf, sortBy, turnPage } from '../../core/ui';
 import { PurchaseFormComponent } from './purchase-form.component';
 import { debounceTime, firstValueFrom } from 'rxjs';
 
@@ -54,7 +54,9 @@ export class PurchaseListComponent implements OnInit {
   purchases: PurchaseResponse[] = [];
   totalRecords = 0;
   loading = true;
-  query: PageQuery = firstPage(20);
+  /** Set from a cancellation until its reload ends, so no second one starts meanwhile (ADR 0034). */
+  busy = false;
+  query: PageQuery = initQuery(20);
 
   // Dialog state
   isFormDialogVisible = false;
@@ -122,20 +124,24 @@ export class PurchaseListComponent implements OnInit {
   }
 
   async confirmDelete(publicId: string) {
+    if (this.busy) return;
     const accepted = await this.confirm.ask({
       title: 'Confirm Deletion',
       message: 'Are you sure you want to cancel this purchase?',
       accept: 'Yes',
       reject: 'No',
     });
-    if (!accepted) return;
+    if (!accepted || this.busy) return;
+    this.busy = true;
     try {
       await firstValueFrom(this.purchaseService.deletePurchase(publicId));
       this.notifications.success('Purchase Deleted');
-      void this.loadPurchases(this.query);
+      await this.loadPurchases(this.query);
     } catch (error) {
       console.error('Failed to delete purchase', error);
       this.notifications.error('Failed to delete purchase');
+    } finally {
+      this.busy = false;
     }
   }
 

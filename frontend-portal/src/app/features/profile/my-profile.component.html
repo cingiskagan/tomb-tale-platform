@@ -14,7 +14,7 @@
           <form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="profile-form">
             <mat-form-field appearance="outline">
               <mat-label>Display Name</mat-label>
-              <input id="displayName" matInput type="text" formControlName="displayName" />
+              <input id="displayName" matInput type="text" formControlName="displayName" [readonly]="isSaving" />
               @if (profileForm.get('displayName')?.invalid) {
                 <mat-error>Display name must be between 3 and 30 characters.</mat-error>
               }

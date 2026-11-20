@@ -7,7 +7,7 @@ import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { firstValueFrom } from 'rxjs';
 import { DealerResponse, DealerService } from '../../core/api';
-import { ConfirmService, NotificationService, PageQuery, firstPage, pageOf, sortBy, turnPage } from '../../core/ui';
+import { ConfirmService, NotificationService, PageQuery, initQuery, pageOf, sortBy, turnPage } from '../../core/ui';
 import { problemDetail } from '../items/problem-detail';
 import { DealerFormComponent } from './dealer-form.component';
 import { StandEditorComponent } from './stand-editor.component';
@@ -39,7 +39,9 @@ export class DealerListComponent implements OnInit {
   dealers: DealerResponse[] = [];
   total = 0;
   loading = true;
-  query: PageQuery = firstPage(20, 'code', 'asc');
+  /** Set from a retirement until its reload ends, so no second one starts meanwhile (ADR 0034). */
+  busy = false;
+  query: PageQuery = initQuery(20, 'code', 'asc');
   /** Only the newest request fills the table, so a slow answer for an old page never replaces the current one. */
   private seq = 0;
 
@@ -97,19 +99,23 @@ export class DealerListComponent implements OnInit {
   }
 
   async confirmRetire(dealer: DealerResponse) {
+    if (this.busy) return;
     const accepted = await this.confirm.ask({
       title: 'Retire dealer',
       message: `Retire ${dealer.code}? Its stand shows nothing from then on, and no new dealer takes its code.`,
       accept: 'Retire',
       reject: 'Cancel',
     });
-    if (!accepted) return;
+    if (!accepted || this.busy) return;
+    this.busy = true;
     try {
       await firstValueFrom(this.dealerService.retireDealer(dealer.publicId));
       this.notifications.success(`${dealer.code} is retired`);
-      void this.loadDealers(this.query);
+      await this.loadDealers(this.query);
     } catch (error) {
       this.showError(error, 'Failed to retire the dealer');
+    } finally {
+      this.busy = false;
     }
   }
 

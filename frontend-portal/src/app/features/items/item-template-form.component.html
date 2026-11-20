@@ -70,7 +70,7 @@
             id="icon"
             type="file"
             accept="image/png,image/webp"
-            [disabled]="uploading"
+            [disabled]="uploading || saving"
             (change)="uploadIcon($event)"
           />
           @if (form.controls.iconHash.value) {
@@ -79,7 +79,7 @@
               type="button"
               class="tt-action-danger"
               aria-label="Remove icon"
-              [disabled]="uploading"
+              [disabled]="uploading || saving"
               (click)="removeIcon()"
             >
               <mat-icon fontIcon="pi-times" />

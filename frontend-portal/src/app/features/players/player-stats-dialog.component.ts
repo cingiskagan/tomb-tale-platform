@@ -56,6 +56,8 @@ export class PlayerStatsDialogComponent {
         experiencePoints: [0, [Validators.required, Validators.min(0)]]
     });
     saving = false;
+    /** Moves when the dialog closes, so a save from an earlier opening never touches the next one. */
+    private session = 0;
 
     /** The player's name, then their character's, which the form edits. */
     get playerLabel(): string {
@@ -63,10 +65,15 @@ export class PlayerStatsDialogComponent {
         return (this._player?.displayName || 'Loading...') + (character ? ` (${character.name})` : '');
     }
 
-    close() { this.visibleChange.emit(false); }
+    close() {
+        this.session++;
+        this.saving = false;
+        this.visibleChange.emit(false);
+    }
 
     async save() {
         if (this.form.invalid || !this.player?.characters || this.player.characters.length === 0) return;
+        const session = this.session;
         this.saving = true;
 
         const characterPublicId = this.player.characters[0].publicId;
@@ -77,13 +84,15 @@ export class PlayerStatsDialogComponent {
                 characterPublicId,
                 this.form.value as UpdateCharacterStatsRequest
             ));
+            // The page still reloads the saved player, but an earlier opening's save leaves the open one alone.
             this.saved.emit();
-            this.close();
+            if (session === this.session) this.close();
         } catch (err) {
+            if (session !== this.session) return;
             console.error('Failed to update stats:', err);
             this.notifications.error('Update failed');
         } finally {
-            this.saving = false;
+            if (session === this.session) this.saving = false;
         }
     }
 }

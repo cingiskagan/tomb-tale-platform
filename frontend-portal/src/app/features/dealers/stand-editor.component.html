@@ -51,7 +51,7 @@
                   type="button"
                   aria-label="Custom item"
                   title="Custom item"
-                  [disabled]="template.retired"
+                  [disabled]="template.retired || busy"
                   (click)="openCustom(template)"
                 >
                   <mat-icon fontIcon="pi-sparkles" />

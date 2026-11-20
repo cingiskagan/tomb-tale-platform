@@ -9,7 +9,7 @@
     </button>
   </div>
 
-  <div class="tt-table">
+  <div class="tt-table" [class.busy]="busy">
     @if (loading) {
       <mat-progress-bar mode="indeterminate" />
     }
@@ -46,7 +46,7 @@
       <ng-container matColumnDef="actions">
         <th mat-header-cell *matHeaderCellDef scope="col">Actions</th>
         <td mat-cell *matCellDef="let dealer">
-          <button mat-button type="button" [disabled]="dealer.retired" (click)="openStand(dealer)">
+          <button mat-button type="button" [disabled]="dealer.retired || busy" (click)="openStand(dealer)">
             <mat-icon fontIcon="pi-shop" />
             Store
           </button>
@@ -55,6 +55,7 @@
             type="button"
             class="tt-action-success"
             aria-label="Edit"
+            [disabled]="busy"
             (click)="openForm(dealer.publicId)"
           >
             <mat-icon fontIcon="pi-pencil" />
@@ -64,7 +65,7 @@
             type="button"
             class="tt-action-danger"
             aria-label="Retire"
-            [disabled]="dealer.retired"
+            [disabled]="dealer.retired || busy"
             (click)="confirmRetire(dealer)"
           >
             <mat-icon fontIcon="pi-ban" />

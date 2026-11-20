@@ -217,6 +217,19 @@ describe('StandEditorComponent', () => {
     expect(find('[data-entry="e-1"]')).toBeNull();
   });
 
+  /** A catalog page that answers after the editor closed changes nothing and reports nothing. */
+  it('drops a catalog answer that arrives after the editor closed', async () => {
+    const lateCatalog = new Subject<never>();
+    catalog.listTemplates.and.returnValue(lateCatalog);
+    await open([]);
+
+    editor.close();
+    lateCatalog.error(new HttpErrorResponse({ status: 500 }));
+    await settle();
+
+    expect(notifications.error).not.toHaveBeenCalled();
+  });
+
   it('offers custom items only while inventory takes them', async () => {
     await open([anEntry('e-1', Rarity.RED, 36450, [{ stat: 'FIRE_DAMAGE', value: 40 }])]);
     expect(find('[aria-label="Custom item"]')).toBeNull();

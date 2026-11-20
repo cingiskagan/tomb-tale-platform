@@ -8,7 +8,7 @@ import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { PlayerService, Player, PlayerFilterRequest, GameCharacter } from '../../core/api';
 import { AuthService, PlatformRole } from '../../core/auth';
-import { NotificationService, PageQuery, firstPage, pageOf, sortBy, turnPage } from '../../core/ui';
+import { NotificationService, PageQuery, initQuery, pageOf, sortBy, turnPage } from '../../core/ui';
 import { PlayerStatsDialogComponent } from './player-stats-dialog.component';
 import { InventoryDialogComponent } from './inventory-dialog.component';
 import { firstValueFrom } from 'rxjs';
@@ -46,7 +46,9 @@ export class PlayerListComponent implements OnInit {
     selectedPlayer: Player | null = null;
     isInventoryVisible = false;
     inventoryCharacter: GameCharacter | null = null;
-    query: PageQuery = firstPage(20);
+    query: PageQuery = initQuery(20);
+    /** Only the newest load fills the table, so a slow answer for an old page never replaces the current one. */
+    private seq = 0;
 
     ngOnInit() {
         void this.loadPlayers(this.query);
@@ -62,18 +64,21 @@ export class PlayerListComponent implements OnInit {
 
     async loadPlayers(query: PageQuery) {
         this.query = query;
+        const seq = ++this.seq;
         this.loading = true;
         try {
             const filters: PlayerFilterRequest = {};
             const { page, size, sort } = pageOf(query);
             const res = await firstValueFrom(this.playerService.listPlayers(filters, page, size, sort));
+            if (seq !== this.seq) return;
             this.players = res.content;
             this.totalRecords = res.page.totalElements;
         } catch (err) {
+            if (seq !== this.seq) return;
             console.error('Failed to load players:', err);
             this.notifications.error('Failed to load');
         } finally {
-            this.loading = false;
+            if (seq === this.seq) this.loading = false;
         }
     }
 

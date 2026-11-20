@@ -8,7 +8,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatTabsModule } from '@angular/material/tabs';
 import { firstValueFrom } from 'rxjs';
 import { ItemCatalogService, ItemSetResponse, ItemTemplateResponse, Stats } from '../../core/api';
-import { ConfirmService, NotificationService, PageQuery, firstPage, pageOf, sortBy, turnPage } from '../../core/ui';
+import { ConfirmService, NotificationService, PageQuery, initQuery, pageOf, sortBy, turnPage } from '../../core/ui';
 import { ItemTemplateFormComponent } from './item-template-form.component';
 import { ItemSetFormComponent } from './item-set-form.component';
 import { problemDetail } from './problem-detail';
@@ -45,7 +45,9 @@ export class ItemCatalogComponent implements OnInit {
   templates: ItemTemplateResponse[] = [];
   templateTotal = 0;
   templatesLoading = true;
-  templateQuery: PageQuery = firstPage(20, 'code', 'asc');
+  /** Set from a retirement until its reload ends, so no second one starts meanwhile (ADR 0034). */
+  busy = false;
+  templateQuery: PageQuery = initQuery(20, 'code', 'asc');
   /** Only the newest request fills a table, so a slow answer for an old page never replaces the current one. */
   private templateSeq = 0;
 
@@ -54,7 +56,7 @@ export class ItemCatalogComponent implements OnInit {
   setsLoading = true;
   /** Every set, for the template form and the Set column. */
   allSets: ItemSetResponse[] = [];
-  setQuery: PageQuery = firstPage(20, 'code', 'asc');
+  setQuery: PageQuery = initQuery(20, 'code', 'asc');
   private setSeq = 0;
 
   /** Icons whose image failed to load, shown as a generic one. */
@@ -165,19 +167,23 @@ export class ItemCatalogComponent implements OnInit {
   }
 
   async confirmRetire(template: ItemTemplateResponse) {
+    if (this.busy) return;
     const accepted = await this.confirm.ask({
       title: 'Retire template',
       message: `Retire ${template.code}? It is never sold or granted again. Copies players own stay.`,
       accept: 'Retire',
       reject: 'Cancel',
     });
-    if (!accepted) return;
+    if (!accepted || this.busy) return;
+    this.busy = true;
     try {
       await firstValueFrom(this.catalog.retireTemplate(template.publicId));
       this.notifications.success(`${template.code} is retired`);
-      void this.loadTemplates(this.templateQuery);
+      await this.loadTemplates(this.templateQuery);
     } catch (error) {
       this.showError(error, 'Failed to retire the template');
+    } finally {
+      this.busy = false;
     }
   }
 

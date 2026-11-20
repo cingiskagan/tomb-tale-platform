@@ -8,7 +8,7 @@ export interface PageQuery {
   sort: Sort;
 }
 
-export function firstPage(size: number, active = '', direction: SortDirection = ''): PageQuery {
+export function initQuery(size: number, active = '', direction: SortDirection = ''): PageQuery {
   return { page: 0, size, sort: { active, direction } };
 }
 

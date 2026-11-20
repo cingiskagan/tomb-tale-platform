@@ -20,7 +20,7 @@ import {
   Rarity,
   StandEntry,
 } from '../../core/api';
-import { DialogDirective, NotificationService, PageQuery, firstPage, pageOf, sortBy, turnPage } from '../../core/ui';
+import { DialogDirective, NotificationService, PageQuery, initQuery, pageOf, sortBy, turnPage } from '../../core/ui';
 import { problemDetail } from '../items/problem-detail';
 import { CustomEntryFormComponent, RARITY_OPTIONS } from './custom-entry-form.component';
 
@@ -65,7 +65,7 @@ export class StandEditorComponent {
   templates: ItemTemplateResponse[] = [];
   templateTotal = 0;
   templatesLoading = true;
-  templateQuery: PageQuery = firstPage(10, 'code', 'asc');
+  templateQuery: PageQuery = initQuery(10, 'code', 'asc');
   /** Icons whose image failed to load, shown as a generic one. */
   readonly brokenIcons = new Set<string>();
 
@@ -120,18 +120,21 @@ export class StandEditorComponent {
 
   async loadTemplates(query: PageQuery) {
     this.templateQuery = query;
+    const session = this.session;
     const seq = ++this.templateSeq;
+    // A closed editor, or a newer load, owns the catalog now.
+    const current = () => session === this.session && seq === this.templateSeq;
     this.templatesLoading = true;
     try {
       const { page, size, sort } = pageOf(query);
       const response = await firstValueFrom(this.catalog.listTemplates(page, size, sort));
-      if (seq !== this.templateSeq) return;
+      if (!current()) return;
       this.templates = response.content;
       this.templateTotal = response.page.totalElements;
     } catch (error) {
-      if (seq === this.templateSeq) this.showError(error, 'Failed to load the catalog');
+      if (current()) this.showError(error, 'Failed to load the catalog');
     } finally {
-      if (seq === this.templateSeq) this.templatesLoading = false;
+      if (current()) this.templatesLoading = false;
     }
   }
 
@@ -184,6 +187,7 @@ export class StandEditorComponent {
   }
 
   openCustom(template: ItemTemplateResponse) {
+    if (this.busy) return;
     this.customTemplate = template;
     this.customVisible = true;
   }
@@ -204,7 +208,7 @@ export class StandEditorComponent {
     this.busy = false;
     this.entries = [];
     // Each opening starts the catalog over, on its first page by code.
-    void this.loadTemplates(firstPage(10, 'code', 'asc'));
+    void this.loadTemplates(initQuery(10, 'code', 'asc'));
     await this.loadStand(session);
   }
 
