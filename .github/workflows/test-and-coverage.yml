@@ -30,6 +30,14 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
+          # One cache per job. A key shared by the matrix is saved by whichever
+          # job finishes first, the Keycloak mapper, so the Spring jobs found
+          # nothing of theirs in it and downloaded everything from Maven Central
+          # on every run, until Central answered 429.
+          cache-dependency-path: |
+            pom.xml
+            platform-commons/pom.xml
+            ${{ matrix.service }}/pom.xml
 
       - name: Run Maven Tests and Generate Jacoco Report
         run: ./mvnw -pl ${{ matrix.service }} -am clean verify
