@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { Subject, of, throwError } from 'rxjs';
 import { ItemCatalogService, ItemTemplateResponse, ItemType } from '../../core/api';
 import { ItemTemplateFormComponent } from './item-template-form.component';
@@ -39,7 +39,7 @@ describe('ItemTemplateFormComponent', () => {
     ]);
     TestBed.configureTestingModule({
       imports: [ItemTemplateFormComponent],
-      providers: [provideNoopAnimations(), { provide: ItemCatalogService, useValue: catalog }],
+      providers: [{ provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } }, { provide: ItemCatalogService, useValue: catalog }],
     });
     fixture = TestBed.createComponent(ItemTemplateFormComponent);
     form = fixture.componentInstance;

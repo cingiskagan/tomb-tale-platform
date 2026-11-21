@@ -1,11 +1,14 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { DialogModule } from 'primeng/dialog';
-import { ButtonModule } from 'primeng/button';
-import { SelectModule } from 'primeng/select';
-import { MessageModule } from 'primeng/message';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 import { firstValueFrom } from 'rxjs';
 import { DealerService, ItemTemplateResponse, Rarity, StandEntry } from '../../core/api';
+import { DialogDirective } from '../../core/ui';
 import { StatsEditorComponent } from '../items/stats-editor.component';
 import { StatRow, linesOf } from '../items/stats-form';
 import { problemDetail } from '../items/problem-detail';
@@ -16,7 +19,17 @@ export const RARITY_OPTIONS = Object.values(Rarity).map((rarity) => ({ label: ra
 @Component({
   selector: 'app-custom-entry-form',
   standalone: true,
-  imports: [ReactiveFormsModule, DialogModule, ButtonModule, SelectModule, MessageModule, StatsEditorComponent],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    DialogDirective,
+    StatsEditorComponent,
+  ],
   templateUrl: './custom-entry-form.component.html',
   styleUrl: './dealers.css',
 })
@@ -52,7 +65,7 @@ export class CustomEntryFormComponent {
   error: string | null = null;
 
   async save() {
-    if (this.form.invalid || !this.dealerCode || !this.template) return;
+    if (this.form.invalid || !this.dealerCode || !this.template || this.saving) return;
     const session = this.session;
     this.saving = true;
     this.error = null;

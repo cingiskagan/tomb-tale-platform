@@ -1,37 +1,45 @@
-<p-dialog
-  [header]="isEditMode ? 'Edit Item Set' : 'New Item Set'"
-  [visible]="visible"
-  (visibleChange)="$event || close()"
-  [modal]="true"
-  [style]="{ width: '30rem' }"
-  styleClass="item-dialog"
->
-  @if (notice) {
-    <p-message [severity]="notice.severity" [text]="notice.text" styleClass="mb-3" />
-  }
+<ng-template [appDialog]="visible" appDialogWidth="30rem" (appDialogDismissed)="close()">
+  <h2 mat-dialog-title>{{ isEditMode ? 'Edit Item Set' : 'New Item Set' }}</h2>
 
-  <form [formGroup]="form" (ngSubmit)="save()">
-    <div class="field">
-      <label for="setCode">Code</label>
-      <input id="setCode" pInputText formControlName="code" class="w-full" placeholder="IRON_SET" />
-    </div>
+  <mat-dialog-content>
+    @if (notice) {
+      <div
+        class="tt-notice"
+        role="alert"
+        [class.tt-notice-warn]="notice.severity === 'warn'"
+        [class.tt-notice-error]="notice.severity === 'error'"
+      >
+        {{ notice.text }}
+      </div>
+    }
 
-    <div class="field">
-      <label for="setName">Name</label>
-      <input id="setName" pInputText formControlName="name" class="w-full" />
-    </div>
+    <form [formGroup]="form" (ngSubmit)="save()" class="tt-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Code</mat-label>
+        <input id="setCode" matInput formControlName="code" placeholder="IRON_SET" />
+      </mat-form-field>
 
-    <app-stats-editor [rows]="form.controls.bonus" label="Bonus for the complete set" />
-  </form>
+      <mat-form-field appearance="outline">
+        <mat-label>Name</mat-label>
+        <input id="setName" matInput formControlName="name" />
+      </mat-form-field>
 
-  <ng-template #footer>
-    <p-button label="Cancel" icon="pi pi-times" severity="secondary" [outlined]="true" (onClick)="close()" />
-    <p-button
-      label="Save"
-      icon="pi pi-check"
-      [disabled]="form.invalid || !loaded || saving"
-      [loading]="saving"
-      (onClick)="save()"
-    />
-  </ng-template>
-</p-dialog>
+      <app-stats-editor [rows]="form.controls.bonus" label="Bonus for the complete set" />
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="close()">
+      <mat-icon fontIcon="pi-times" />
+      Cancel
+    </button>
+    <button mat-flat-button type="button" [disabled]="form.invalid || !loaded || saving" (click)="save()">
+      @if (saving) {
+        <mat-progress-spinner class="tt-button-spinner" mode="indeterminate" [diameter]="18" />
+      } @else {
+        <mat-icon fontIcon="pi-check" />
+      }
+      Save
+    </button>
+  </mat-dialog-actions>
+</ng-template>

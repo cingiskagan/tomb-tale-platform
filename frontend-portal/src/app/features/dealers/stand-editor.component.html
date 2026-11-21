@@ -1,123 +1,139 @@
-<p-dialog
-  [header]="'Stand — ' + (dealer?.name ?? '')"
-  [visible]="visible"
-  (visibleChange)="$event || close()"
-  [modal]="true"
-  [style]="{ width: '68rem' }"
->
-  <div class="stand-editor">
-    <section class="catalog" aria-label="Catalog">
-      <h3>Catalog</h3>
-      <p-table
-        [value]="templates"
-        [lazy]="true"
-        (onLazyLoad)="loadTemplates($event)"
-        [paginator]="true"
-        [rows]="10"
-        [totalRecords]="templateTotal"
-        [loading]="templatesLoading"
-        sortField="code"
-        [sortOrder]="1"
-        styleClass="p-datatable-sm"
-      >
-        <ng-template #header>
-          <tr>
-            <th scope="col" class="icon-cell">Icon</th>
-            <th scope="col" pSortableColumn="code">Code <p-sortIcon field="code" /></th>
-            <th scope="col" pSortableColumn="name">Name <p-sortIcon field="name" /></th>
-            <th scope="col" pSortableColumn="price">Price <p-sortIcon field="price" /></th>
-            @if (customEnabled) {
-              <th scope="col">Custom</th>
-            }
-          </tr>
-        </ng-template>
-
-        <ng-template #body let-template>
-          <tr
-            [class.retired]="template.retired"
-            [attr.data-template]="template.code"
-            [draggable]="!template.retired"
-            (dragstart)="onDragStart($event, template)"
-            (dragend)="onDragEnd()"
-          >
-            <td class="icon-cell">
-              @if (templateIconUrl(template); as src) {
-                <img [src]="src" [alt]="template.name" draggable="false" (error)="brokenIcons.add(template.iconHash)" />
-              } @else {
-                <i class="pi pi-image generic-icon" aria-hidden="true"></i>
-              }
-            </td>
-            <td>{{ template.code }}</td>
-            <td>{{ template.name }}</td>
-            <td>{{ template.price }}</td>
-            @if (customEnabled) {
-              <td>
-                <p-button
-                  icon="pi pi-sparkles"
-                  [rounded]="true"
-                  [text]="true"
-                  ariaLabel="Custom item"
-                  title="Custom item"
-                  [disabled]="template.retired"
-                  (onClick)="openCustom(template)"
-                />
-              </td>
-            }
-          </tr>
-        </ng-template>
-
-        <ng-template #emptymessage>
-          <tr>
-            <td [attr.colspan]="customEnabled ? 5 : 4">The catalog is empty.</td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </section>
-
-    <section
-      class="stand"
-      aria-label="Stand"
-      [class.busy]="busy"
-      (dragover)="allowDrop($event)"
-      (drop)="dropOnStand($event)"
-    >
-      <div class="stand-header">
-        <h3>Stand</h3>
-        <label for="standRarity">Drop as</label>
-        <p-select inputId="standRarity" [formControl]="rarity" [options]="rarities" appendTo="body" />
-      </div>
-
-      @for (entry of entries; track entry.publicId) {
-        <div class="entry" [attr.data-entry]="entry.publicId">
-          @if (entryIconUrl(entry); as src) {
-            <img [src]="src" [alt]="entry.name" (error)="hideIcon(entry.iconUrl)" />
-          } @else {
-            <i class="pi pi-box generic-icon" aria-hidden="true"></i>
+<ng-template [appDialog]="visible" appDialogWidth="68rem" (appDialogDismissed)="close()">
+  <h2 mat-dialog-title>Stand — {{ dealer?.name ?? '' }}</h2>
+  <mat-dialog-content>
+    <div class="stand-editor">
+      <section class="catalog" aria-label="Catalog">
+        <h3>Catalog</h3>
+        <div class="tt-table">
+          @if (templatesLoading) {
+            <mat-progress-bar mode="indeterminate" />
           }
-          <span class="entry-name">
-            {{ entry.name }}
-            @if (entry.bonus) {
-              <span class="entry-bonus">Custom: {{ formatBonus(entry.bonus) || 'no bonus' }}</span>
-            }
-          </span>
-          <p-tag [value]="entry.rarity" severity="secondary" />
-          <span class="entry-price">{{ entry.price }}</span>
-          <p-button
-            icon="pi pi-times"
-            [rounded]="true"
-            [text]="true"
-            severity="danger"
-            ariaLabel="Remove from stand"
-            [disabled]="busy"
-            (onClick)="remove(entry)"
-          />
+          <table
+            mat-table
+            [dataSource]="templates"
+            matSort
+            matSortDisableClear
+            [matSortActive]="templateQuery.sort.active"
+            [matSortDirection]="templateQuery.sort.direction"
+            (matSortChange)="sortTemplates($event)"
+          >
+            <ng-container matColumnDef="icon">
+              <th mat-header-cell *matHeaderCellDef scope="col" class="icon-cell">Icon</th>
+              <td mat-cell *matCellDef="let template" class="icon-cell">
+                @if (templateIconUrl(template); as src) {
+                  <img [src]="src" [alt]="template.name" draggable="false" (error)="brokenIcons.add(template.iconHash)" />
+                } @else {
+                  <i class="pi pi-image generic-icon" aria-hidden="true"></i>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="code">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Code</th>
+              <td mat-cell *matCellDef="let template">{{ template.code }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Name</th>
+              <td mat-cell *matCellDef="let template">{{ template.name }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="price">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Price</th>
+              <td mat-cell *matCellDef="let template">{{ template.price }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="custom">
+              <th mat-header-cell *matHeaderCellDef scope="col">Custom</th>
+              <td mat-cell *matCellDef="let template">
+                <button
+                  mat-icon-button
+                  type="button"
+                  aria-label="Custom item"
+                  title="Custom item"
+                  [disabled]="template.retired || busy"
+                  (click)="openCustom(template)"
+                >
+                  <mat-icon fontIcon="pi-sparkles" />
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="catalogColumns"></tr>
+            <tr
+              mat-row
+              *matRowDef="let template; columns: catalogColumns"
+              [class.retired]="template.retired"
+              [attr.data-template]="template.code"
+              [draggable]="!template.retired"
+              (dragstart)="onDragStart($event, template)"
+              (dragend)="onDragEnd()"
+            ></tr>
+            <tr class="mat-mdc-row" *matNoDataRow>
+              <td class="mat-mdc-cell" [attr.colspan]="catalogColumns.length">The catalog is empty.</td>
+            </tr>
+          </table>
         </div>
-      } @empty {
-        <p class="hint">Drop a template here to sell it.</p>
-      }
-    </section>
-  </div>
-</p-dialog>
+        <mat-paginator
+          [length]="templateTotal"
+          [pageIndex]="templateQuery.page"
+          [pageSize]="templateQuery.size"
+          (page)="pageTemplates($event)"
+        />
+      </section>
+  
+      <section
+        class="stand"
+        aria-label="Stand"
+        [class.busy]="busy"
+        (dragover)="allowDrop($event)"
+        (drop)="dropOnStand($event)"
+      >
+        <div class="stand-header">
+          <h3>Stand</h3>
+          <mat-form-field class="rarity" appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Drop as</mat-label>
+            <mat-select id="standRarity" [formControl]="rarity">
+              @for (option of rarities; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+  
+        @for (entry of entries; track entry.publicId) {
+          <div class="entry" [attr.data-entry]="entry.publicId">
+            @if (entryIconUrl(entry); as src) {
+              <img [src]="src" [alt]="entry.name" (error)="hideIcon(entry.iconUrl)" />
+            } @else {
+              <i class="pi pi-box generic-icon" aria-hidden="true"></i>
+            }
+            <span class="entry-name">
+              {{ entry.name }}
+              @if (entry.bonus) {
+                <span class="entry-bonus">Custom: {{ formatBonus(entry.bonus) || 'no bonus' }}</span>
+              }
+            </span>
+            <span class="tt-tag">{{ entry.rarity }}</span>
+            <span class="entry-price">{{ entry.price }}</span>
+            <button
+              mat-icon-button
+              type="button"
+              class="tt-action-danger"
+              aria-label="Remove from stand"
+              [disabled]="busy"
+              (click)="remove(entry)"
+            >
+              <mat-icon fontIcon="pi-times" />
+            </button>
+          </div>
+        } @empty {
+          <p class="hint">Drop a template here to sell it.</p>
+        }
+      </section>
+    </div>
+  </mat-dialog-content>
+</ng-template>
 
 <app-custom-entry-form
   [dealerCode]="dealer?.code ?? null"

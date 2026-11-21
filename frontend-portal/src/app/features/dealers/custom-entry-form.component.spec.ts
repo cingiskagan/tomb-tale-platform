@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { of, throwError } from 'rxjs';
+import { MATERIAL_ANIMATIONS } from '@angular/material/core';
+import { Subject, of, throwError } from 'rxjs';
 import { DealerService, ItemTemplateResponse, ItemType, Rarity, StandEntry } from '../../core/api';
 import { statRow } from '../items/stats-form';
 import { CustomEntryFormComponent } from './custom-entry-form.component';
@@ -17,7 +17,7 @@ describe('CustomEntryFormComponent', () => {
     dealerService = jasmine.createSpyObj<DealerService>('DealerService', ['addEntry']);
     TestBed.configureTestingModule({
       imports: [CustomEntryFormComponent],
-      providers: [provideNoopAnimations(), { provide: DealerService, useValue: dealerService }],
+      providers: [{ provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } }, { provide: DealerService, useValue: dealerService }],
     });
     fixture = TestBed.createComponent(CustomEntryFormComponent);
     form = fixture.componentInstance;
@@ -59,6 +59,20 @@ describe('CustomEntryFormComponent', () => {
 
     expect(form.error).toBe('Custom stand items are off');
     expect(form.visible).toBeTrue();
+  });
+
+  /** Pressing Save, or Enter in the one stat field, twice adds the entry once. */
+  it('sends one entry when saved twice before the first answers', async () => {
+    const answer = new Subject<StandEntry>();
+    dealerService.addEntry.and.returnValue(answer);
+
+    const first = form.save();
+    await form.save();
+    answer.next({ publicId: 'e-1' } as StandEntry);
+    answer.complete();
+    await first;
+
+    expect(dealerService.addEntry).toHaveBeenCalledTimes(1);
   });
 
   it('opens blank each time', async () => {

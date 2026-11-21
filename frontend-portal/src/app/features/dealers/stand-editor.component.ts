@@ -1,11 +1,14 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { DialogModule } from 'primeng/dialog';
-import { TableLazyLoadEvent, TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { TagModule } from 'primeng/tag';
-import { SelectModule } from 'primeng/select';
-import { MessageService } from 'primeng/api';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSortModule, Sort } from '@angular/material/sort';
+import { MatTableModule } from '@angular/material/table';
 import { Observable, firstValueFrom } from 'rxjs';
 import {
   BonusLine,
@@ -17,7 +20,7 @@ import {
   Rarity,
   StandEntry,
 } from '../../core/api';
-import { pageOf } from '../items/page-of';
+import { DialogDirective, NotificationService, PageQuery, initQuery, pageOf, sortBy, turnPage } from '../../core/ui';
 import { problemDetail } from '../items/problem-detail';
 import { CustomEntryFormComponent, RARITY_OPTIONS } from './custom-entry-form.component';
 
@@ -25,7 +28,20 @@ import { CustomEntryFormComponent, RARITY_OPTIONS } from './custom-entry-form.co
 @Component({
   selector: 'app-stand-editor',
   standalone: true,
-  imports: [DialogModule, TableModule, ButtonModule, TagModule, SelectModule, ReactiveFormsModule, CustomEntryFormComponent],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatPaginatorModule,
+    MatProgressBarModule,
+    MatSelectModule,
+    MatSortModule,
+    MatTableModule,
+    DialogDirective,
+    CustomEntryFormComponent,
+  ],
   templateUrl: './stand-editor.component.html',
   styleUrl: './dealers.css',
 })
@@ -33,7 +49,7 @@ export class StandEditorComponent {
   private readonly dealerService = inject(DealerService);
   private readonly catalog = inject(ItemCatalogService);
   private readonly inventoryService = inject(InventoryService);
-  private readonly messageService = inject(MessageService);
+  private readonly notifications = inject(NotificationService);
 
   /** Whether inventory takes custom entries. The page reads it from inventory's settings. */
   @Input() customEnabled = false;
@@ -49,6 +65,7 @@ export class StandEditorComponent {
   templates: ItemTemplateResponse[] = [];
   templateTotal = 0;
   templatesLoading = true;
+  templateQuery: PageQuery = initQuery(10, 'code', 'asc');
   /** Icons whose image failed to load, shown as a generic one. */
   readonly brokenIcons = new Set<string>();
 
@@ -88,19 +105,36 @@ export class StandEditorComponent {
     this.visibleChange.emit(false);
   }
 
-  async loadTemplates(event: TableLazyLoadEvent) {
+  /** The catalog's columns, with the custom one only while inventory takes custom entries. */
+  get catalogColumns(): string[] {
+    return this.customEnabled ? ['icon', 'code', 'name', 'price', 'custom'] : ['icon', 'code', 'name', 'price'];
+  }
+
+  sortTemplates(sort: Sort) {
+    void this.loadTemplates(sortBy(this.templateQuery, sort));
+  }
+
+  pageTemplates(event: PageEvent) {
+    void this.loadTemplates(turnPage(this.templateQuery, event));
+  }
+
+  async loadTemplates(query: PageQuery) {
+    this.templateQuery = query;
+    const session = this.session;
     const seq = ++this.templateSeq;
+    // A closed editor, or a newer load, owns the catalog now.
+    const current = () => session === this.session && seq === this.templateSeq;
     this.templatesLoading = true;
     try {
-      const { page, size, sort } = pageOf(event);
+      const { page, size, sort } = pageOf(query);
       const response = await firstValueFrom(this.catalog.listTemplates(page, size, sort));
-      if (seq !== this.templateSeq) return;
+      if (!current()) return;
       this.templates = response.content;
       this.templateTotal = response.page.totalElements;
     } catch (error) {
-      if (seq === this.templateSeq) this.showError(error, 'Failed to load the catalog');
+      if (current()) this.showError(error, 'Failed to load the catalog');
     } finally {
-      if (seq === this.templateSeq) this.templatesLoading = false;
+      if (current()) this.templatesLoading = false;
     }
   }
 
@@ -153,6 +187,7 @@ export class StandEditorComponent {
   }
 
   openCustom(template: ItemTemplateResponse) {
+    if (this.busy) return;
     this.customTemplate = template;
     this.customVisible = true;
   }
@@ -172,6 +207,8 @@ export class StandEditorComponent {
     // A change still on its way belongs to the old session, which can no longer clear this.
     this.busy = false;
     this.entries = [];
+    // Each opening starts the catalog over, on its first page by code.
+    void this.loadTemplates(initQuery(10, 'code', 'asc'));
     await this.loadStand(session);
   }
 
@@ -204,6 +241,6 @@ export class StandEditorComponent {
 
   private showError(error: unknown, fallback: string) {
     console.error(fallback, error);
-    this.messageService.add({ severity: 'error', summary: 'Error', detail: problemDetail(error, fallback) });
+    this.notifications.error(problemDetail(error, fallback));
   }
 }

@@ -386,8 +386,11 @@ $font-body: 'Inter', 'Segoe UI', sans-serif;
   width: 100%;
   margin-bottom: 1.5rem;
 
-  ::ng-deep .enter-tomb-btn {
+  .enter-tomb-btn {
+    --mat-button-filled-container-color: #{$color-gold-primary};
+    --mat-button-filled-label-text-color: #{$color-bg-deep};
     width: 100%;
+    height: auto;
     font-family: $font-heading;
     font-size: 1.05rem;
     letter-spacing: 0.15em;

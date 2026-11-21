@@ -3,76 +3,89 @@
 
   <div class="header-actions">
     <span>Every dealer, retired ones grayed out. The town finds a dealer's stand by its code.</span>
-    <p-button label="New Dealer" icon="pi pi-plus" (onClick)="openForm(null)" />
+    <button mat-flat-button type="button" (click)="openForm(null)">
+      <mat-icon fontIcon="pi-plus" />
+      New Dealer
+    </button>
   </div>
 
-  <p-table
-    [value]="dealers"
-    [lazy]="true"
-    (onLazyLoad)="loadDealers($event)"
-    [paginator]="true"
-    [rows]="20"
-    [totalRecords]="total"
-    [loading]="loading"
-    sortField="code"
-    [sortOrder]="1"
-    styleClass="p-datatable-sm"
-  >
-    <ng-template #header>
-      <tr>
-        <th scope="col" pSortableColumn="code">Code <p-sortIcon field="code" /></th>
-        <th scope="col" pSortableColumn="name">Name <p-sortIcon field="name" /></th>
-        <th scope="col">Status</th>
-        <th scope="col">Actions</th>
-      </tr>
-    </ng-template>
+  <div class="tt-table">
+    @if (loading) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+    <table
+      mat-table
+      [dataSource]="dealers"
+      matSort
+      matSortDisableClear
+      [matSortActive]="query.sort.active"
+      [matSortDirection]="query.sort.direction"
+      (matSortChange)="sortDealers($event)"
+    >
+      <ng-container matColumnDef="code">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Code</th>
+        <td mat-cell *matCellDef="let dealer">{{ dealer.code }}</td>
+      </ng-container>
 
-    <ng-template #body let-dealer>
-      <tr [class.retired]="dealer.retired">
-        <td>{{ dealer.code }}</td>
-        <td>{{ dealer.name }}</td>
-        <td>
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Name</th>
+        <td mat-cell *matCellDef="let dealer">{{ dealer.name }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef scope="col">Status</th>
+        <td mat-cell *matCellDef="let dealer">
           @if (dealer.retired) {
-            <p-tag value="RETIRED" severity="secondary" />
+            <span class="tt-tag">RETIRED</span>
           } @else {
-            <p-tag value="ACTIVE" severity="success" />
+            <span class="tt-tag tt-tag-success">ACTIVE</span>
           }
         </td>
-        <td>
-          <p-button
-            label="Store"
-            icon="pi pi-shop"
-            [text]="true"
-            [disabled]="dealer.retired"
-            (onClick)="openStand(dealer)"
-          />
-          <p-button
-            icon="pi pi-pencil"
-            [rounded]="true"
-            [text]="true"
-            severity="success"
-            ariaLabel="Edit"
-            (onClick)="openForm(dealer.publicId)"
-          />
-          <p-button
-            icon="pi pi-ban"
-            [rounded]="true"
-            [text]="true"
-            severity="danger"
-            ariaLabel="Retire"
-            [disabled]="dealer.retired"
-            (onClick)="confirmRetire(dealer)"
-          />
-        </td>
-      </tr>
-    </ng-template>
+      </ng-container>
 
-    <ng-template #emptymessage>
-      <tr>
-        <td colspan="4">No dealers yet.</td>
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef scope="col">Actions</th>
+        <td mat-cell *matCellDef="let dealer">
+          <button mat-button type="button" [disabled]="dealer.retired" (click)="openStand(dealer)">
+            <mat-icon fontIcon="pi-shop" />
+            Store
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            class="tt-action-success"
+            aria-label="Edit"
+            (click)="openForm(dealer.publicId)"
+          >
+            <mat-icon fontIcon="pi-pencil" />
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            class="tt-action-danger"
+            aria-label="Retire"
+            [disabled]="dealer.retired"
+            (click)="confirmRetire(dealer)"
+          >
+            <mat-icon fontIcon="pi-ban" />
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let dealer; columns: columns" [class.retired]="dealer.retired"></tr>
+      <tr class="mat-mdc-row" *matNoDataRow>
+        <td class="mat-mdc-cell" [attr.colspan]="columns.length">No dealers yet.</td>
       </tr>
-    </ng-template>
-  </p-table>
+    </table>
+  </div>
+  <mat-paginator
+    [length]="total"
+    [pageIndex]="query.page"
+    [pageSize]="query.size"
+    showFirstLastButtons
+    (page)="pageDealers($event)"
+  />
 </div>
 
 <app-dealer-form [dealerPublicId]="selectedDealerId" [(visible)]="isFormVisible" (saved)="onSaved()" />
@@ -82,6 +95,3 @@
   [customEnabled]="customStandItemsEnabled"
   [(visible)]="isStandVisible"
 />
-
-<p-confirmDialog [style]="{ width: '450px' }" />
-<p-toast />

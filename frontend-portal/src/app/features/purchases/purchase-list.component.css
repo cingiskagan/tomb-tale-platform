@@ -19,7 +19,24 @@
   font-size: 1.5rem;
 }
 
-::ng-deep .purchase-table .p-datatable-header,
-::ng-deep .purchase-table .p-datatable-tbody > tr > td {
-  border-color: rgba(212, 162, 78, 0.1);
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.purchase-table {
+  min-width: 75rem;
+}
+
+.cancellation-reason {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #8a8078;
+}
+
+.empty {
+  padding: 1rem;
+  text-align: center;
+  color: #8a8078;
 }

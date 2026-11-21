@@ -1,7 +1,7 @@
 # 34. Every API call shows loading, and a change blocks the next
 
 - **Date:** 2026-11-16
-- **Status:** accepted
+- **Status:** superseded by [0037](0037-a-change-covers-the-portal-until-no-call-is-left.md)
 
 ## Context
 

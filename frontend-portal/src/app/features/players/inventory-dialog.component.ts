@@ -1,10 +1,9 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { DialogModule } from 'primeng/dialog';
-import { SelectModule } from 'primeng/select';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import { Observable, firstValueFrom } from 'rxjs';
 import {
   BonusLine,
@@ -20,6 +19,7 @@ import {
   Stats,
 } from '../../core/api';
 import { RUNTIME_CONFIG } from '../../core/config';
+import { ConfirmService, DialogDirective, NotificationService } from '../../core/ui';
 import { problemDetail } from '../items/problem-detail';
 
 /** The bag is drawn this many cells wide. Inventory stores one number per cell, so the width is ours to pick. */
@@ -48,15 +48,23 @@ export const SLOTS: readonly { slot: EquipmentSlot; label: string }[] = [
 @Component({
   selector: 'app-inventory-dialog',
   standalone: true,
-  imports: [DialogModule, SelectModule, ConfirmDialogModule, ReactiveFormsModule, DecimalPipe, NgTemplateOutlet],
+  imports: [
+    MatDialogModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    DialogDirective,
+    ReactiveFormsModule,
+    DecimalPipe,
+    NgTemplateOutlet,
+  ],
   templateUrl: './inventory-dialog.component.html',
   styleUrl: './inventory-dialog.component.css',
 })
 export class InventoryDialogComponent {
   private readonly inventoryService = inject(InventoryService);
   private readonly dealerService = inject(DealerService);
-  private readonly messageService = inject(MessageService);
-  private readonly confirmationService = inject(ConfirmationService);
+  private readonly notifications = inject(NotificationService);
+  private readonly confirm = inject(ConfirmService);
   private readonly config = inject(RUNTIME_CONFIG);
 
   @Output() visibleChange = new EventEmitter<boolean>();
@@ -288,23 +296,16 @@ export class InventoryDialogComponent {
   }
 
   /** In production the inventory belongs to a live player, so the admin's first change to it asks first. */
-  private confirmFirstChange(characterId: string): Promise<boolean> {
-    if (!this.config.production || this.confirmed.has(characterId)) return Promise.resolve(true);
-    return new Promise((resolve) => {
-      this.confirmationService.confirm({
-        key: 'inventory',
-        header: "A live player's inventory",
-        message: 'This inventory belongs to a live player, who sees every change at once. Change it anyway?',
-        icon: 'pi pi-exclamation-triangle',
-        acceptLabel: 'Change it',
-        rejectLabel: 'Cancel',
-        accept: () => {
-          this.confirmed.add(characterId);
-          resolve(true);
-        },
-        reject: () => resolve(false),
-      });
+  private async confirmFirstChange(characterId: string): Promise<boolean> {
+    if (!this.config.production || this.confirmed.has(characterId)) return true;
+    const accepted = await this.confirm.ask({
+      title: "A live player's inventory",
+      message: 'This inventory belongs to a live player, who sees every change at once. Change it anyway?',
+      accept: 'Change it',
+      reject: 'Cancel',
     });
+    if (accepted) this.confirmed.add(characterId);
+    return accepted;
   }
 
   private async reload(session: number) {
@@ -363,7 +364,7 @@ export class InventoryDialogComponent {
 
   private showError(error: unknown, fallback: string) {
     console.error(fallback, error);
-    this.messageService.add({ severity: 'error', summary: 'Error', detail: problemDetail(error, fallback) });
+    this.notifications.error(problemDetail(error, fallback));
   }
 }
 

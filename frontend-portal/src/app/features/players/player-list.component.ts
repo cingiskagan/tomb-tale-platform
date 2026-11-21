@@ -1,11 +1,14 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TableModule, TableLazyLoadEvent } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { ToastModule } from 'primeng/toast';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSortModule, Sort } from '@angular/material/sort';
+import { MatTableModule } from '@angular/material/table';
 import { PlayerService, Player, PlayerFilterRequest, GameCharacter } from '../../core/api';
 import { AuthService, PlatformRole } from '../../core/auth';
+import { NotificationService, PageQuery, initQuery, pageOf, sortBy, turnPage } from '../../core/ui';
 import { PlayerStatsDialogComponent } from './player-stats-dialog.component';
 import { InventoryDialogComponent } from './inventory-dialog.component';
 import { firstValueFrom } from 'rxjs';
@@ -13,17 +16,28 @@ import { firstValueFrom } from 'rxjs';
 @Component({
     selector: 'app-player-list',
     standalone: true,
-    imports: [CommonModule, TableModule, ButtonModule, ToastModule, PlayerStatsDialogComponent, InventoryDialogComponent],
-    providers: [ConfirmationService, MessageService],
+    imports: [
+        CommonModule,
+        MatButtonModule,
+        MatIconModule,
+        MatPaginatorModule,
+        MatProgressBarModule,
+        MatSortModule,
+        MatTableModule,
+        PlayerStatsDialogComponent,
+        InventoryDialogComponent,
+    ],
     templateUrl: './player-list.component.html',
     styleUrl: './player-list.component.css'
 })
-export class PlayerListComponent {
+export class PlayerListComponent implements OnInit {
     private readonly playerService = inject(PlayerService);
-    private readonly messageService = inject(MessageService);
+    private readonly notifications = inject(NotificationService);
 
     /** Only `platform_admin` opens an inventory, because inventory refuses everyone else's. */
     readonly isAdmin = inject(AuthService).hasAnyRole([PlatformRole.PLATFORM_ADMIN]);
+
+    readonly columns = ['publicId', 'displayName', 'level', 'xp', 'actions'];
 
     players: Player[] = [];
     totalRecords = 0;
@@ -32,30 +46,39 @@ export class PlayerListComponent {
     selectedPlayer: Player | null = null;
     isInventoryVisible = false;
     inventoryCharacter: GameCharacter | null = null;
-    private lastEvent: TableLazyLoadEvent | null = null;
+    query: PageQuery = initQuery(20);
+    /** Only the newest load fills the table, so a slow answer for an old page never replaces the current one. */
+    private seq = 0;
 
-    async loadPlayers(event: TableLazyLoadEvent) {
-        this.lastEvent = event;
+    ngOnInit() {
+        void this.loadPlayers(this.query);
+    }
+
+    sortPlayers(sort: Sort) {
+        void this.loadPlayers(sortBy(this.query, sort));
+    }
+
+    pagePlayers(event: PageEvent) {
+        void this.loadPlayers(turnPage(this.query, event));
+    }
+
+    async loadPlayers(query: PageQuery) {
+        this.query = query;
+        const seq = ++this.seq;
         this.loading = true;
         try {
-            const page = event.first ? Math.floor(event.first / (event.rows || 20)) : 0;
             const filters: PlayerFilterRequest = {};
-
-            let sort: string | undefined;
-            if (event.sortField) {
-                const field = Array.isArray(event.sortField) ? event.sortField[0] : event.sortField;
-                const order = event.sortOrder === -1 ? 'desc' : 'asc';
-                sort = `${field},${order}`;
-            }
-
-            const res = await firstValueFrom(this.playerService.listPlayers(filters, page, event.rows || 20, sort));
+            const { page, size, sort } = pageOf(query);
+            const res = await firstValueFrom(this.playerService.listPlayers(filters, page, size, sort));
+            if (seq !== this.seq) return;
             this.players = res.content;
             this.totalRecords = res.page.totalElements;
         } catch (err) {
+            if (seq !== this.seq) return;
             console.error('Failed to load players:', err);
-            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load' });
+            this.notifications.error('Failed to load');
         } finally {
-            this.loading = false;
+            if (seq === this.seq) this.loading = false;
         }
     }
 
@@ -71,7 +94,7 @@ export class PlayerListComponent {
     }
 
     onSaved() {
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Stats updated' });
-        if (this.lastEvent) this.loadPlayers(this.lastEvent);
+        this.notifications.success('Stats updated');
+        void this.loadPlayers(this.query);
     }
 }

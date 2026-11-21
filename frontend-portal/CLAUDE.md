@@ -12,11 +12,15 @@ npx ng test --watch=false --browsers=ChromeHeadless     # headless run (CHROME_B
 
 ## Late answers
 
-A request can answer after a newer one, so every component drops answers for an old `session`, lets only the newest load fill the view, reloads after a change instead of patching, and stays `busy` until that reload ends. See ADR 0033.
+A request can answer after a newer one, so every component drops answers for an old `session`, lets only the newest load fill the view, and reloads after a change instead of patching. The change cover keeps the portal blocked until that reload ends (see Loading). See ADR 0033.
+
+## UI
+
+Components come from Angular Material. Its theme is `mat.theme` in `src/styles.scss`, built from `src/_theme-colors.scss`. A dialog is an `<ng-template [appDialog]>` in its own component, so the component outlives each opening. Toasts go through `NotificationService` and questions through `ConfirmService`, both in `core/ui`. Icons are PrimeIcons drawn by `<mat-icon fontIcon="pi-…" />`. A spec reads a dialog from `document`, because Material draws it in an overlay. See ADR 0036.
 
 ## Loading
 
-`loadingInterceptor` shows a bar for every API call, so a component adds nothing for it. A table or button waiting on its own call shows PrimeNG's `loading` too. While `busy`, a component disables and refuses the controls that start a change, and dims that area. Reads block nothing. See ADR 0034.
+`loadingInterceptor` shows a bar for every API call, so a component adds nothing for it. A table waiting on its own call shows a progress bar over it too, and a button a spinner in place of its icon. Every call but a GET or HEAD is a change, and from its start until no call is left, `ChangeBlockerComponent` covers the portal, dialogs included, and swallows Enter, Space and Escape. A component therefore needs no `busy` flag of its own, but each `save()` still refuses while saving. Reads block nothing. See ADR 0037.
 
 ## Runtime config
 

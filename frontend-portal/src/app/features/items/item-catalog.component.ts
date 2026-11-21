@@ -1,17 +1,17 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { TableLazyLoadEvent, TableModule } from 'primeng/table';
-import { ButtonModule } from 'primeng/button';
-import { TagModule } from 'primeng/tag';
-import { TabsModule } from 'primeng/tabs';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ToastModule } from 'primeng/toast';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSortModule, Sort } from '@angular/material/sort';
+import { MatTableModule } from '@angular/material/table';
+import { MatTabsModule } from '@angular/material/tabs';
 import { firstValueFrom } from 'rxjs';
 import { ItemCatalogService, ItemSetResponse, ItemTemplateResponse, Stats } from '../../core/api';
+import { ConfirmService, NotificationService, PageQuery, initQuery, pageOf, sortBy, turnPage } from '../../core/ui';
 import { ItemTemplateFormComponent } from './item-template-form.component';
 import { ItemSetFormComponent } from './item-set-form.component';
 import { problemDetail } from './problem-detail';
-import { pageOf } from './page-of';
 
 /** Enough for every set in one page, so the template form can offer them all. */
 const ALL_SETS = 200;
@@ -21,28 +21,31 @@ const ALL_SETS = 200;
   selector: 'app-item-catalog',
   standalone: true,
   imports: [
-    TableModule,
-    ButtonModule,
-    TagModule,
-    TabsModule,
-    ConfirmDialogModule,
-    ToastModule,
+    MatButtonModule,
+    MatIconModule,
+    MatPaginatorModule,
+    MatProgressBarModule,
+    MatSortModule,
+    MatTableModule,
+    MatTabsModule,
     ItemTemplateFormComponent,
     ItemSetFormComponent,
   ],
-  providers: [ConfirmationService, MessageService],
   templateUrl: './item-catalog.component.html',
   styleUrl: './items.css',
 })
 export class ItemCatalogComponent implements OnInit {
   private readonly catalog = inject(ItemCatalogService);
-  private readonly confirmationService = inject(ConfirmationService);
-  private readonly messageService = inject(MessageService);
+  private readonly confirm = inject(ConfirmService);
+  private readonly notifications = inject(NotificationService);
+
+  readonly templateColumns = ['icon', 'code', 'name', 'itemType', 'price', 'baseStats', 'set', 'status', 'actions'];
+  readonly setColumns = ['code', 'name', 'bonus', 'actions'];
 
   templates: ItemTemplateResponse[] = [];
   templateTotal = 0;
   templatesLoading = true;
-  private lastTemplateEvent: TableLazyLoadEvent | null = null;
+  templateQuery: PageQuery = initQuery(20, 'code', 'asc');
   /** Only the newest request fills a table, so a slow answer for an old page never replaces the current one. */
   private templateSeq = 0;
 
@@ -51,7 +54,7 @@ export class ItemCatalogComponent implements OnInit {
   setsLoading = true;
   /** Every set, for the template form and the Set column. */
   allSets: ItemSetResponse[] = [];
-  private lastSetEvent: TableLazyLoadEvent | null = null;
+  setQuery: PageQuery = initQuery(20, 'code', 'asc');
   private setSeq = 0;
 
   /** Icons whose image failed to load, shown as a generic one. */
@@ -64,14 +67,32 @@ export class ItemCatalogComponent implements OnInit {
 
   ngOnInit() {
     void this.loadAllSets();
+    void this.loadTemplates(this.templateQuery);
+    void this.loadSets(this.setQuery);
   }
 
-  async loadTemplates(event: TableLazyLoadEvent) {
-    this.lastTemplateEvent = event;
+  sortTemplates(sort: Sort) {
+    void this.loadTemplates(sortBy(this.templateQuery, sort));
+  }
+
+  pageTemplates(event: PageEvent) {
+    void this.loadTemplates(turnPage(this.templateQuery, event));
+  }
+
+  sortSets(sort: Sort) {
+    void this.loadSets(sortBy(this.setQuery, sort));
+  }
+
+  pageSets(event: PageEvent) {
+    void this.loadSets(turnPage(this.setQuery, event));
+  }
+
+  async loadTemplates(query: PageQuery) {
+    this.templateQuery = query;
     const seq = ++this.templateSeq;
     this.templatesLoading = true;
     try {
-      const { page, size, sort } = pageOf(event);
+      const { page, size, sort } = pageOf(query);
       const response = await firstValueFrom(this.catalog.listTemplates(page, size, sort));
       if (seq !== this.templateSeq) return;
       this.templates = response.content;
@@ -87,12 +108,12 @@ export class ItemCatalogComponent implements OnInit {
     }
   }
 
-  async loadSets(event: TableLazyLoadEvent) {
-    this.lastSetEvent = event;
+  async loadSets(query: PageQuery) {
+    this.setQuery = query;
     const seq = ++this.setSeq;
     this.setsLoading = true;
     try {
-      const { page, size, sort } = pageOf(event);
+      const { page, size, sort } = pageOf(query);
       const response = await firstValueFrom(this.catalog.listSets(page, size, sort));
       if (seq !== this.setSeq) return;
       this.sets = response.content;
@@ -133,40 +154,30 @@ export class ItemCatalogComponent implements OnInit {
   }
 
   onTemplateSaved() {
-    this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Template saved' });
-    this.reloadTemplates();
+    this.notifications.success('Template saved');
+    void this.loadTemplates(this.templateQuery);
   }
 
   onSetSaved() {
-    this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Item set saved' });
+    this.notifications.success('Item set saved');
     void this.loadAllSets();
-    if (this.lastSetEvent) {
-      void this.loadSets(this.lastSetEvent);
-    }
+    void this.loadSets(this.setQuery);
   }
 
-  confirmRetire(template: ItemTemplateResponse) {
-    this.confirmationService.confirm({
-      header: 'Retire template',
+  async confirmRetire(template: ItemTemplateResponse) {
+    const accepted = await this.confirm.ask({
+      title: 'Retire template',
       message: `Retire ${template.code}? It is never sold or granted again. Copies players own stay.`,
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Retire',
-      rejectLabel: 'Cancel',
-      accept: async () => {
-        try {
-          await firstValueFrom(this.catalog.retireTemplate(template.publicId));
-          this.messageService.add({ severity: 'success', summary: 'Retired', detail: `${template.code} is retired` });
-          this.reloadTemplates();
-        } catch (error) {
-          this.showError(error, 'Failed to retire the template');
-        }
-      },
+      accept: 'Retire',
+      reject: 'Cancel',
     });
-  }
-
-  private reloadTemplates() {
-    if (this.lastTemplateEvent) {
-      void this.loadTemplates(this.lastTemplateEvent);
+    if (!accepted) return;
+    try {
+      await firstValueFrom(this.catalog.retireTemplate(template.publicId));
+      this.notifications.success(`${template.code} is retired`);
+      void this.loadTemplates(this.templateQuery);
+    } catch (error) {
+      this.showError(error, 'Failed to retire the template');
     }
   }
 
@@ -180,6 +191,6 @@ export class ItemCatalogComponent implements OnInit {
 
   private showError(error: unknown, fallback: string) {
     console.error(fallback, error);
-    this.messageService.add({ severity: 'error', summary: 'Error', detail: problemDetail(error, fallback) });
+    this.notifications.error(problemDetail(error, fallback));
   }
 }

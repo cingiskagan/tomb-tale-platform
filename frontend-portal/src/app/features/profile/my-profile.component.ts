@@ -2,12 +2,14 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { PlayerService } from '../../core/api/player.service';
 import { Player } from '../../core/api/player.models';
-import { MessageService } from 'primeng/api';
-import { CardModule } from 'primeng/card';
-import { InputTextModule } from 'primeng/inputtext';
-import { ButtonModule } from 'primeng/button';
-import { ToastModule } from 'primeng/toast';
 import { CommonModule } from '@angular/common';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { NotificationService } from '../../core/ui';
 import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
@@ -16,12 +18,13 @@ import { HttpErrorResponse } from '@angular/common/http';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    CardModule,
-    InputTextModule,
-    ButtonModule,
-    ToastModule
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
   ],
-  providers: [MessageService],
   templateUrl: './my-profile.component.html',
   styleUrl: './my-profile.component.css'
 })
@@ -31,7 +34,7 @@ export class MyProfileComponent implements OnInit {
   isSaving = false;
 
   private readonly playerService = inject(PlayerService);
-  private readonly messageService = inject(MessageService);
+  private readonly notifications = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   constructor() {
@@ -54,13 +57,13 @@ export class MyProfileComponent implements OnInit {
       },
       error: (err) => {
         console.error('Failed to load profile:', err);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load profile' });
+        this.notifications.error('Failed to load profile');
       }
     });
   }
 
   onSubmit() {
-    if (this.profileForm.invalid) {
+    if (this.profileForm.invalid || this.isSaving) {
       return;
     }
 
@@ -73,16 +76,16 @@ export class MyProfileComponent implements OnInit {
       next: (updatedPlayer) => {
         this.player = updatedPlayer;
         this.profileForm.markAsPristine();
-        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Profile updated successfully' });
+        this.notifications.success('Profile updated successfully');
         this.isSaving = false;
       },
       error: (err: HttpErrorResponse) => {
         console.error('Failed to update profile:', err);
         this.isSaving = false;
         if (err.status === 409) {
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Display name is already taken' });
+          this.notifications.error('Display name is already taken');
         } else {
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update profile' });
+          this.notifications.error('Failed to update profile');
         }
       }
     });

@@ -1,28 +1,46 @@
 import { Component, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
-import { RouterOutlet, Router } from '@angular/router';
-import { MenubarModule } from 'primeng/menubar';
-import { ProgressBarModule } from 'primeng/progressbar';
-import { MenuItem } from 'primeng/api';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { AuthService, PlatformRole } from '../core/auth';
-import { LoadingService } from '../core/loading';
+import { ChangeBlockerComponent, LoadingService } from '../core/loading';
+
+/** A link in the top bar, shown only to the roles that may open its page. */
+interface NavItem {
+  label: string;
+  icon: string;
+  route: string;
+  visible: boolean;
+}
 
 /**
  * Main layout component for authenticated views.
  *
- * Provides a top navigation bar (Menubar) and an outlet for the nested routes.
+ * Provides a top navigation bar and an outlet for the nested routes.
  * Maintains the dark and gold (Cinzel) theme used by the platform.
  */
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [RouterOutlet, MenubarModule, ProgressBarModule, AsyncPipe],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    MatToolbarModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressBarModule,
+    AsyncPipe,
+    ChangeBlockerComponent,
+  ],
   templateUrl: './main-layout.component.html',
-  styleUrl: './main-layout.component.css'
+  styleUrl: './main-layout.component.css',
 })
 export class MainLayoutComponent {
   private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
 
   /** A thin bar on top of everything while any API call is in flight (ADR 0034). */
   readonly loading$ = inject(LoadingService).loading$;
@@ -35,50 +53,41 @@ export class MainLayoutComponent {
 
   readonly username: string;
 
-  items: MenuItem[] = [
-    {
-      label: 'Dashboard',
-      icon: 'pi pi-home',
-      command: () => this.router.navigate(['/dashboard']),
-    },
+  readonly items: NavItem[] = [
+    { label: 'Dashboard', icon: 'pi-home', route: '/dashboard', visible: true },
     {
       label: 'Purchases',
-      icon: 'pi pi-shopping-cart',
+      icon: 'pi-shopping-cart',
+      route: '/purchases',
       visible: this.authService.hasAnyRole(MainLayoutComponent.ADMIN_ROLES),
-      command: () => this.router.navigate(['/purchases']),
     },
     {
       label: 'Players',
-      icon: 'pi pi-user',
+      icon: 'pi-user',
+      route: '/players',
       visible: this.authService.hasAnyRole(MainLayoutComponent.ADMIN_ROLES),
-      command: () => this.router.navigate(['/players']),
     },
     {
       label: 'Items',
-      icon: 'pi pi-box',
+      icon: 'pi-box',
+      route: '/items',
       visible: this.authService.hasAnyRole([PlatformRole.PLATFORM_ADMIN]),
-      command: () => this.router.navigate(['/items']),
     },
     {
       label: 'Dealers',
-      icon: 'pi pi-shop',
+      icon: 'pi-shop',
+      route: '/dealers',
       visible: this.authService.hasAnyRole([PlatformRole.PLATFORM_ADMIN]),
-      command: () => this.router.navigate(['/dealers']),
     },
-    {
-      label: 'My Profile',
-      icon: 'pi pi-id-card',
-      command: () => this.router.navigate(['/profile']),
-    },
-    {
-      label: 'Logout',
-      icon: 'pi pi-sign-out',
-      command: () => this.authService.logout(),
-    },
-  ];
+    { label: 'My Profile', icon: 'pi-id-card', route: '/profile', visible: true },
+  ].filter((item) => item.visible);
 
   constructor() {
     const profile = this.authService.getUserProfile();
     this.username = profile?.preferred_username || profile?.name || 'Adventurer';
+  }
+
+  logout() {
+    this.authService.logout();
   }
 }

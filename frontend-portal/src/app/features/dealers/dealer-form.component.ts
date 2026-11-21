@@ -1,19 +1,31 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { DialogModule } from 'primeng/dialog';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { firstValueFrom } from 'rxjs';
 import { DealerResponse, DealerService } from '../../core/api';
+import { DialogDirective } from '../../core/ui';
 import { problemDetail } from '../items/problem-detail';
 
 /** Creates a dealer, or renames one. A 409 on an edit reloads what someone else saved. */
 @Component({
   selector: 'app-dealer-form',
   standalone: true,
-  imports: [ReactiveFormsModule, DialogModule, ButtonModule, InputTextModule, MessageModule],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    DialogDirective,
+  ],
   templateUrl: './dealer-form.component.html',
   styleUrl: './dealers.css',
 })
@@ -90,7 +102,7 @@ export class DealerFormComponent {
   }
 
   async save() {
-    if (this.form.invalid || !this.loaded) return;
+    if (this.form.invalid || !this.loaded || this.saving) return;
     const session = this.session;
     this.saving = true;
     this.notice = null;

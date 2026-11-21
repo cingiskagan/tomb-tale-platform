@@ -1,114 +1,129 @@
 <div class="purchase-container">
   <div class="header-actions">
     <h2 class="page-title">Purchases</h2>
-    <p-button
-      label="New Purchase"
-      icon="pi pi-plus"
-      (onClick)="openNewPurchase()"
-    />
+    <button mat-flat-button type="button" (click)="openNewPurchase()">
+      <mat-icon fontIcon="pi-plus" />
+      New Purchase
+    </button>
   </div>
 
-  <p-table
-    #dt
-    [value]="purchases"
-    [lazy]="true"
-    (onLazyLoad)="loadPurchases($event)"
-    [tableStyle]="{ 'min-width': '75rem' }"
-    [paginator]="true"
-    [rows]="20"
-    [totalRecords]="totalRecords"
-    [loading]="loading"
-    styleClass="p-datatable-sm purchase-table"
-    [showCurrentPageReport]="true"
-    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
-    [rowsPerPageOptions]="[10, 20, 50]"
-  >
-    <ng-template pTemplate="header">
-      <tr>
-        <th scope="col">ID</th>
-        <th scope="col" pSortableColumn="playerId">Player ID <p-sortIcon field="playerId" /></th>
-        <th scope="col" pSortableColumn="itemCode">Item Code <p-sortIcon field="itemCode" /></th>
-        <th scope="col">Quantity</th>
-        <th scope="col">Unit Price</th>
-        <th scope="col">Total Price</th>
-        <th scope="col" pSortableColumn="status">Status <p-sortIcon field="status" /></th>
-        <th scope="col" pSortableColumn="createdAt">Date <p-sortIcon field="createdAt" /></th>
-        <th scope="col">Actions</th>
-      </tr>
-      <tr>
-        <th scope="col"></th>
-        <th scope="col">
-          <p-columnFilter type="text" field="playerId" placeholder="Search Player" [showMenu]="false" />
-        </th>
-        <th scope="col">
-          <p-columnFilter type="text" field="itemCode" placeholder="Search Item" [showMenu]="false" />
-        </th>
-        <th scope="col"></th>
-        <th scope="col"></th>
-        <th scope="col"></th>
-        <th scope="col"></th>
-        <th scope="col"></th>
-        <th scope="col"></th>
-      </tr>
-    </ng-template>
+  <form class="filters" [formGroup]="filters">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Search Player</mat-label>
+      <input matInput formControlName="playerId" />
+    </mat-form-field>
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Search Item</mat-label>
+      <input matInput formControlName="itemCode" />
+    </mat-form-field>
+  </form>
 
-    <ng-template pTemplate="body" let-purchase>
-      <tr>
-        <td [title]="purchase.publicId">{{ purchase.publicId | slice:0:8 }}...</td>
-        <td>{{ purchase.playerId }}</td>
-        <td>{{ purchase.itemCode }}</td>
-        <td>{{ purchase.quantity }}</td>
-        <td>{{ purchase.unitPrice | currency }}</td>
-        <td>{{ purchase.totalPrice | currency }}</td>
-        <td>
-          <p-tag
-            [value]="purchase.status"
-            [severity]="getStatusSeverity(purchase.status)"
-          />
+  <div class="tt-table">
+    @if (loading) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+    <table
+      mat-table
+      class="purchase-table"
+      [dataSource]="purchases"
+      matSort
+      matSortDisableClear
+      [matSortActive]="query.sort.active"
+      [matSortDirection]="query.sort.direction"
+      (matSortChange)="sortPurchases($event)"
+    >
+      <ng-container matColumnDef="publicId">
+        <th mat-header-cell *matHeaderCellDef scope="col">ID</th>
+        <td mat-cell *matCellDef="let purchase" [title]="purchase.publicId">{{ purchase.publicId | slice: 0 : 8 }}...</td>
+      </ng-container>
+
+      <ng-container matColumnDef="playerId">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Player ID</th>
+        <td mat-cell *matCellDef="let purchase">{{ purchase.playerId }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="itemCode">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Item Code</th>
+        <td mat-cell *matCellDef="let purchase">{{ purchase.itemCode }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="quantity">
+        <th mat-header-cell *matHeaderCellDef scope="col">Quantity</th>
+        <td mat-cell *matCellDef="let purchase">{{ purchase.quantity }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="unitPrice">
+        <th mat-header-cell *matHeaderCellDef scope="col">Unit Price</th>
+        <td mat-cell *matCellDef="let purchase">{{ purchase.unitPrice | currency }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="totalPrice">
+        <th mat-header-cell *matHeaderCellDef scope="col">Total Price</th>
+        <td mat-cell *matCellDef="let purchase">{{ purchase.totalPrice | currency }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Status</th>
+        <td mat-cell *matCellDef="let purchase">
+          <span class="tt-tag" [ngClass]="'tt-tag-' + getStatusSeverity(purchase.status)">{{ purchase.status }}</span>
           @if (purchase.cancellationReason) {
-            <div class="text-xs text-gray-500 mt-1">{{ purchase.cancellationReason }}</div>
+            <div class="cancellation-reason">{{ purchase.cancellationReason }}</div>
           }
         </td>
-        <td>{{ purchase.createdAt | date:'short' }}</td>
-        <td>
-          <p-button
-            aria-label="Edit"
-            icon="pi pi-pencil"
-            [rounded]="true"
-            [text]="true"
-            severity="success"
-            [disabled]="isPending(purchase.status)"
-            (onClick)="openEditPurchase(purchase.publicId)"
-          />
-          <p-button
-            aria-label="Delete"
-            icon="pi pi-trash"
-            [rounded]="true"
-            [text]="true"
-            severity="danger"
-            [disabled]="isPending(purchase.status)"
-            (onClick)="confirmDelete(purchase.publicId)"
-          />
-        </td>
-      </tr>
-    </ng-template>
+      </ng-container>
 
-    <ng-template pTemplate="emptymessage">
-      <tr>
-        <td colspan="9" class="text-center p-4 text-gray-500">
+      <ng-container matColumnDef="createdAt">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Date</th>
+        <td mat-cell *matCellDef="let purchase">{{ purchase.createdAt | date: 'short' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef scope="col">Actions</th>
+        <td mat-cell *matCellDef="let purchase">
+          <button
+            mat-icon-button
+            type="button"
+            class="tt-action-success"
+            aria-label="Edit"
+            [disabled]="isPending(purchase.status)"
+            (click)="openEditPurchase(purchase.publicId)"
+          >
+            <mat-icon fontIcon="pi-pencil" />
+          </button>
+          <button
+            mat-icon-button
+            type="button"
+            class="tt-action-danger"
+            aria-label="Delete"
+            [disabled]="isPending(purchase.status)"
+            (click)="confirmDelete(purchase.publicId)"
+          >
+            <mat-icon fontIcon="pi-trash" />
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns"></tr>
+      <tr mat-row *matRowDef="let purchase; columns: columns"></tr>
+      <tr class="mat-mdc-row" *matNoDataRow>
+        <td class="mat-mdc-cell empty" [attr.colspan]="columns.length">
           No purchases found. Use the filters or create a new purchase.
         </td>
       </tr>
-    </ng-template>
-  </p-table>
+    </table>
+  </div>
+  <mat-paginator
+    [length]="totalRecords"
+    [pageIndex]="query.page"
+    [pageSize]="query.size"
+    [pageSizeOptions]="[10, 20, 50]"
+    showFirstLastButtons
+    (page)="pagePurchases($event)"
+  />
 </div>
 
-<!-- Create / Edit Dialog Component -->
 <app-purchase-form
   [(visible)]="isFormDialogVisible"
   [purchasePublicId]="selectedPurchasePublicId"
   (saved)="onFormSaved()"
 />
-
-<p-confirmDialog [style]="{width: '450px'}" />
-<p-toast />

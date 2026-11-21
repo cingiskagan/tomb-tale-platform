@@ -1,12 +1,16 @@
 import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { DialogModule } from 'primeng/dialog';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { SelectModule } from 'primeng/select';
+import { AbstractControl, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 import { PurchaseService, PurchaseStatus } from '../../core/api';
+import { DialogDirective } from '../../core/ui';
+import { centsOnly } from './cents-only';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
@@ -15,17 +19,21 @@ import { firstValueFrom } from 'rxjs';
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    DialogModule,
-    ButtonModule,
-    InputTextModule,
-    InputNumberModule,
-    SelectModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    DialogDirective,
   ],
   templateUrl: './purchase-form.component.html',
-  styleUrl: './purchase-form.component.css'
 })
 export class PurchaseFormComponent implements OnInit {
   private loadRequestSeq = 0;
+  /** Moves when the dialog closes, so a save from an earlier opening never closes the next one. */
+  private session = 0;
   private readonly fb = inject(FormBuilder);
   private readonly purchaseService = inject(PurchaseService);
 
@@ -76,7 +84,11 @@ export class PurchaseFormComponent implements OnInit {
       playerId: ['', Validators.required],
       itemCode: ['', Validators.required],
       quantity: [1, [Validators.required, Validators.min(1)]],
-      unitPrice: [0, [Validators.required, Validators.min(0)]],
+      // An existing purchase keeps the price it has, since the form sends only its status.
+      unitPrice: [
+        0,
+        [Validators.required, Validators.min(0), (control: AbstractControl) => (this.isEditMode ? null : centsOnly(control))],
+      ],
       status: [PurchaseStatus.PENDING],
     });
   }
@@ -112,14 +124,17 @@ export class PurchaseFormComponent implements OnInit {
 
   close() {
     this.loadRequestSeq++;
+    this.session++;
+    this.isSaving = false;
     this.visible = false;
     this.visibleChange.emit(this.visible);
     this.form.reset({ quantity: 1, unitPrice: 0, status: PurchaseStatus.PENDING });
   }
 
   async save() {
-    if (this.form.invalid) return;
+    if (this.form.invalid || this.isSaving) return;
 
+    const session = this.session;
     this.isSaving = true;
     try {
       const val = this.form.getRawValue();
@@ -137,13 +152,14 @@ export class PurchaseFormComponent implements OnInit {
         }));
       }
 
+      // The page still refreshes its table, but a save from an earlier opening leaves the open one alone.
       this.saved.emit();
-      this.close();
+      if (session === this.session) this.close();
     } catch (error) {
       console.error('Failed to save purchase', error);
       // In a real app we would show a toast here.
     } finally {
-      this.isSaving = false;
+      if (session === this.session) this.isSaving = false;
     }
   }
 }

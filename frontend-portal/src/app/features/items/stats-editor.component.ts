@@ -1,8 +1,10 @@
 import { Component, Input } from '@angular/core';
 import { FormArray, ReactiveFormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { SelectModule } from 'primeng/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { STATS } from '../../core/api';
 import { StatRow, statRow } from './stats-form';
 
@@ -10,7 +12,7 @@ import { StatRow, statRow } from './stats-form';
 @Component({
   selector: 'app-stats-editor',
   standalone: true,
-  imports: [ReactiveFormsModule, ButtonModule, InputNumberModule, SelectModule],
+  imports: [ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule],
   templateUrl: './stats-editor.component.html',
   styleUrl: './items.css',
 })
