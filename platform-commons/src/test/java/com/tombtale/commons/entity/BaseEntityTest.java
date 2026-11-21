@@ -79,6 +79,15 @@ class BaseEntityTest {
         assertThat(set).contains(entity);
     }
 
+    /** A builder that prints an entity field now shows which entity, not Object's hash. */
+    @Test
+    @DisplayName("toString names the class and the publicId")
+    void printsClassAndPublicId() {
+        FixtureEntity entity = new FixtureEntity();
+
+        assertThat(entity).hasToString("FixtureEntity[publicId=" + entity.getPublicId() + "]");
+    }
+
     // An uninitialised Hibernate proxy reads its own null field in both methods
     // below, so the guards are live code rather than defensive padding.
 

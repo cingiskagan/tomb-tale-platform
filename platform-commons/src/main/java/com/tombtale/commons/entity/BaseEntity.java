@@ -121,4 +121,13 @@ public abstract class BaseEntity {
     public final int hashCode() {
         return publicId == null ? 0 : publicId.hashCode();
     }
+
+    /**
+     * The class and {@code publicId}, never a relation. Final, so a proxy prints its own
+     * null field rather than loading the row.
+     */
+    @Override
+    public final String toString() {
+        return getClass().getSimpleName() + "[publicId=" + publicId + "]";
+    }
 }
