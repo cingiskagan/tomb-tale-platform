@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
@@ -32,6 +32,7 @@ const ALL_SETS = 200;
     ItemSetFormComponent,
   ],
   templateUrl: './item-catalog.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './items.css',
 })
 export class ItemCatalogComponent implements OnInit {

@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { FormArray, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,6 +14,7 @@ import { StatRow, statRow } from './stats-form';
   standalone: true,
   imports: [ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, MatSelectModule],
   templateUrl: './stats-editor.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './items.css',
 })
 export class StatsEditorComponent {

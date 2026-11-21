@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { MatDialog } from '@angular/material/dialog';
@@ -7,6 +7,7 @@ import { DialogDirective } from './dialog.directive';
 @Component({
   standalone: true,
   imports: [DialogDirective],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <ng-template [appDialog]="open" appDialogWidth="20rem" (appDialogDismissed)="dismissed = dismissed + 1">
       <p class="body">Hello {{ name }}</p>

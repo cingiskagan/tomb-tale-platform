@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth';
 
@@ -11,6 +11,7 @@ import { AuthService } from './core/auth';
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: '<router-outlet />',
 })
 export class App implements OnInit {

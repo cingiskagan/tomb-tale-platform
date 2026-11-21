@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -30,6 +30,7 @@ import { problemDetail } from './problem-detail';
     StatsEditorComponent,
   ],
   templateUrl: './item-set-form.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './items.css',
 })
 export class ItemSetFormComponent {

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { PlayerService } from '../../core/api/player.service';
 import { Player } from '../../core/api/player.models';
@@ -26,6 +26,7 @@ import { HttpErrorResponse } from '@angular/common/http';
     MatProgressSpinnerModule,
   ],
   templateUrl: './my-profile.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './my-profile.component.css'
 })
 export class MyProfileComponent implements OnInit {

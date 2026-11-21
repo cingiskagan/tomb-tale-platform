@@ -31,6 +31,8 @@ module.exports = defineConfig([
           style: "kebab-case",
         },
       ],
+      // Components mutate plain fields from async callbacks, so they stay Eager until they move to signals.
+      "@angular-eslint/prefer-on-push-component-change-detection": "off",
     },
   },
   {

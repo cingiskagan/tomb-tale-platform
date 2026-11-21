@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -37,6 +37,7 @@ const MAX_PRICE = 1_000_000_000;
     StatsEditorComponent,
   ],
   templateUrl: './item-template-form.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './items.css',
 })
 export class ItemTemplateFormComponent {

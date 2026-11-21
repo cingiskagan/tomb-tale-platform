@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -43,6 +43,7 @@ import { CustomEntryFormComponent, RARITY_OPTIONS } from './custom-entry-form.co
     CustomEntryFormComponent,
   ],
   templateUrl: './stand-editor.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './dealers.css',
 })
 export class StandEditorComponent {

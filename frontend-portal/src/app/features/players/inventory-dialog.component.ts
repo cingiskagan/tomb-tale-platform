@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -58,6 +58,7 @@ export const SLOTS: readonly { slot: EquipmentSlot; label: string }[] = [
     NgTemplateOutlet,
   ],
   templateUrl: './inventory-dialog.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './inventory-dialog.component.css',
 })
 export class InventoryDialogComponent {

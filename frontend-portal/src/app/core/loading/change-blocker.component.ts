@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject } from '@angular/core';
+import { Component, DestroyRef, inject, ChangeDetectionStrategy } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LoadingService } from './loading.service';
@@ -18,6 +18,7 @@ const BLOCKED_KEYS = new Set(['Enter', ' ', 'Escape']);
       <div class="change-blocker" aria-hidden="true"></div>
     }
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: `
     /* Above Material's overlays at 1000, below the loading bar at 2000. It dims only if the wait is long enough to see. */
     .change-blocker {
