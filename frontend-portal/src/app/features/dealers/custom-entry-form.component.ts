@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -31,6 +31,7 @@ export const RARITY_OPTIONS = Object.values(Rarity).map((rarity) => ({ label: ra
     StatsEditorComponent,
   ],
   templateUrl: './custom-entry-form.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './dealers.css',
 })
 export class CustomEntryFormComponent {

@@ -121,4 +121,13 @@ public abstract class BaseEntity {
     public final int hashCode() {
         return publicId == null ? 0 : publicId.hashCode();
     }
+
+    /**
+     * The class and {@code publicId}, never a relation. Not final, so a proxy hands the call to
+     * its row: the proxy's own {@code publicId} is a random one from the constructor.
+     */
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[publicId=" + publicId + "]";
+    }
 }

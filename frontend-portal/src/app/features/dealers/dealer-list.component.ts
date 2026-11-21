@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
@@ -27,6 +27,7 @@ import { StandEditorComponent } from './stand-editor.component';
     StandEditorComponent,
   ],
   templateUrl: './dealer-list.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './dealers.css',
 })
 export class DealerListComponent implements OnInit {

@@ -1,5 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Input, OnInit, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 import { AbstractControl, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -17,7 +16,6 @@ import { firstValueFrom } from 'rxjs';
   selector: 'app-purchase-form',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatButtonModule,
     MatDialogModule,
@@ -28,6 +26,7 @@ import { firstValueFrom } from 'rxjs';
     MatSelectModule,
     DialogDirective,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './purchase-form.component.html',
 })
 export class PurchaseFormComponent implements OnInit {

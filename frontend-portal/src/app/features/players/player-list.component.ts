@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -28,6 +28,7 @@ import { firstValueFrom } from 'rxjs';
         InventoryDialogComponent,
     ],
     templateUrl: './player-list.component.html',
+    changeDetection: ChangeDetectionStrategy.Eager,
     styleUrl: './player-list.component.css'
 })
 export class PlayerListComponent implements OnInit {

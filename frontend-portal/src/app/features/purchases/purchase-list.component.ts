@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -35,6 +35,7 @@ const FILTER_DELAY_MS = 300;
     PurchaseFormComponent,
   ],
   templateUrl: './purchase-list.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './purchase-list.component.css'
 })
 export class PurchaseListComponent implements OnInit {

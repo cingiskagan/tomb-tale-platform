@@ -5,6 +5,7 @@ import com.tombtale.serviceinventory.entity.ItemTemplate;
 import com.tombtale.serviceinventory.support.ItemTemplates;
 import com.tombtale.serviceinventory.support.FixedAuthorTestBase;
 
+import org.hibernate.Hibernate;
 import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +52,18 @@ class ItemTemplateRepositoryTest extends FixedAuthorTestBase {
         assertThatThrownBy(() -> persist(aTemplate(SWORD_IRON, 0)))
                 .isInstanceOf(ConstraintViolationException.class)
                 .hasMessageContaining("ck_item_templates_max_stack_size");
+    }
+
+    /** An unloaded proxy prints its row's publicId, not the random one its constructor made. */
+    @Test
+    void aProxyPrintsItsRowsPublicId() {
+        ItemTemplate template = aTemplate(SWORD_IRON, 1);
+        persist(template);
+
+        ItemTemplate proxy = entityManager.getEntityManager().getReference(ItemTemplate.class, template.getId());
+
+        assertThat(Hibernate.isInitialized(proxy)).isFalse();
+        assertThat(proxy).hasToString("ItemTemplate[publicId=" + template.getPublicId() + "]");
     }
 
     private static ItemTemplate aTemplate(String code, int maxStackSize) {
