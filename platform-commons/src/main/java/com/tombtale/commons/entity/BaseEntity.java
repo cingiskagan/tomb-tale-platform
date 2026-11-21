@@ -96,7 +96,8 @@ public abstract class BaseEntity {
      *
      * <p>Compared with {@code instanceof} rather than {@code getClass()},
      * because a lazily loaded entity is a proxy subclass and would otherwise
-     * never equal the entity it stands for.
+     * never equal the entity it stands for. Both sides go through the getter:
+     * a proxy's own field holds a random UUID from the constructor.
      *
      * @param other the object to compare with
      * @return true when both are entities sharing one {@code publicId}
@@ -109,17 +110,19 @@ public abstract class BaseEntity {
         if (!(other instanceof BaseEntity that)) {
             return false;
         }
-        return publicId != null && publicId.equals(that.getPublicId());
+        UUID mine = getPublicId();
+        return mine != null && mine.equals(that.getPublicId());
     }
 
     /**
-     * Hashes the {@code publicId}, which is fixed for the life of the object.
+     * Hashes the {@code publicId}, read through the getter as {@link #equals} does.
      *
      * @return the hash code of this entity
      */
     @Override
     public final int hashCode() {
-        return publicId == null ? 0 : publicId.hashCode();
+        UUID mine = getPublicId();
+        return mine == null ? 0 : mine.hashCode();
     }
 
     /**

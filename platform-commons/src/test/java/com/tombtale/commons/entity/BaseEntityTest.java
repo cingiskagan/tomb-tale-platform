@@ -88,9 +88,6 @@ class BaseEntityTest {
         assertThat(entity).hasToString("FixtureEntity[publicId=" + entity.getPublicId() + "]");
     }
 
-    // An uninitialised Hibernate proxy reads its own null field in both methods
-    // below, so the guards are live code rather than defensive padding.
-
     @Test
     @DisplayName("an entity without a publicId hashes to zero")
     void hashesToZeroWithoutAPublicId() {

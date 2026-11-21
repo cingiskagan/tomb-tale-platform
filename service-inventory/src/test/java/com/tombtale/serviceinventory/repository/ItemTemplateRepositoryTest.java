@@ -66,6 +66,18 @@ class ItemTemplateRepositoryTest extends FixedAuthorTestBase {
         assertThat(proxy).hasToString("ItemTemplate[publicId=" + template.getPublicId() + "]");
     }
 
+    /** A proxy and another copy of its row are equal both ways and hash alike, so a Set finds either. */
+    @Test
+    void aProxyAndItsRowAreEqualBothWays() {
+        ItemTemplate template = aTemplate(SWORD_IRON, 1);
+        persist(template);
+
+        ItemTemplate proxy = entityManager.getEntityManager().getReference(ItemTemplate.class, template.getId());
+
+        assertThat(proxy).isEqualTo(template).hasSameHashCodeAs(template);
+        assertThat(template).isEqualTo(proxy);
+    }
+
     private static ItemTemplate aTemplate(String code, int maxStackSize) {
         return ItemTemplates.aTemplate(code).maxStackSize(maxStackSize).build();
     }
