@@ -14,9 +14,9 @@ We will show and block in three layers, replacing 0034:
 
 - The loading interceptor counts the API calls in flight, and the layout shows a thin bar.
 - A table waiting on its own call shows a progress bar, and a button a spinner for its icon.
-- Every call but a GET is a change. Until a tick passes with no call in flight, a cover over
-  the portal and its dialogs takes clicks and swallows Enter, Space and Escape, so the
-  reload a change starts as it answers is covered too. Reads cover nothing.
+- Every call but a read (GET, HEAD) is a change. Until a tick passes with no call in flight,
+  a cover over the portal and its dialogs takes clicks and swallows Enter, Space and Escape,
+  so the reload a change starts as it answers is covered too. Reads cover nothing.
 - Each `save()` still refuses while saving. The stand editor and inventory keep their `busy`.
 
 ## Consequences

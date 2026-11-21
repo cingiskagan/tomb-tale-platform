@@ -20,7 +20,7 @@ export class LoadingService {
   /** True from the moment a change starts until a tick passes with no call in flight. */
   readonly blocking$: Observable<boolean> = this.changing.pipe(distinctUntilChanged());
 
-  /** @param change whether the call changes something, which a GET never does */
+  /** @param change whether the call changes something, which a read (GET, HEAD) never does */
   start(change: boolean) {
     if (change) this.changing.next(true);
     this.calls.next(this.calls.value + 1);

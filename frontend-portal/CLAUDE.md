@@ -12,7 +12,7 @@ npx ng test --watch=false --browsers=ChromeHeadless     # headless run (CHROME_B
 
 ## Late answers
 
-A request can answer after a newer one, so every component drops answers for an old `session`, lets only the newest load fill the view, reloads after a change instead of patching, and stays `busy` until that reload ends. See ADR 0033.
+A request can answer after a newer one, so every component drops answers for an old `session`, lets only the newest load fill the view, and reloads after a change instead of patching. The change cover keeps the portal blocked until that reload ends (see Loading). See ADR 0033.
 
 ## UI
 
@@ -20,7 +20,7 @@ Components come from Angular Material. Its theme is `mat.theme` in `src/styles.s
 
 ## Loading
 
-`loadingInterceptor` shows a bar for every API call, so a component adds nothing for it. A table waiting on its own call shows a progress bar over it too, and a button a spinner in place of its icon. Every call but a GET is a change, and from its start until no call is left, `ChangeBlockerComponent` covers the portal, dialogs included, and swallows Enter, Space and Escape. A component therefore needs no `busy` flag of its own, but each `save()` still refuses while saving. Reads block nothing. See ADR 0037.
+`loadingInterceptor` shows a bar for every API call, so a component adds nothing for it. A table waiting on its own call shows a progress bar over it too, and a button a spinner in place of its icon. Every call but a GET or HEAD is a change, and from its start until no call is left, `ChangeBlockerComponent` covers the portal, dialogs included, and swallows Enter, Space and Escape. A component therefore needs no `busy` flag of its own, but each `save()` still refuses while saving. Reads block nothing. See ADR 0037.
 
 ## Runtime config
 
