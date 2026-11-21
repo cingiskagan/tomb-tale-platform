@@ -123,11 +123,11 @@ public abstract class BaseEntity {
     }
 
     /**
-     * The class and {@code publicId}, never a relation. Final, so a proxy prints its own
-     * null field rather than loading the row.
+     * The class and {@code publicId}, never a relation. Not final, so a proxy hands the call to
+     * its row: the proxy's own {@code publicId} is a random one from the constructor.
      */
     @Override
-    public final String toString() {
+    public String toString() {
         return getClass().getSimpleName() + "[publicId=" + publicId + "]";
     }
 }
