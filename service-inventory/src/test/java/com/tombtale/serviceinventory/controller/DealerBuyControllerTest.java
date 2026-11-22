@@ -67,6 +67,9 @@ class DealerBuyControllerTest extends FixedAuthorTestBase {
     private static final List<BonusLine> CUSTOM_BONUS =
             List.of(new BonusLine(Stat.FIRE_DAMAGE, 40), new BonusLine(Stat.FIRE_DAMAGE, 40));
     private static final Duration LOCK_TIME = Duration.ofMinutes(2);
+    private static final int FREE_CELL = 5;
+    /** {@code inventory.bag-cells} in application-test.yml. */
+    private static final int BAG_CELLS = 40;
 
     @Autowired
     private MockMvc mockMvc;
@@ -151,6 +154,34 @@ class DealerBuyControllerTest extends FixedAuthorTestBase {
 
         assertThat(boughtSwords()).singleElement()
                 .satisfies(bought -> assertThat(bought.getBonus()).isEqualTo(CUSTOM_BONUS));
+    }
+
+    /** The ring takes only cell 0, so the cell the copy was dropped on is free. */
+    @Test
+    void aBuyPutsTheCopyInTheFreeCellItWasDroppedOn() throws Exception {
+        buy(UUID.randomUUID(), blueSword, BLUE_SWORD_PRICE, FREE_CELL, ownersToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.bag[1].code").value("SWORD_IRON"))
+                .andExpect(jsonPath("$.bag[1].bagPosition").value(FREE_CELL));
+    }
+
+    /** Dropped on the ring's cell, the copy goes to the lowest free cell instead. */
+    @Test
+    void aBuyDroppedOnATakenCellGoesToTheLowestFreeCell() throws Exception {
+        buy(UUID.randomUUID(), blueSword, BLUE_SWORD_PRICE, 0, ownersToken())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.bag[0].code").value("RING_IRON"))
+                .andExpect(jsonPath("$.bag[1].bagPosition").value(1));
+    }
+
+    /** The cell after the test bag's last answers 400 before anything is charged. */
+    @Test
+    void aBuyDroppedOutsideTheBagAnswers400AndChargesNothing() throws Exception {
+        buy(UUID.randomUUID(), blueSword, BLUE_SWORD_PRICE, BAG_CELLS, ownersToken())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath(PROBLEM_TITLE).value("Cell Outside Bag"));
+
+        assertNothingChanged();
     }
 
     @Test
@@ -264,12 +295,17 @@ class DealerBuyControllerTest extends FixedAuthorTestBase {
 
     private ResultActions buy(UUID tradeId, StandEntry entry, long price, JwtRequestPostProcessor token)
             throws Exception {
+        return buy(tradeId, entry, price, null, token);
+    }
+
+    private ResultActions buy(UUID tradeId, StandEntry entry, long price, Integer cell, JwtRequestPostProcessor token)
+            throws Exception {
         return mockMvc.perform(post(buysUrl())
                 .with(token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"tradeId": "%s", "entryId": "%s", "price": %d}
-                        """.formatted(tradeId, entry.getPublicId(), price)));
+                        {"tradeId": "%s", "entryId": "%s", "price": %d, "cell": %s}
+                        """.formatted(tradeId, entry.getPublicId(), price, cell)));
     }
 
     private String buysUrl() {

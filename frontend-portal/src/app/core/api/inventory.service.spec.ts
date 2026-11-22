@@ -37,10 +37,10 @@ describe('InventoryService', () => {
     request.flush({});
   });
 
-  it('empties a slot with a delete', () => {
-    service.unequip('c-1', EquipmentSlot.RING_2).subscribe();
+  it('empties a slot with a delete that names the cell the item was dropped on', () => {
+    service.unequip('c-1', EquipmentSlot.RING_2, 7).subscribe();
 
-    expect(http.expectOne(`${CHARACTER}/equipment/RING_2`).request.method).toBe('DELETE');
+    expect(http.expectOne(`${CHARACTER}/equipment/RING_2?cell=7`).request.method).toBe('DELETE');
   });
 
   it('moves the item the body names to the cell the path names', () => {
@@ -51,12 +51,12 @@ describe('InventoryService', () => {
     expect(request.request.body).toEqual({ itemId: 'i-1' });
   });
 
-  it('buys with the trade id, the stand entry and the price the admin saw', () => {
-    service.buy('c-1', 'trade-1', 'e-1', 1350).subscribe();
+  it('buys with the trade id, the stand entry, the price the admin saw and the cell it was dropped on', () => {
+    service.buy('c-1', 'trade-1', 'e-1', 1350, 4).subscribe();
 
     const request = http.expectOne(`${CHARACTER}/dealer-buys`);
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ tradeId: 'trade-1', entryId: 'e-1', price: 1350 });
+    expect(request.request.body).toEqual({ tradeId: 'trade-1', entryId: 'e-1', price: 1350, cell: 4 });
   });
 
   it('sells a bag item with the trade id', () => {

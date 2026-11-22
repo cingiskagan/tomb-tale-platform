@@ -194,7 +194,7 @@ class CharacterLockTest extends FixedAuthorTestBase {
 
     private CharacterInventoryResponse buy(StandEntry entry) {
         return dealerTradeService.buy(character.getPublicId(),
-                new DealerBuyRequest(UUID.randomUUID(), entry.getPublicId(), SWORD_PRICE), ADMIN);
+                new DealerBuyRequest(UUID.randomUUID(), entry.getPublicId(), SWORD_PRICE, null), ADMIN);
     }
 
     private ItemInstance aHelmetInCell(ItemTemplate helmet, int cell) {

@@ -11,6 +11,7 @@ import java.util.UUID;
  * @param tradeId a new id the client makes for each buy
  * @param entryId the stand entry to buy a copy of
  * @param price   the price the player saw. If the stand's price changed since, the buy answers 409
+ * @param cell    the cell the copy was dropped on, or null. A taken cell, or none, means the lowest free cell
  */
 public record DealerBuyRequest(
         @NotNull(message = "tradeId is required")
@@ -21,6 +22,9 @@ public record DealerBuyRequest(
 
         @NotNull(message = "price is required")
         @PositiveOrZero(message = "price must not be negative")
-        Long price
+        Long price,
+
+        @PositiveOrZero(message = "cell must not be negative")
+        Integer cell
 ) {
 }

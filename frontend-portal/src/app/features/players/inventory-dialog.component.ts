@@ -202,8 +202,8 @@ export class InventoryDialogComponent {
   }
 
   /**
-   * A stand entry dropped on the bag is bought into the lowest free cell. An equipped item goes to the lowest free
-   * cell too, and a bag item to the cell it is dropped on.
+   * A stand entry is bought, and an equipped item unequipped, into the cell it is dropped on, or into the lowest free
+   * cell if an item takes it. A bag item moves to the cell, swapping with the item there.
    */
   dropOnCell(event: DragEvent, cell: number) {
     event.preventDefault();
@@ -212,12 +212,12 @@ export class InventoryDialogComponent {
     const slot = item?.equipmentSlot;
     if (entry) {
       void this.change(
-        (id) => this.inventoryService.buy(id, crypto.randomUUID(), entry.publicId, entry.price),
+        (id) => this.inventoryService.buy(id, crypto.randomUUID(), entry.publicId, entry.price, cell),
         'Inventory refused the buy',
         true,
       );
     } else if (slot) {
-      void this.change((id) => this.inventoryService.unequip(id, slot), 'Inventory refused the unequip');
+      void this.change((id) => this.inventoryService.unequip(id, slot, cell), 'Inventory refused the unequip');
     } else if (item && item.bagPosition !== cell) {
       void this.change((id) => this.inventoryService.move(id, cell, item.publicId), 'Inventory refused the move');
     }

@@ -11,6 +11,7 @@ import com.tombtale.serviceinventory.entity.CharacterInventory;
 import com.tombtale.serviceinventory.entity.CoinHistory;
 import com.tombtale.serviceinventory.entity.ItemInstance;
 import com.tombtale.serviceinventory.entity.StandEntry;
+import com.tombtale.serviceinventory.exception.CellOutsideBagException;
 import com.tombtale.serviceinventory.exception.CharacterInDungeonException;
 import com.tombtale.serviceinventory.exception.CharacterNotFoundException;
 import com.tombtale.serviceinventory.exception.ItemNotFoundException;
@@ -50,33 +51,38 @@ public class DealerTradeService {
     private final ItemInstanceRepository itemInstanceRepository;
     private final InventoryView inventoryView;
     private final SellShare sellShare;
+    private final int bagCells;
 
     // A guessable sequence would let a player time a buy for a better roll.
     private final RandomGenerator random = new SecureRandom();
 
-    /** The sell share comes from {@code inventory.sell-share-percent} in application.yml. */
+    /** The sell share and the bag's size come from {@code inventory.*} in application.yml. */
     public DealerTradeService(
             CharacterInventoryRepository characterInventoryRepository,
             CoinHistoryRepository coinHistoryRepository,
             StandEntryRepository standEntryRepository,
             ItemInstanceRepository itemInstanceRepository,
             InventoryView inventoryView,
-            @Value("${inventory.sell-share-percent}") int sellSharePercent) {
+            @Value("${inventory.sell-share-percent}") int sellSharePercent,
+            @Value("${inventory.bag-cells}") int bagCells) {
         this.characterInventoryRepository = characterInventoryRepository;
         this.coinHistoryRepository = coinHistoryRepository;
         this.standEntryRepository = standEntryRepository;
         this.itemInstanceRepository = itemInstanceRepository;
         this.inventoryView = inventoryView;
         this.sellShare = new SellShare(sellSharePercent);
+        this.bagCells = bagCells;
     }
 
     /**
-     * Charges the entry's price and puts a new copy in the lowest free cell. A trade id sent again changes nothing.
+     * Charges the entry's price and puts a new copy in the cell it was dropped on, if no item takes it, or else in
+     * the lowest free cell. A trade id sent again changes nothing.
      *
      * @param characterId the character
-     * @param request     the trade id, the stand entry and the price the player saw
+     * @param request     the trade id, the stand entry, the price the player saw and the cell, if any
      * @param caller      who asks
      * @return the inventory after the buy
+     * @throws CellOutsideBagException     if the cell is past the bag's last one
      * @throws CharacterInDungeonException if the character holds a dungeon lock
      * @throws StandEntryNotFoundException if no stand shows the entry
      * @throws PriceChangedException       if the entry's price is no longer the one the player saw
@@ -84,6 +90,7 @@ public class DealerTradeService {
      */
     @Transactional
     public CharacterInventoryResponse buy(UUID characterId, DealerBuyRequest request, InventoryCaller caller) {
+        BagCells.checkInside(request.cell(), bagCells);
         CharacterInventory character = lock(characterId, caller);
         if (coinHistoryRepository.existsByCharacterInventoryAndReference(character, request.tradeId())) {
             return inventoryOf(character);
@@ -105,7 +112,8 @@ public class DealerTradeService {
                 .rarity(entry.getRarity())
                 .bonus(bonusOf(entry))
                 .quantity(1)
-                .bagPosition(BagCells.free(itemInstanceRepository.findBagPositions(character)).nextInt())
+                .bagPosition(BagCells.wantedOrLowestFree(
+                        request.cell(), itemInstanceRepository.findBagPositions(character)))
                 .build());
         LOG.info("Character {} bought {} {} for {} coins in trade {}",
                 characterId, entry.getRarity(), entry.getTemplate().getCode(), price, request.tradeId());

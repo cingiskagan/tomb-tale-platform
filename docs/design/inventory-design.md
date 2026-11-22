@@ -128,6 +128,7 @@ Equipping runs in one transaction under the character lock, so two taps at once 
 - Every item in the bag has a `bag_position`, its cell in the grid, and an equipped item has none. A cell holds one item or one stack.
 - The position is one number, not a row and a column, so the client chooses how many columns to draw.
 - A new item or stack takes the lowest free cell. An item that leaves a slot takes the cell of the item that replaces it, or else the lowest free cell.
+- An unequip or a dealer buy may name the cell the item was dropped on. The item takes it if it is free, and the lowest free cell if not, with no swap.
 - The character lock keeps two changes at once from taking the same cell.
 - Both unique constraints, on the slot and on the cell, are checked at the commit, so a swap of two items doesn't collide halfway.
 - The bag has no limit yet. When Tier 2 adds one, every path that adds an item needs an answer for a full bag: drops, purchases, dealer buys, unequipping and party trades.
