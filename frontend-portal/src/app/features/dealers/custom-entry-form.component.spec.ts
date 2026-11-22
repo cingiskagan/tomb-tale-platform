@@ -3,7 +3,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { Subject, of, throwError } from 'rxjs';
 import { DealerService, ItemTemplateResponse, ItemType, Rarity, StandEntry } from '../../core/api';
-import { statRow } from '../items/stats-form';
 import { CustomEntryFormComponent } from './custom-entry-form.component';
 
 const RING = { publicId: 't-ring', code: 'RING_GOLD', name: 'Gold Ring', itemType: ItemType.RING } as ItemTemplateResponse;
@@ -29,17 +28,19 @@ describe('CustomEntryFormComponent', () => {
   it('adds the template with the rarity and the exact bonus, a stat twice too, then closes', async () => {
     dealerService.addEntry.and.returnValue(of({ publicId: 'e-1' } as StandEntry));
     const saved = spyOn(form.saved, 'emit');
-    form.form.controls.rarity.setValue(Rarity.ORANGE);
-    form.form.controls.bonus.push(statRow('FIRE_DAMAGE', 40));
-    form.form.controls.bonus.push(statRow('CRIT_CHANCE', 2));
-    form.form.controls.bonus.push(statRow('FIRE_DAMAGE', 40));
+    form.form.controls.rarity.setValue(Rarity.PURPLE);
+    form.form.controls.bonus.setValue([
+      { stat: 'FIRE_DAMAGE', value: 40 },
+      { stat: 'CRIT_CHANCE', value: 2 },
+      { stat: 'FIRE_DAMAGE', value: 40 },
+    ]);
 
     expect(form.form.valid).toBeTrue();
     await form.save();
 
     expect(dealerService.addEntry).toHaveBeenCalledWith('TOWN_JEWELER', {
       templateId: 't-ring',
-      rarity: Rarity.ORANGE,
+      rarity: Rarity.PURPLE,
       bonus: [
         { stat: 'FIRE_DAMAGE', value: 40 },
         { stat: 'CRIT_CHANCE', value: 2 },
@@ -54,6 +55,7 @@ describe('CustomEntryFormComponent', () => {
     dealerService.addEntry.and.returnValue(
       throwError(() => new HttpErrorResponse({ status: 403, error: { detail: 'Custom stand items are off' } })),
     );
+    form.form.controls.rarity.setValue(Rarity.GRAY);
 
     await form.save();
 
@@ -61,10 +63,11 @@ describe('CustomEntryFormComponent', () => {
     expect(form.visible).toBeTrue();
   });
 
-  /** Pressing Save, or Enter in the one stat field, twice adds the entry once. */
+  /** Pressing Save, or Enter in a stat field, twice adds the entry once. */
   it('sends one entry when saved twice before the first answers', async () => {
     const answer = new Subject<StandEntry>();
     dealerService.addEntry.and.returnValue(answer);
+    form.form.controls.rarity.setValue(Rarity.GRAY);
 
     const first = form.save();
     await form.save();
@@ -75,14 +78,35 @@ describe('CustomEntryFormComponent', () => {
     expect(dealerService.addEntry).toHaveBeenCalledTimes(1);
   });
 
-  it('opens blank each time', async () => {
-    form.form.controls.bonus.push(statRow('FIRE_DAMAGE', 40));
+  it('opens blank each time, with the five empty rows of a red item', async () => {
     form.form.controls.rarity.setValue(Rarity.GREEN);
+    form.form.controls.bonus.setValue([{ stat: 'FIRE_DAMAGE', value: 40 }]);
 
     form.close();
     form.visible = true;
 
-    expect(form.form.controls.bonus.length).toBe(0);
     expect(form.form.controls.rarity.value).toBe(Rarity.RED);
+    expect(form.form.controls.bonus.getRawValue()).toEqual(Array(5).fill({ stat: null, value: null }));
+  });
+
+  /** Inventory refuses a bonus with more or fewer lines than the rarity rolls, so the admin can't add or remove one. */
+  it('gives the bonus as many rows as the rarity rolls, keeping the filled ones', async () => {
+    form.form.controls.rarity.setValue(Rarity.BLUE);
+    form.form.controls.bonus.at(0).setValue({ stat: 'FIRE_DAMAGE', value: 40 });
+    expect(form.form.controls.bonus.length).toBe(2);
+
+    form.form.controls.rarity.setValue(Rarity.ORANGE);
+    expect(form.form.controls.bonus.length).toBe(4);
+    expect(form.form.controls.bonus.at(0).getRawValue()).toEqual({ stat: 'FIRE_DAMAGE', value: 40 });
+
+    form.form.controls.rarity.setValue(Rarity.GRAY);
+    expect(form.form.controls.bonus.length).toBe(0);
+
+    form.form.controls.rarity.setValue(Rarity.GREEN);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(document.querySelectorAll('.stat-row').length).toBe(1);
+    expect(document.querySelector('[aria-label="Remove stat"]')).toBeNull();
+    expect(Array.from(document.querySelectorAll('button')).some((b) => b.textContent?.includes('Add stat'))).toBeFalse();
   });
 });

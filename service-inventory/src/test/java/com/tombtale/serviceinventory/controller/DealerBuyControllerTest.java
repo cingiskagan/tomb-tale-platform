@@ -141,12 +141,12 @@ class DealerBuyControllerTest extends FixedAuthorTestBase {
         });
     }
 
-    /** A red copy would roll five lines, so two show the bonus was copied, not rolled, a repeated stat too. */
+    /** A weapon rolls 1 to 8 fire damage, so two lines of 40 were copied, not rolled, a repeated stat too. */
     @Test
     void aCustomEntryCopiesItsBonusExactly() throws Exception {
-        StandEntry custom = anEntry(sword, Rarity.RED, CUSTOM_BONUS);
+        StandEntry custom = anEntry(sword, Rarity.BLUE, CUSTOM_BONUS);
 
-        buy(UUID.randomUUID(), custom, SWORD_PRICE * Rarity.RED.priceMultiplier(), ownersToken())
+        buy(UUID.randomUUID(), custom, BLUE_SWORD_PRICE, ownersToken())
                 .andExpect(status().isOk());
 
         assertThat(boughtSwords()).singleElement()

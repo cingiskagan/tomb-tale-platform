@@ -167,6 +167,16 @@ public class GlobalExceptionHandler extends PlatformExceptionHandler {
     }
 
     /**
+     * @param ex a custom bonus with more or fewer lines than its rarity rolls
+     * @return a 400 problem detail
+     */
+    @ExceptionHandler(WrongBonusCountException.class)
+    public ProblemDetail handleWrongBonusCount(WrongBonusCountException ex) {
+        LOG.warn("Wrong bonus count: {}", ex.getMessage());
+        return problem(HttpStatus.BAD_REQUEST, "Wrong Bonus Count", ex.getMessage());
+    }
+
+    /**
      * @param ex the icon hash a template names
      * @return a 400 problem detail
      */

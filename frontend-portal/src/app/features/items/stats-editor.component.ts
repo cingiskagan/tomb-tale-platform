@@ -20,6 +20,8 @@ import { StatRow, statRow } from './stats-form';
 export class StatsEditorComponent {
   @Input({ required: true }) rows!: FormArray<StatRow>;
   @Input() label = 'Stats';
+  /** Hides Add and Remove, for rows whose number the owner decides. */
+  @Input() fixedRows = false;
 
   readonly statOptions = STATS.map((stat) => ({ label: stat, value: stat }));
 

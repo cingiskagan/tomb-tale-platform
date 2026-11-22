@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output, inject, ChangeDetectionStrategy } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -7,10 +8,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { firstValueFrom } from 'rxjs';
-import { DealerService, ItemTemplateResponse, Rarity, StandEntry } from '../../core/api';
+import { DealerService, ItemTemplateResponse, Rarity, StandEntry, bonusCount } from '../../core/api';
 import { DialogDirective } from '../../core/ui';
 import { StatsEditorComponent } from '../items/stats-editor.component';
-import { StatRow, linesOf } from '../items/stats-form';
+import { StatRow, linesOf, statRow } from '../items/stats-form';
 import { problemDetail } from '../items/problem-detail';
 
 export const RARITY_OPTIONS = Object.values(Rarity).map((rarity) => ({ label: rarity, value: rarity }));
@@ -65,6 +66,18 @@ export class CustomEntryFormComponent {
   saving = false;
   error: string | null = null;
 
+  constructor() {
+    this.form.controls.rarity.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.fitBonus());
+  }
+
+  /** Inventory takes exactly as many lines as the rarity rolls, so the rows follow it and keep what is filled in. */
+  fitBonus() {
+    const rows = this.form.controls.bonus;
+    const count = bonusCount(this.form.controls.rarity.value);
+    while (rows.length > count) rows.removeAt(rows.length - 1);
+    while (rows.length < count) rows.push(statRow());
+  }
+
   async save() {
     if (this.form.invalid || !this.dealerCode || !this.template || this.saving) return;
     const session = this.session;
@@ -97,7 +110,8 @@ export class CustomEntryFormComponent {
     this.session++;
     this.saving = false;
     this.error = null;
-    this.form.reset({ rarity: Rarity.RED });
     this.form.controls.bonus.clear();
+    this.form.reset({ rarity: Rarity.RED });
+    this.fitBonus();
   }
 }
