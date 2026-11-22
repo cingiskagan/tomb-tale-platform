@@ -1,7 +1,7 @@
 # NNNN. Short statement of the decision
 
 - **Date:** YYYY-MM-DD
-- **Status:** proposed | accepted | superseded by NNNN | deprecated
+- **Status:** proposed | accepted | amended by NNNN | superseded by NNNN | deprecated
 
 ## Context
 

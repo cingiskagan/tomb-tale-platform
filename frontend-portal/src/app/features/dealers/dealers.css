@@ -52,7 +52,7 @@ tr.retired td {
   border-radius: 6px;
 }
 
-/* A change and its reload are on their way, so the stand takes no other (ADR 0034). */
+/* A change and its reload are on their way, so the stand takes no other (ADR 0037). */
 .stand.busy {
   opacity: 0.6;
 }

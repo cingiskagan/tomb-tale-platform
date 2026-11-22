@@ -43,7 +43,7 @@ interface NavItem {
 export class MainLayoutComponent {
   private readonly authService = inject(AuthService);
 
-  /** A thin bar on top of everything while any API call is in flight (ADR 0034). */
+  /** A thin bar on top of everything while any API call is in flight (ADR 0037). */
   readonly loading$ = inject(LoadingService).loading$;
 
   /** Roles that grant access to admin-only menu items. */

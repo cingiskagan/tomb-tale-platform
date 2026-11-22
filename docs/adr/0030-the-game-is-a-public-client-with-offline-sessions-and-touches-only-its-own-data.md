@@ -1,7 +1,7 @@
 # 30. The game is a public client with offline sessions, and touches only its own data
 
 - **Date:** 2026-10-27
-- **Status:** superseded by [0031](0031-the-game-acts-on-its-own-characters-inventory-directly.md)
+- **Status:** amended by [0031](0031-the-game-acts-on-its-own-characters-inventory-directly.md)
 
 ## Context
 

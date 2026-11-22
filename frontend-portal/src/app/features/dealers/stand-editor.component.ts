@@ -61,7 +61,7 @@ export class StandEditorComponent {
   readonly rarity = new FormControl(Rarity.GRAY, { nonNullable: true });
 
   entries: StandEntry[] = [];
-  /** Set from a change until the stand's reload ends, so no second change starts meanwhile (ADR 0034). */
+  /** Set from a change until the stand's reload ends, so no second change starts meanwhile (ADR 0037). */
   busy = false;
   templates: ItemTemplateResponse[] = [];
   templateTotal = 0;

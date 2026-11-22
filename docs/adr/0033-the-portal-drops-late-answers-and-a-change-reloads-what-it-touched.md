@@ -1,7 +1,7 @@
 # 33. The portal drops late answers, and a change reloads what it touched
 
 - **Date:** 2026-11-16
-- **Status:** accepted
+- **Status:** amended by [0037](0037-a-change-covers-the-portal-until-no-call-is-left.md), whose cover replaced `busy` outside the stand editor and inventory
 
 ## Context
 
