@@ -35,6 +35,15 @@ export type Stat = (typeof STATS)[number];
 /** Stat names with their values, as base stats or a set's bonus. */
 export type Stats = Partial<Record<Stat, number>>;
 
+/** The lowest and highest value a bonus roll gives a stat. */
+export interface BonusRange {
+  min: number;
+  max: number;
+}
+
+/** Each item type's rolled stats with their ranges. A stat missing from a type never rolls on it. */
+export type BonusRanges = Partial<Record<ItemType, Partial<Record<Stat, BonusRange>>>>;
+
 export interface ItemTemplateResponse {
   publicId: string;
   code: string;

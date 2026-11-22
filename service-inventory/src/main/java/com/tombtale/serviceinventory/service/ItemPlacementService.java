@@ -83,21 +83,26 @@ public class ItemPlacementService {
     }
 
     /**
-     * Sends the item in the slot to the lowest free cell. An empty slot stays empty.
+     * Sends the item in the slot to the cell, if no item takes it, or else to the lowest free cell. An empty slot
+     * stays empty.
      *
      * @param characterId the character
      * @param slot        the slot to empty
+     * @param cell        the cell the item was dropped on, or null for the lowest free cell
      * @param caller      who asks
      * @return the inventory after the change
+     * @throws CellOutsideBagException if the cell is past the bag's last one
      */
     @Transactional
-    public CharacterInventoryResponse unequip(UUID characterId, EquipmentSlot slot, InventoryCaller caller) {
+    public CharacterInventoryResponse unequip(
+            UUID characterId, EquipmentSlot slot, Integer cell, InventoryCaller caller) {
+        BagCells.checkInside(cell, bagCells);
         CharacterInventory character = lock(characterId, caller);
         List<ItemInstance> items = itemInstanceRepository.findByCharacterInventory(character);
         ItemInstance item = inSlot(items, slot);
         if (item != null) {
             item.setEquipmentSlot(null);
-            item.setBagPosition(lowestFreeCell(items));
+            item.setBagPosition(freeCell(cell, items));
         }
         return inventoryView.build(character, items);
     }
@@ -115,9 +120,7 @@ public class ItemPlacementService {
      */
     @Transactional
     public CharacterInventoryResponse move(UUID characterId, int cell, UUID itemId, InventoryCaller caller) {
-        if (cell >= bagCells) {
-            throw new CellOutsideBagException(cell, bagCells);
-        }
+        BagCells.checkInside(cell, bagCells);
         CharacterInventory character = lock(characterId, caller);
         List<ItemInstance> items = itemInstanceRepository.findByCharacterInventory(character);
         ItemInstance item = find(items, itemId);
@@ -170,12 +173,13 @@ public class ItemPlacementService {
         for (int i = 0; i < leaving.size(); i++) {
             ItemInstance item = leaving.get(i);
             item.setEquipmentSlot(null);
-            item.setBagPosition(i == 0 ? freedCell : lowestFreeCell(items));
+            item.setBagPosition(i == 0 ? freedCell : freeCell(null, items));
         }
     }
 
-    private static int lowestFreeCell(List<ItemInstance> items) {
-        return BagCells.free(items.stream().map(ItemInstance::getBagPosition).filter(Objects::nonNull).toList())
-                .nextInt();
+    /** The wanted cell if no item takes it, or else the lowest free cell. */
+    private static int freeCell(Integer wanted, List<ItemInstance> items) {
+        return BagCells.wantedOrLowestFree(
+                wanted, items.stream().map(ItemInstance::getBagPosition).filter(Objects::nonNull).toList());
     }
 }

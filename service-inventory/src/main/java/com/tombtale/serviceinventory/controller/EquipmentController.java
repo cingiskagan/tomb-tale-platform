@@ -7,6 +7,7 @@ import com.tombtale.serviceinventory.dto.ItemRequest;
 import com.tombtale.serviceinventory.security.InventoryCaller;
 import com.tombtale.serviceinventory.service.ItemPlacementService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -50,14 +52,20 @@ public class EquipmentController {
     }
 
     /**
+     * The item goes to the cell, unless an item takes it. Then, or with no cell, it goes to the lowest free cell.
+     *
      * @param characterId the character
-     * @param slot        the slot to empty into the lowest free cell
+     * @param slot        the slot to empty
+     * @param cell        the cell the item was dropped on, from 0
      * @param token       the caller's token
      * @return the inventory after the change
      */
     @DeleteMapping("/{slot}")
     public CharacterInventoryResponse unequip(
-            @PathVariable UUID characterId, @PathVariable EquipmentSlot slot, JwtAuthenticationToken token) {
-        return itemPlacementService.unequip(characterId, slot, InventoryCaller.from(token));
+            @PathVariable UUID characterId,
+            @PathVariable EquipmentSlot slot,
+            @RequestParam(required = false) @PositiveOrZero Integer cell,
+            JwtAuthenticationToken token) {
+        return itemPlacementService.unequip(characterId, slot, cell, InventoryCaller.from(token));
     }
 }

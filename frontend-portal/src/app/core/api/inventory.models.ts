@@ -23,6 +23,11 @@ export enum Rarity {
   RED = 'RED',
 }
 
+/** How many bonus stats a copy of the rarity carries: none for gray, 5 for red. Mirrors `Rarity.bonusCount`. */
+export function bonusCount(rarity: Rarity): number {
+  return Object.values(Rarity).indexOf(rarity);
+}
+
 /** One roll of an item's bonus. A stat can roll more than once, and each roll is a line of its own. */
 export interface BonusLine {
   stat: Stat;

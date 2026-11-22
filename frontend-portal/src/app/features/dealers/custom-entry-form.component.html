@@ -6,7 +6,10 @@
       <div class="tt-notice tt-notice-error" role="alert">{{ error }}</div>
     }
 
-    <p class="hint">Every copy a player buys carries exactly this bonus, so testers can try any scenario.</p>
+    <p class="hint">
+      Every copy a player buys carries exactly this bonus, so testers can try any scenario. The rarity decides how many
+      stats it has.
+    </p>
 
     <form [formGroup]="form" (ngSubmit)="save()" class="tt-form">
       <mat-form-field appearance="outline">
@@ -18,7 +21,7 @@
         </mat-select>
       </mat-form-field>
 
-      <app-stats-editor [rows]="form.controls.bonus" label="Bonus" />
+      <app-stats-editor [rows]="form.controls.bonus" label="Bonus" [fixedRows]="true" [ranges]="ranges" />
     </form>
   </mat-dialog-content>
 

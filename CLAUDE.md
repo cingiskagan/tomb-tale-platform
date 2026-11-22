@@ -92,3 +92,4 @@ nginx on port 8080 fronts both: `/api` goes to the backend services, `/realms/` 
 ## Conventions
 
 - Commit messages are at most 10 lines: a subject, a blank line, and up to eight lines of body. Trailers do not count. If the reasoning does not fit, it was never commit-message material — it belongs in an ADR, and those are capped at 30 lines (`docs/adr/README.md`).
+- An ADR is true as of its date: names in it may be out of date, but its decision holds unless its status links to a newer record.

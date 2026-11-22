@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { RUNTIME_CONFIG } from '../config';
 import { PagedResponse } from './common.model';
 import {
+  BonusRanges,
   CreateItemSetRequest,
   CreateItemTemplateRequest,
   ItemIconResponse,
@@ -25,6 +26,11 @@ export class ItemCatalogService {
     return this.http.get<PagedResponse<ItemTemplateResponse>>(`${this.baseUrl}/templates`, {
       params: pageParams(page, size, sort),
     });
+  }
+
+  /** The roll ranges are code in inventory, so they change only with a deploy. */
+  getBonusRanges(): Observable<BonusRanges> {
+    return this.http.get<BonusRanges>(`${this.baseUrl}/bonus-ranges`);
   }
 
   getTemplate(publicId: string): Observable<ItemTemplateResponse> {

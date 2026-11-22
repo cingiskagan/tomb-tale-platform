@@ -111,7 +111,7 @@ app:
 inventory:
   # The coins every new character starts with, written with their history row.
   starting-coins: ${INVENTORY_STARTING_COINS}
-  # How many cells a bag has. A move stays inside them. Grants ignore it until Tier 2 limits the bag.
+  # How many cells a bag has. A cell a client names stays inside them. Grants ignore it until Tier 2 limits the bag.
   bag-cells: ${INVENTORY_BAG_CELLS}
   # The share of an item's price, in percent, that any dealer pays for it, rounded
   # down. At most 100, so no route between dealers makes coins.

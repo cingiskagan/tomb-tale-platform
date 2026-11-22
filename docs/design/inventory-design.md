@@ -128,6 +128,7 @@ Equipping runs in one transaction under the character lock, so two taps at once 
 - Every item in the bag has a `bag_position`, its cell in the grid, and an equipped item has none. A cell holds one item or one stack.
 - The position is one number, not a row and a column, so the client chooses how many columns to draw.
 - A new item or stack takes the lowest free cell. An item that leaves a slot takes the cell of the item that replaces it, or else the lowest free cell.
+- An unequip or a dealer buy may name the cell the item was dropped on. The item takes it if it is free, and the lowest free cell if not, with no swap.
 - The character lock keeps two changes at once from taking the same cell.
 - Both unique constraints, on the slot and on the cell, are checked at the commit, so a swap of two items doesn't collide halfway.
 - The bag has no limit yet. When Tier 2 adds one, every path that adds an item needs an answer for a full bag: drops, purchases, dealer buys, unequipping and party trades.
@@ -137,7 +138,7 @@ Equipping runs in one transaction under the character lock, so two taps at once 
 
 - One price per template, at most a billion coins, so a red copy's price still fits a `bigint`. A dealer's stand only lists the items that dealer sells.
 - A stand can sell any rarity. A bought item rolls its rarity's bonuses from its item type's pool, like any other.
-- To test bonuses, an admin puts a custom item on a stand, with a rarity and a bonus they choose. It never sells out, and every copy a player buys carries exactly that bonus, so testers can try any scenario.
+- To test bonuses, an admin puts a custom item on a stand, with a rarity and a bonus they choose. It never sells out, and every copy a player buys carries exactly that bonus, so testers can try any scenario. The bonus has as many lines as the rarity rolls. A value may pass its stat's roll range but is at least 1, and the portal shows the range beside each stat.
 - In production, admins don't add rare items. A setting, `inventory.custom-stand-items.enabled`, is off by default, and `.env.example` turns it on for the local stack. While it's off, the endpoint refuses the action and the portal hides the button.
 - A scheduled job puts random rare items on stands in production, through its own code, so the setting doesn't affect it.
 - Each rarity triples the price: green costs 3 times gray, blue 9, purple 27, orange 81 and red 243.

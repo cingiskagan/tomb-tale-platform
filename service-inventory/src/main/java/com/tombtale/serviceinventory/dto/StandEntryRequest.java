@@ -12,8 +12,8 @@ import java.util.UUID;
  *
  * @param templateId the template it sells
  * @param rarity     the rarity of every copy
- * @param bonus      the lines every copy carries, a stat more than once if need be, or null for copies that roll
- *                   their own
+ * @param bonus      the lines every copy carries, as many as the rarity rolls and a stat more than once if need be,
+ *                   or null for copies that roll their own
  */
 public record StandEntryRequest(
         @NotNull(message = "templateId is required")

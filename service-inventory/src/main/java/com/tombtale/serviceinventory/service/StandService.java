@@ -16,6 +16,7 @@ import com.tombtale.serviceinventory.exception.RetiredDealerException;
 import com.tombtale.serviceinventory.exception.RetiredTemplateException;
 import com.tombtale.serviceinventory.exception.StandEntryNotFoundException;
 import com.tombtale.serviceinventory.exception.UnknownItemTemplateException;
+import com.tombtale.serviceinventory.exception.WrongBonusCountException;
 import com.tombtale.serviceinventory.repository.DealerRepository;
 import com.tombtale.serviceinventory.repository.ItemTemplateRepository;
 import com.tombtale.serviceinventory.repository.StandEntryRepository;
@@ -71,6 +72,7 @@ public class StandService {
      * @param request    the template, the rarity and, for a custom entry, its bonus
      * @return the saved entry
      * @throws CustomStandItemsDisabledException if the request has a bonus while the setting is off
+     * @throws WrongBonusCountException          if the bonus has more or fewer lines than the rarity rolls
      * @throws RetiredDealerException            if the dealer is retired
      * @throws RetiredTemplateException          if the template is retired
      */
@@ -78,6 +80,9 @@ public class StandService {
     public StandEntryResponse addEntry(String dealerCode, StandEntryRequest request) {
         if (request.bonus() != null && !customStandItemsEnabled) {
             throw new CustomStandItemsDisabledException();
+        }
+        if (request.bonus() != null && request.bonus().size() != request.rarity().bonusCount()) {
+            throw new WrongBonusCountException(request.rarity(), request.bonus().size());
         }
         Dealer dealer = findActiveDealer(dealerCode);
         ItemTemplate template = findActiveTemplate(request.templateId());

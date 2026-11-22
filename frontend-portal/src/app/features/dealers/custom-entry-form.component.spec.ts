@@ -2,22 +2,37 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { Subject, of, throwError } from 'rxjs';
-import { DealerService, ItemTemplateResponse, ItemType, Rarity, StandEntry } from '../../core/api';
-import { statRow } from '../items/stats-form';
+import {
+  BonusRanges,
+  DealerService,
+  ItemCatalogService,
+  ItemTemplateResponse,
+  ItemType,
+  Rarity,
+  StandEntry,
+} from '../../core/api';
 import { CustomEntryFormComponent } from './custom-entry-form.component';
 
 const RING = { publicId: 't-ring', code: 'RING_GOLD', name: 'Gold Ring', itemType: ItemType.RING } as ItemTemplateResponse;
+const RANGES: BonusRanges = { RING: { FIRE_DAMAGE: { min: 1, max: 8 } } };
 
 describe('CustomEntryFormComponent', () => {
   let dealerService: jasmine.SpyObj<DealerService>;
+  let itemCatalogService: jasmine.SpyObj<ItemCatalogService>;
   let fixture: ComponentFixture<CustomEntryFormComponent>;
   let form: CustomEntryFormComponent;
 
   beforeEach(() => {
     dealerService = jasmine.createSpyObj<DealerService>('DealerService', ['addEntry']);
+    itemCatalogService = jasmine.createSpyObj<ItemCatalogService>('ItemCatalogService', ['getBonusRanges']);
+    itemCatalogService.getBonusRanges.and.returnValue(of(RANGES));
     TestBed.configureTestingModule({
       imports: [CustomEntryFormComponent],
-      providers: [{ provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } }, { provide: DealerService, useValue: dealerService }],
+      providers: [
+        { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
+        { provide: DealerService, useValue: dealerService },
+        { provide: ItemCatalogService, useValue: itemCatalogService },
+      ],
     });
     fixture = TestBed.createComponent(CustomEntryFormComponent);
     form = fixture.componentInstance;
@@ -29,17 +44,19 @@ describe('CustomEntryFormComponent', () => {
   it('adds the template with the rarity and the exact bonus, a stat twice too, then closes', async () => {
     dealerService.addEntry.and.returnValue(of({ publicId: 'e-1' } as StandEntry));
     const saved = spyOn(form.saved, 'emit');
-    form.form.controls.rarity.setValue(Rarity.ORANGE);
-    form.form.controls.bonus.push(statRow('FIRE_DAMAGE', 40));
-    form.form.controls.bonus.push(statRow('CRIT_CHANCE', 2));
-    form.form.controls.bonus.push(statRow('FIRE_DAMAGE', 40));
+    form.form.controls.rarity.setValue(Rarity.PURPLE);
+    form.form.controls.bonus.setValue([
+      { stat: 'FIRE_DAMAGE', value: 40 },
+      { stat: 'CRIT_CHANCE', value: 2 },
+      { stat: 'FIRE_DAMAGE', value: 40 },
+    ]);
 
     expect(form.form.valid).toBeTrue();
     await form.save();
 
     expect(dealerService.addEntry).toHaveBeenCalledWith('TOWN_JEWELER', {
       templateId: 't-ring',
-      rarity: Rarity.ORANGE,
+      rarity: Rarity.PURPLE,
       bonus: [
         { stat: 'FIRE_DAMAGE', value: 40 },
         { stat: 'CRIT_CHANCE', value: 2 },
@@ -54,6 +71,7 @@ describe('CustomEntryFormComponent', () => {
     dealerService.addEntry.and.returnValue(
       throwError(() => new HttpErrorResponse({ status: 403, error: { detail: 'Custom stand items are off' } })),
     );
+    form.form.controls.rarity.setValue(Rarity.GRAY);
 
     await form.save();
 
@@ -61,10 +79,11 @@ describe('CustomEntryFormComponent', () => {
     expect(form.visible).toBeTrue();
   });
 
-  /** Pressing Save, or Enter in the one stat field, twice adds the entry once. */
+  /** Pressing Save, or Enter in a stat field, twice adds the entry once. */
   it('sends one entry when saved twice before the first answers', async () => {
     const answer = new Subject<StandEntry>();
     dealerService.addEntry.and.returnValue(answer);
+    form.form.controls.rarity.setValue(Rarity.GRAY);
 
     const first = form.save();
     await form.save();
@@ -75,14 +94,72 @@ describe('CustomEntryFormComponent', () => {
     expect(dealerService.addEntry).toHaveBeenCalledTimes(1);
   });
 
-  it('opens blank each time', async () => {
-    form.form.controls.bonus.push(statRow('FIRE_DAMAGE', 40));
+  it('opens blank each time, with the five empty rows of a red item', async () => {
     form.form.controls.rarity.setValue(Rarity.GREEN);
+    form.form.controls.bonus.setValue([{ stat: 'FIRE_DAMAGE', value: 40 }]);
 
     form.close();
     form.visible = true;
 
-    expect(form.form.controls.bonus.length).toBe(0);
     expect(form.form.controls.rarity.value).toBe(Rarity.RED);
+    expect(form.form.controls.bonus.getRawValue()).toEqual(Array(5).fill({ stat: null, value: null }));
+  });
+
+  /** Inventory refuses a bonus with more or fewer lines than the rarity rolls, so the admin can't add or remove one. */
+  it('gives the bonus as many rows as the rarity rolls, keeping the filled ones', async () => {
+    form.form.controls.rarity.setValue(Rarity.BLUE);
+    form.form.controls.bonus.at(0).setValue({ stat: 'FIRE_DAMAGE', value: 40 });
+    expect(form.form.controls.bonus.length).toBe(2);
+
+    form.form.controls.rarity.setValue(Rarity.ORANGE);
+    expect(form.form.controls.bonus.length).toBe(4);
+    expect(form.form.controls.bonus.at(0).getRawValue()).toEqual({ stat: 'FIRE_DAMAGE', value: 40 });
+
+    form.form.controls.rarity.setValue(Rarity.GRAY);
+    expect(form.form.controls.bonus.length).toBe(0);
+
+    form.form.controls.rarity.setValue(Rarity.GREEN);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(document.querySelectorAll('.stat-row').length).toBe(1);
+    expect(document.querySelector('[aria-label="Remove stat"]')).toBeNull();
+    expect(Array.from(document.querySelectorAll('button')).some((b) => b.textContent?.includes('Add stat'))).toBeFalse();
+  });
+
+  /** A ring rolls fire damage from 1 to 8 and no MAX_HP in these ranges, and 40 is allowed though past them. */
+  it("shows a picked stat's roll range for the item type, and takes any value of at least 1", async () => {
+    form.form.controls.rarity.setValue(Rarity.GREEN);
+    const row = form.form.controls.bonus.at(0);
+    row.setValue({ stat: 'FIRE_DAMAGE', value: 0 });
+    expect(form.form.valid).toBeFalse();
+    row.controls.value.setValue(40);
+    expect(form.form.valid).toBeTrue();
+
+    // The ranges load when the dialog opens.
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(document.querySelector('mat-hint')?.textContent).toContain('Rolls 1–8');
+
+    row.controls.stat.setValue('MAX_HP');
+    fixture.detectChanges();
+    expect(document.querySelector('mat-hint')?.textContent).toContain('Never rolls on this item');
+  });
+
+  /** Reopened while the first load waits, the dialog loads again, and the first failing late clears nothing. */
+  it('keeps the ranges a later load brought when an earlier one fails after it', async () => {
+    const first = new Subject<BonusRanges>();
+    itemCatalogService.getBonusRanges.and.returnValues(first, of(RANGES));
+    const other = TestBed.createComponent(CustomEntryFormComponent).componentInstance;
+    other.template = RING;
+
+    other.visible = true;
+    other.close();
+    other.visible = true;
+    await new Promise((resolve) => setTimeout(resolve));
+    first.error(new HttpErrorResponse({ status: 503 }));
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(itemCatalogService.getBonusRanges).toHaveBeenCalledTimes(3);
+    expect(other.ranges).toEqual(RANGES.RING!);
   });
 });

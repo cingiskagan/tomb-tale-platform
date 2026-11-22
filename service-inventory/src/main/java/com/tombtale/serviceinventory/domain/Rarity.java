@@ -27,7 +27,7 @@ public enum Rarity {
     }
 
     /**
-     * @return how many bonus stats a copy rolls: none for gray, 5 for red
+     * @return how many bonus stats a copy rolls, and a custom entry carries: none for gray, 5 for red
      */
     public int bonusCount() {
         return ordinal();

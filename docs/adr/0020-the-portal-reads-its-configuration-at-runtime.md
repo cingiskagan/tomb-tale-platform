@@ -1,7 +1,7 @@
 # 20. The portal reads its configuration at runtime
 
 - **Date:** 2026-09-19
-- **Status:** accepted
+- **Status:** amended by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md), whose realm fixes the client id, so `config.json` is tracked and no script writes it
 
 ## Context
 

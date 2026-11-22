@@ -22,9 +22,11 @@ export class InventoryService {
     return this.http.put<CharacterInventory>(`${this.baseUrl}/${characterId}/equipment/${slot}`, { itemId });
   }
 
-  /** The item goes to the lowest free cell. */
-  unequip(characterId: string, slot: EquipmentSlot): Observable<CharacterInventory> {
-    return this.http.delete<CharacterInventory>(`${this.baseUrl}/${characterId}/equipment/${slot}`);
+  /** The item goes to the cell, or to the lowest free cell if an item takes it. */
+  unequip(characterId: string, slot: EquipmentSlot, cell: number): Observable<CharacterInventory> {
+    return this.http.delete<CharacterInventory>(`${this.baseUrl}/${characterId}/equipment/${slot}`, {
+      params: { cell },
+    });
   }
 
   /** A taken cell swaps the two items. */
@@ -33,10 +35,16 @@ export class InventoryService {
   }
 
   /**
-   * The copy goes to the lowest free cell. A trade id sent again buys nothing, and a changed price answers 409.
+   * The copy goes to the cell, or to the lowest free cell if an item takes it. A trade id sent again buys nothing,
+   * and a changed price answers 409.
    */
-  buy(characterId: string, tradeId: string, entryId: string, price: number): Observable<CharacterInventory> {
-    return this.http.post<CharacterInventory>(`${this.baseUrl}/${characterId}/dealer-buys`, { tradeId, entryId, price });
+  buy(characterId: string, tradeId: string, entryId: string, price: number, cell: number): Observable<CharacterInventory> {
+    return this.http.post<CharacterInventory>(`${this.baseUrl}/${characterId}/dealer-buys`, {
+      tradeId,
+      entryId,
+      price,
+      cell,
+    });
   }
 
   /** Every dealer pays the same share, so a sell names none. A trade id sent again pays nothing. */

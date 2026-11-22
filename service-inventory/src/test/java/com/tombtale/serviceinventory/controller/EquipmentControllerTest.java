@@ -50,7 +50,10 @@ class EquipmentControllerTest extends FixedAuthorTestBase {
     private static final String CHARACTERS_URL = "/api/v1/inventory/characters/";
     private static final UUID OWNER = UUID.randomUUID();
     private static final int CELL = 3;
+    /** {@code inventory.bag-cells} in application-test.yml. */
+    private static final int BAG_CELLS = 40;
     private static final String PROBLEM_TITLE = "$.title";
+    private static final String SECOND_IN_BAG = "$.bag[1].publicId";
 
     @Autowired
     private MockMvc mockMvc;
@@ -102,7 +105,7 @@ class EquipmentControllerTest extends FixedAuthorTestBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.equipment.MAIN_HAND.publicId").value(axe.getPublicId().toString()))
                 .andExpect(jsonPath("$.equipment.OFF_HAND").doesNotExist())
-                .andExpect(jsonPath("$.bag[1].publicId").value(sword.getPublicId().toString()))
+                .andExpect(jsonPath(SECOND_IN_BAG).value(sword.getPublicId().toString()))
                 .andExpect(jsonPath("$.bag[2].publicId").value(shield.getPublicId().toString()))
                 .andExpect(jsonPath("$.bag[2].bagPosition").value(2));
     }
@@ -180,8 +183,48 @@ class EquipmentControllerTest extends FixedAuthorTestBase {
         mockMvc.perform(delete(slotUrl(EquipmentSlot.HEAD)).with(tokenOf(UUID.randomUUID(), RoleConstants.PLATFORM_ADMIN)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.equipment.HEAD").doesNotExist())
-                .andExpect(jsonPath("$.bag[1].publicId").value(helmet.getPublicId().toString()))
+                .andExpect(jsonPath(SECOND_IN_BAG).value(helmet.getPublicId().toString()))
                 .andExpect(jsonPath("$.bag[1].bagPosition").value(1));
+    }
+
+    /** The cell the item was dropped on is free, so the item lands there. */
+    @Test
+    void unequippingIntoAFreeCellPutsTheItemThere() throws Exception {
+        ItemInstance helmet = anItem(ItemType.HELMET, EquipmentSlot.HEAD, null);
+        anItem(ItemType.RING, null, 0);
+
+        unequip(EquipmentSlot.HEAD, CELL)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(SECOND_IN_BAG).value(helmet.getPublicId().toString()))
+                .andExpect(jsonPath("$.bag[1].bagPosition").value(CELL));
+    }
+
+    /** No swap: dropped on a ring, the helmet goes to the lowest free cell, and the ring stays. */
+    @Test
+    void unequippingIntoATakenCellSendsTheItemToTheLowestFreeCell() throws Exception {
+        ItemInstance helmet = anItem(ItemType.HELMET, EquipmentSlot.HEAD, null);
+        anItem(ItemType.RING, null, 0);
+        ItemInstance ring = anItem(ItemType.RING, null, 2);
+
+        unequip(EquipmentSlot.HEAD, 2)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(SECOND_IN_BAG).value(helmet.getPublicId().toString()))
+                .andExpect(jsonPath("$.bag[1].bagPosition").value(1))
+                .andExpect(jsonPath("$.bag[2].publicId").value(ring.getPublicId().toString()));
+    }
+
+    /** Neither the cell after the test bag's last nor a negative one takes the helmet off. */
+    @Test
+    void unequippingIntoACellOutsideTheBagAnswers400() throws Exception {
+        ItemInstance helmet = anItem(ItemType.HELMET, EquipmentSlot.HEAD, null);
+
+        unequip(EquipmentSlot.HEAD, BAG_CELLS)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath(PROBLEM_TITLE).value("Cell Outside Bag"));
+        unequip(EquipmentSlot.HEAD, -1).andExpect(status().isBadRequest());
+
+        assertThat(itemInstanceRepository.findById(helmet.getId()))
+                .hasValueSatisfying(stored -> assertThat(stored.getEquipmentSlot()).isEqualTo(EquipmentSlot.HEAD));
     }
 
     @Test
@@ -217,6 +260,10 @@ class EquipmentControllerTest extends FixedAuthorTestBase {
 
     private ItemTemplate aTemplate(ItemType type) {
         return itemTemplateRepository.save(ItemTemplates.aTemplate(type + "_" + UUID.randomUUID()).itemType(type).build());
+    }
+
+    private ResultActions unequip(EquipmentSlot slot, int cell) throws Exception {
+        return mockMvc.perform(delete(slotUrl(slot)).param("cell", String.valueOf(cell)).with(ownersToken()));
     }
 
     private ResultActions equip(EquipmentSlot slot, ItemInstance item, JwtRequestPostProcessor token) throws Exception {

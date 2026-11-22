@@ -177,14 +177,14 @@ describe('InventoryDialogComponent', () => {
     expect(find('[data-cell="2"] [data-item="helmet"]')).toBeNull();
   });
 
-  it('unequips an item dropped on the bag', async () => {
+  it('unequips an item into the cell it is dropped on', async () => {
     await open(anInventory({ RING_1: RING }, []));
-    inventoryService.unequip.and.returnValue(of(anInventory({}, [{ ...RING, equipmentSlot: null, bagPosition: 0 }])));
+    inventoryService.unequip.and.returnValue(of(anInventory({}, [{ ...RING, equipmentSlot: null, bagPosition: 5 }])));
 
     await drag('ring', '[data-cell="5"]');
 
-    expect(inventoryService.unequip).toHaveBeenCalledWith('c-1', EquipmentSlot.RING_1);
-    expect(find('[data-cell="0"] [data-item="ring"]')).not.toBeNull();
+    expect(inventoryService.unequip).toHaveBeenCalledWith('c-1', EquipmentSlot.RING_1, 5);
+    expect(find('[data-cell="5"] [data-item="ring"]')).not.toBeNull();
   });
 
   it('moves a bag item to the cell it is dropped on', async () => {
@@ -271,19 +271,19 @@ describe('InventoryDialogComponent', () => {
     expect(dialog.dealers.map((dealer) => dealer.code)).toEqual(['TOWN_BLACKSMITH', 'TOWN_TAILOR']);
   });
 
-  it('buys a stand entry dropped on the bag, with a new trade id each time', async () => {
+  it('buys a stand entry into the cell it is dropped on, with a new trade id each time', async () => {
     await open(anInventory({}, []));
     await pickTheBlacksmith();
-    const sword = anItem('sword', { itemType: ItemType.ONE_HANDED_WEAPON, rarity: Rarity.BLUE, bagPosition: 0 });
+    const sword = anItem('sword', { itemType: ItemType.ONE_HANDED_WEAPON, rarity: Rarity.BLUE, bagPosition: 4 });
     inventoryService.buy.and.returnValue(of(anInventory({}, [sword], 150)));
 
     await dragFrom('[data-entry="e-1"]', '[data-cell="4"]');
     await dragFrom('[data-entry="e-1"]', '[data-cell="4"]');
 
     const [first, second] = inventoryService.buy.calls.allArgs();
-    expect(first).toEqual(['c-1', jasmine.any(String), 'e-1', 1350]);
+    expect(first).toEqual(['c-1', jasmine.any(String), 'e-1', 1350, 4]);
     expect(second[1]).not.toBe(first[1]);
-    expect(find('[data-cell="0"] [data-item="sword"]')).not.toBeNull();
+    expect(find('[data-cell="4"] [data-item="sword"]')).not.toBeNull();
     expect(find('.coins')?.textContent).toContain('150');
   });
 

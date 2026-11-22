@@ -15,7 +15,8 @@ it got to where it is.
 Every record has the same five parts. Start from `0000-template.md`.
 
 - **Title** — a short phrase naming the decision, written as a statement.
-- **Status** — `proposed`, `accepted`, `superseded by NNNN`, or `deprecated`.
+- **Status** — `proposed`, `accepted`, `amended by NNNN`,
+  `superseded by NNNN`, or `deprecated`.
 - **Context** — what forced a choice: the pressure, the constraint, the thing
   that was broken. Write it without saying what you decided.
 - **Decision** — what we chose, stated actively. "We will ..."
@@ -30,13 +31,18 @@ write the next one. Shortening the wording is the one edit to the content that
 is allowed, because the decision, the date, the status and the links come
 through it unchanged. Records 0001 to 0019 were cut that way on 2026-09-21, and
 none of them changed its mind. The rule below adds the one other edit a record
-ever takes: a status that becomes `superseded by NNNN`.
+ever takes: a status that becomes `superseded by NNNN` or `amended by NNNN`.
 
 **A changed decision gets a new record.** Set the old one's status to
 `superseded by NNNN` and link forward to it. The new record links back. That
 chain is the history of the project, and it is why a record stays in the
 directory even after it turns out to be wrong. Records 0004 and 0008 are the
 worked example.
+
+**A record changed in part is amended, not superseded.** Its status becomes
+`amended by NNNN`, since the rest still holds and a reader needs both records.
+If NNNN does not say what it changed, a few words after the link do. Records
+0030 and 0031 are the worked example.
 
 **Numbers are sequential and never reused.** They are identifiers, not
 priorities.
@@ -87,7 +93,7 @@ in sequence here — a record written later can describe an earlier choice.
 | [0017](0017-an-api-field-is-named-after-the-field-behind-it.md) | An API field is named after the field behind it | 2026-09-17 | accepted |
 | [0018](0018-zitadel-provisions-players-and-me-is-the-fallback.md) | Zitadel provisions players, and `/me` is the fallback that complains | 2026-09-17 | superseded by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md) |
 | [0019](0019-zitadel-configuration-is-code.md) | Zitadel configuration is code | 2026-09-18 | superseded by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md) |
-| [0020](0020-the-portal-reads-its-configuration-at-runtime.md) | The portal reads its configuration at runtime | 2026-09-19 | accepted |
+| [0020](0020-the-portal-reads-its-configuration-at-runtime.md) | The portal reads its configuration at runtime | 2026-09-19 | amended by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md) |
 | [0021](0021-api-belongs-to-the-platform-not-zitadel.md) | `/api` belongs to the platform, not to Zitadel | 2026-09-28 | superseded by [0025](0025-nginx-replaces-traefik.md) |
 | [0022](0022-separate-services-not-a-modular-monolith.md) | Separate services, not a modular monolith | 2026-09-28 | accepted |
 | [0023](0023-the-player-publicid-travels-in-the-access-token.md) | The player's `publicId` travels in the access token | 2026-10-01 | superseded by [0024](0024-keycloak-replaces-zitadel-and-mints-the-publicid.md) |
@@ -97,10 +103,10 @@ in sequence here — a record written later can describe an earlier choice.
 | [0027](0027-a-purchase-is-a-choreographed-saga-that-waits-in-pending.md) | A purchase is a choreographed saga that waits in `PENDING` | 2026-10-13 | accepted |
 | [0028](0028-micrometer-with-opentelemetry-traces-the-services-and-exports-nothing-yet.md) | Micrometer with OpenTelemetry traces the services, and exports nothing yet | 2026-10-16 | accepted |
 | [0029](0029-service-audit-inserts-each-event-once-and-keeps-only-listed-fields.md) | service-audit inserts each event once, and keeps only listed fields | 2026-10-16 | accepted |
-| [0030](0030-the-game-is-a-public-client-with-offline-sessions-and-touches-only-its-own-data.md) | The game is a public client with offline sessions, and touches only its own data | 2026-10-27 | superseded by [0031](0031-the-game-acts-on-its-own-characters-inventory-directly.md) |
+| [0030](0030-the-game-is-a-public-client-with-offline-sessions-and-touches-only-its-own-data.md) | The game is a public client with offline sessions, and touches only its own data | 2026-10-27 | amended by [0031](0031-the-game-acts-on-its-own-characters-inventory-directly.md) |
 | [0031](0031-the-game-acts-on-its-own-characters-inventory-directly.md) | The game acts on its own character's inventory directly | 2026-11-02 | accepted |
 | [0032](0032-a-stand-is-found-by-its-dealers-code.md) | A stand is found by its dealer's code | 2026-11-12 | accepted |
-| [0033](0033-the-portal-drops-late-answers-and-a-change-reloads-what-it-touched.md) | The portal drops late answers, and a change reloads what it touched | 2026-11-16 | accepted |
+| [0033](0033-the-portal-drops-late-answers-and-a-change-reloads-what-it-touched.md) | The portal drops late answers, and a change reloads what it touched | 2026-11-16 | amended by [0037](0037-a-change-covers-the-portal-until-no-call-is-left.md) |
 | [0034](0034-every-api-call-shows-loading-and-a-change-blocks-the-next.md) | Every API call shows loading, and a change blocks the next | 2026-11-16 | superseded by [0037](0037-a-change-covers-the-portal-until-no-call-is-left.md) |
 | [0035](0035-a-catalog-change-is-an-event-that-carries-the-whole-template-or-set.md) | A catalog change is an event that carries the whole template or set | 2026-11-17 | accepted |
 | [0036](0036-the-portal-uses-angular-material-not-primeng.md) | The portal uses Angular Material, not PrimeNG | 2026-11-19 | accepted |

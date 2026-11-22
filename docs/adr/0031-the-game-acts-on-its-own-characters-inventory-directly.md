@@ -2,7 +2,7 @@
 
 - **Date:** 2026-11-02
 - **Status:** accepted
-- **Supersedes:** [0030](0030-the-game-is-a-public-client-with-offline-sessions-and-touches-only-its-own-data.md)
+- **Amends:** [0030](0030-the-game-is-a-public-client-with-offline-sessions-and-touches-only-its-own-data.md)
 
 ## Context
 

@@ -1,7 +1,7 @@
 package com.tombtale.serviceinventory.exception;
 
 /**
- * A move names a cell past the bag's last one. Answers 400.
+ * A client names a cell past the bag's last one. Answers 400.
  */
 public class CellOutsideBagException extends RuntimeException {
 
