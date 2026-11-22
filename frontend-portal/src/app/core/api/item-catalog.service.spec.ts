@@ -27,6 +27,12 @@ describe('ItemCatalogService', () => {
 
   afterEach(() => http.verify());
 
+  it('reads the roll ranges of every item type', () => {
+    service.getBonusRanges().subscribe();
+
+    expect(http.expectOne(`${INVENTORY}/bonus-ranges`).request.method).toBe('GET');
+  });
+
   it('lists templates with the page, the size and the sort', () => {
     service.listTemplates(2, 10, 'name,desc').subscribe();
 

@@ -102,13 +102,16 @@ class CustomStandEntryControllerTest extends FixedAuthorTestBase {
                 .andExpect(jsonPath("$.title").value("Unknown Stat"));
     }
 
+    /** A missing value, zero and a negative value are each refused, naming the line, though the count is right. */
     @Test
-    void aBonusLineWithoutAValueAnswers400NamingIt() throws Exception {
-        addEntry("""
-                {"templateId": "%s", "rarity": "RED", "bonus": [{"stat": "FIRE_DAMAGE"}]}
-                """.formatted(ring.getPublicId()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors['bonus[0].value']").exists());
+    void aBonusLineWithoutAValueOfAtLeastOneAnswers400NamingIt() throws Exception {
+        for (String value : List.of("", ", \"value\": 0", ", \"value\": -5")) {
+            String line = "{\"stat\": \"FIRE_DAMAGE\"%s}".formatted(value);
+            addEntry(aBlueEntry(line + ", " + line))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors['bonus[0].value']").exists());
+        }
+        assertThat(standEntryRepository.count()).isZero();
     }
 
     /** A blue copy rolls two lines, so a custom blue bonus of one line or of three is refused. */

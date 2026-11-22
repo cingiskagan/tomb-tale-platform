@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormArray, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,7 +8,17 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { firstValueFrom } from 'rxjs';
-import { DealerService, ItemTemplateResponse, Rarity, StandEntry, bonusCount } from '../../core/api';
+import {
+  BonusRange,
+  BonusRanges,
+  DealerService,
+  ItemCatalogService,
+  ItemTemplateResponse,
+  Rarity,
+  StandEntry,
+  Stat,
+  bonusCount,
+} from '../../core/api';
 import { DialogDirective } from '../../core/ui';
 import { StatsEditorComponent } from '../items/stats-editor.component';
 import { StatRow, linesOf, statRow } from '../items/stats-form';
@@ -37,6 +47,8 @@ export const RARITY_OPTIONS = Object.values(Rarity).map((rarity) => ({ label: ra
 })
 export class CustomEntryFormComponent {
   private readonly dealerService = inject(DealerService);
+  private readonly itemCatalogService = inject(ItemCatalogService);
+  private bonusRanges: BonusRanges | null = null;
 
   @Input() dealerCode: string | null = null;
   @Input() template: ItemTemplateResponse | null = null;
@@ -70,12 +82,23 @@ export class CustomEntryFormComponent {
     this.form.controls.rarity.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.fitBonus());
   }
 
+  /** What each stat rolls on the template's item type, or null until the ranges load. */
+  get ranges(): Partial<Record<Stat, BonusRange>> | null {
+    if (!this.template || !this.bonusRanges) return null;
+    return this.bonusRanges[this.template.itemType] ?? {};
+  }
+
   /** Inventory takes exactly as many lines as the rarity rolls, so the rows follow it and keep what is filled in. */
   fitBonus() {
     const rows = this.form.controls.bonus;
     const count = bonusCount(this.form.controls.rarity.value);
     while (rows.length > count) rows.removeAt(rows.length - 1);
-    while (rows.length < count) rows.push(statRow());
+    while (rows.length < count) {
+      // Past the roll range is fine, so testers can try extremes, but a line always adds.
+      const row = statRow();
+      row.controls.value.addValidators(Validators.min(1));
+      rows.push(row);
+    }
   }
 
   async save() {
@@ -113,5 +136,15 @@ export class CustomEntryFormComponent {
     this.form.controls.bonus.clear();
     this.form.reset({ rarity: Rarity.RED });
     this.fitBonus();
+    if (!this.bonusRanges) void this.loadRanges();
+  }
+
+  /** The ranges are a hint, not a check, so a failed load only leaves them out. */
+  private async loadRanges() {
+    try {
+      this.bonusRanges = await firstValueFrom(this.itemCatalogService.getBonusRanges());
+    } catch {
+      this.bonusRanges = null;
+    }
   }
 }

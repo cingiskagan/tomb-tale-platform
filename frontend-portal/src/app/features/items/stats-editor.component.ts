@@ -5,7 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { STATS } from '../../core/api';
+import { BonusRange, STATS, Stat } from '../../core/api';
 import { StatRow, statRow } from './stats-form';
 
 /** Edits stat names and values, for a template's base stats or a set's bonus. */
@@ -22,6 +22,8 @@ export class StatsEditorComponent {
   @Input() label = 'Stats';
   /** Hides Add and Remove, for rows whose number the owner decides. */
   @Input() fixedRows = false;
+  /** What each stat rolls, shown under a picked stat, or null for no hint. */
+  @Input() ranges: Partial<Record<Stat, BonusRange>> | null = null;
 
   readonly statOptions = STATS.map((stat) => ({ label: stat, value: stat }));
 
@@ -31,5 +33,10 @@ export class StatsEditorComponent {
 
   remove(index: number) {
     this.rows.removeAt(index);
+  }
+
+  rangeHint(stat: Stat): string {
+    const range = this.ranges?.[stat];
+    return range ? `Rolls ${range.min}–${range.max}` : 'Never rolls on this item';
   }
 }

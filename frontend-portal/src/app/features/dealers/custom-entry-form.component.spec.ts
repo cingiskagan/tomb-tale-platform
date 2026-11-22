@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { Subject, of, throwError } from 'rxjs';
-import { DealerService, ItemTemplateResponse, ItemType, Rarity, StandEntry } from '../../core/api';
+import { DealerService, ItemCatalogService, ItemTemplateResponse, ItemType, Rarity, StandEntry } from '../../core/api';
 import { CustomEntryFormComponent } from './custom-entry-form.component';
 
 const RING = { publicId: 't-ring', code: 'RING_GOLD', name: 'Gold Ring', itemType: ItemType.RING } as ItemTemplateResponse;
@@ -14,9 +14,15 @@ describe('CustomEntryFormComponent', () => {
 
   beforeEach(() => {
     dealerService = jasmine.createSpyObj<DealerService>('DealerService', ['addEntry']);
+    const itemCatalogService = jasmine.createSpyObj<ItemCatalogService>('ItemCatalogService', ['getBonusRanges']);
+    itemCatalogService.getBonusRanges.and.returnValue(of({ RING: { FIRE_DAMAGE: { min: 1, max: 8 } } }));
     TestBed.configureTestingModule({
       imports: [CustomEntryFormComponent],
-      providers: [{ provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } }, { provide: DealerService, useValue: dealerService }],
+      providers: [
+        { provide: MATERIAL_ANIMATIONS, useValue: { animationsDisabled: true } },
+        { provide: DealerService, useValue: dealerService },
+        { provide: ItemCatalogService, useValue: itemCatalogService },
+      ],
     });
     fixture = TestBed.createComponent(CustomEntryFormComponent);
     form = fixture.componentInstance;
@@ -108,5 +114,24 @@ describe('CustomEntryFormComponent', () => {
     expect(document.querySelectorAll('.stat-row').length).toBe(1);
     expect(document.querySelector('[aria-label="Remove stat"]')).toBeNull();
     expect(Array.from(document.querySelectorAll('button')).some((b) => b.textContent?.includes('Add stat'))).toBeFalse();
+  });
+
+  /** A ring rolls fire damage from 1 to 8 and no MAX_HP in these ranges, and 40 is allowed though past them. */
+  it("shows a picked stat's roll range for the item type, and takes any value of at least 1", async () => {
+    form.form.controls.rarity.setValue(Rarity.GREEN);
+    const row = form.form.controls.bonus.at(0);
+    row.setValue({ stat: 'FIRE_DAMAGE', value: 0 });
+    expect(form.form.valid).toBeFalse();
+    row.controls.value.setValue(40);
+    expect(form.form.valid).toBeTrue();
+
+    // The ranges load when the dialog opens.
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(document.querySelector('mat-hint')?.textContent).toContain('Rolls 1–8');
+
+    row.controls.stat.setValue('MAX_HP');
+    fixture.detectChanges();
+    expect(document.querySelector('mat-hint')?.textContent).toContain('Never rolls on this item');
   });
 });
