@@ -139,12 +139,15 @@ export class CustomEntryFormComponent {
     if (!this.bonusRanges) void this.loadRanges();
   }
 
-  /** The ranges are a hint, not a check, so a failed load only leaves them out. */
+  /**
+   * The ranges are a hint, not a check, and the same for every session, so a late answer may land in any of them.
+   * A failure changes nothing: failing after a reopen's load answered, it must not clear what that load brought.
+   */
   private async loadRanges() {
     try {
       this.bonusRanges = await firstValueFrom(this.itemCatalogService.getBonusRanges());
     } catch {
-      this.bonusRanges = null;
+      // Without ranges the form shows no hints and works as before.
     }
   }
 }

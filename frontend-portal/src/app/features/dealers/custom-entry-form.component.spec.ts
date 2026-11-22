@@ -2,20 +2,30 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MATERIAL_ANIMATIONS } from '@angular/material/core';
 import { Subject, of, throwError } from 'rxjs';
-import { DealerService, ItemCatalogService, ItemTemplateResponse, ItemType, Rarity, StandEntry } from '../../core/api';
+import {
+  BonusRanges,
+  DealerService,
+  ItemCatalogService,
+  ItemTemplateResponse,
+  ItemType,
+  Rarity,
+  StandEntry,
+} from '../../core/api';
 import { CustomEntryFormComponent } from './custom-entry-form.component';
 
 const RING = { publicId: 't-ring', code: 'RING_GOLD', name: 'Gold Ring', itemType: ItemType.RING } as ItemTemplateResponse;
+const RANGES: BonusRanges = { RING: { FIRE_DAMAGE: { min: 1, max: 8 } } };
 
 describe('CustomEntryFormComponent', () => {
   let dealerService: jasmine.SpyObj<DealerService>;
+  let itemCatalogService: jasmine.SpyObj<ItemCatalogService>;
   let fixture: ComponentFixture<CustomEntryFormComponent>;
   let form: CustomEntryFormComponent;
 
   beforeEach(() => {
     dealerService = jasmine.createSpyObj<DealerService>('DealerService', ['addEntry']);
-    const itemCatalogService = jasmine.createSpyObj<ItemCatalogService>('ItemCatalogService', ['getBonusRanges']);
-    itemCatalogService.getBonusRanges.and.returnValue(of({ RING: { FIRE_DAMAGE: { min: 1, max: 8 } } }));
+    itemCatalogService = jasmine.createSpyObj<ItemCatalogService>('ItemCatalogService', ['getBonusRanges']);
+    itemCatalogService.getBonusRanges.and.returnValue(of(RANGES));
     TestBed.configureTestingModule({
       imports: [CustomEntryFormComponent],
       providers: [
@@ -133,5 +143,23 @@ describe('CustomEntryFormComponent', () => {
     row.controls.stat.setValue('MAX_HP');
     fixture.detectChanges();
     expect(document.querySelector('mat-hint')?.textContent).toContain('Never rolls on this item');
+  });
+
+  /** Reopened while the first load waits, the dialog loads again, and the first failing late clears nothing. */
+  it('keeps the ranges a later load brought when an earlier one fails after it', async () => {
+    const first = new Subject<BonusRanges>();
+    itemCatalogService.getBonusRanges.and.returnValues(first, of(RANGES));
+    const other = TestBed.createComponent(CustomEntryFormComponent).componentInstance;
+    other.template = RING;
+
+    other.visible = true;
+    other.close();
+    other.visible = true;
+    await new Promise((resolve) => setTimeout(resolve));
+    first.error(new HttpErrorResponse({ status: 503 }));
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(itemCatalogService.getBonusRanges).toHaveBeenCalledTimes(3);
+    expect(other.ranges).toEqual(RANGES.RING!);
   });
 });
